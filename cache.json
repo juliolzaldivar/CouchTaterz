@@ -1,0 +1,53 @@
+{
+  "enrich": {
+    "little house on the prarie": {
+      "title": "Little House on the Prairie",
+      "streamingService": "Netflix",
+      "genres": [
+        "Drama",
+        "Family",
+        "Western"
+      ],
+      "rottenTomatoesScore": 80,
+      "overview": "The life and adventures of the Ingalls family in the nineteenth century American Midwest, focusing on their struggles, triumphs, and daily experiences in the small town of Walnut Grove, Minnesota.",
+      "directors": [
+        "Michael Landon",
+        "William F. Claxton",
+        "Maury Dexter",
+        "Victor French"
+      ],
+      "actors": [
+        "Michael Landon",
+        "Karen Grassle",
+        "Melissa Gilbert",
+        "Melissa Sue Anderson",
+        "Lindsay Greenbush",
+        "Sidney Greenbush",
+        "Richard Bull",
+        "Katherine MacGregor"
+      ],
+      "concluded": true,
+      "bannerImage": "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80",
+      "totalSeasons": 9,
+      "episodesPerSeason": [
+        24,
+        22,
+        22,
+        22,
+        24,
+        24,
+        22,
+        22,
+        22
+      ],
+      "nextEpisode": {
+        "season": 1,
+        "episode": 1,
+        "title": "A Harvest of Friends",
+        "airDate": "1974-09-11"
+      }
+    }
+  },
+  "recaps": {},
+  "teasers": {}
+}

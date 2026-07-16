@@ -1,0 +1,8 @@
+{
+  "name": "CouchTater v2",
+  "description": "Track your favorite TV shows across major streaming services, log your watching progress, view upcoming episodes, rate shows, and chat with an AI TV expert for recommendations and catching up.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

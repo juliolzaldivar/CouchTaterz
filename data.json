@@ -1,0 +1,1395 @@
+{
+  "default": {
+    "id": "default",
+    "name": "My Tracker",
+    "shows": [
+      {
+        "id": "show-1784081645847",
+        "title": "The Americans",
+        "streamingService": "Hulu",
+        "genres": [
+          "Thriller",
+          "Western"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 2,
+          "title": "Episode 2",
+          "airDate": "2026-07-29"
+        },
+        "rottenTomatoesScore": 94,
+        "userScore": 9,
+        "userNotes": "",
+        "overview": "A compelling television series tracking \"The Americans\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Main Cast Star",
+          "Ensemble Cast Member"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSuG_1v8qSY_Jr5OTI94uFnIsSsd_eqokq2cHQQ7Bv43w&s=10",
+        "concluded": false,
+        "totalSeasons": 2,
+        "episodesPerSeason": [
+          10,
+          8
+        ],
+        "createdAt": "2026-07-15T02:14:05.847Z"
+      },
+      {
+        "id": "show-1784081428122",
+        "title": "Slow Horses",
+        "streamingService": "Apple TV",
+        "genres": [
+          "Spy Thriller",
+          "Drama",
+          "Crime"
+        ],
+        "status": "Backlog",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 5,
+          "episode": 1,
+          "title": "London Rules",
+          "airDate": "2025-09-03"
+        },
+        "rottenTomatoesScore": 98,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "This quick-witted spy thriller follows a dysfunctional team of MI5 agents and their obnoxious boss, the notorious Jackson Lamb, as they navigate the espionage world's smoke and mirrors to defend England from sinister forces.",
+        "directors": [
+          "James Hawes",
+          "Jeremy Lovering",
+          "Saul Metzstein",
+          "Adam Randall"
+        ],
+        "actors": [
+          "Gary Oldman",
+          "Jack Lowden",
+          "Kristin Scott Thomas",
+          "Rosalind Eleazar",
+          "Saskia Reeves",
+          "Christopher Chung"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6pzwPlJXnQcGY8BkO_z2ph4-asGzeaLDUAmNU8UM3AQ&s=10",
+        "concluded": false,
+        "totalSeasons": 4,
+        "episodesPerSeason": [
+          6,
+          6,
+          6,
+          6
+        ],
+        "createdAt": "2026-07-15T02:10:28.122Z"
+      },
+      {
+        "id": "show-1784081298845",
+        "title": "Pluribus",
+        "streamingService": "Apple TV",
+        "genres": [
+          "Horror",
+          "Sci-Fi"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 2,
+          "episode": 1,
+          "title": "Season 2 Premiere",
+          "airDate": "2027-06-01"
+        },
+        "rottenTomatoesScore": 89,
+        "userScore": 10,
+        "userNotes": "",
+        "overview": "A compelling television series tracking \"Pluribus\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Main Cast Star",
+          "Ensemble Cast Member"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL0jIu8CIbj8o9aY4whwMucEGJiJyuGdigiZNpE6gY&s",
+        "concluded": false,
+        "totalSeasons": 2,
+        "episodesPerSeason": [
+          10,
+          8
+        ],
+        "createdAt": "2026-07-15T02:08:18.845Z",
+        "isFavorite": false,
+        "isBannerHidden": false
+      },
+      {
+        "id": "show-1784079769863",
+        "title": "Sons of Anarchy",
+        "streamingService": "Hulu",
+        "genres": [
+          "Crime",
+          "Drama",
+          "Thriller"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 0,
+          "episode": 0,
+          "title": "",
+          "airDate": ""
+        },
+        "rottenTomatoesScore": 87,
+        "userScore": 8,
+        "userNotes": "",
+        "overview": "Sons of Anarchy is an adrenaline-fueled drama with comedic undertones about a notorious outlaw motorcycle club (SAMCRO) intent on protecting their sheltered small town of Charming, California against encroaching drug dealers, corporate developers, and overzealous law officers.",
+        "directors": [
+          "Kurt Sutter",
+          "Paris Barclay",
+          "Guy Ferland",
+          "Gwyneth Horder-Payton"
+        ],
+        "actors": [
+          "Charlie Hunnam",
+          "Katey Sagal",
+          "Ron Perlman",
+          "Maggie Siff",
+          "Kim Coates",
+          "Tommy Flanagan",
+          "Mark Boone Junior"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTswcn_b-V5fpk75yok8qb1V2FYN1hxRhA7MmxYTwDI6A&s=10",
+        "concluded": true,
+        "totalSeasons": 7,
+        "episodesPerSeason": [
+          13,
+          13,
+          13,
+          14,
+          13,
+          13,
+          13
+        ],
+        "createdAt": "2026-07-15T01:42:49.863Z"
+      },
+      {
+        "id": "show-1784050663044",
+        "title": "Lioness",
+        "streamingService": "Paramount+",
+        "genres": [
+          "Drama",
+          "Comedy"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 2,
+          "title": "Episode 2",
+          "airDate": "2026-07-28"
+        },
+        "rottenTomatoesScore": 84,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "A compelling television series tracking \"Lioness\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Main Cast Star",
+          "Ensemble Cast Member"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUqC_tu3W9jV36t_xdOh0sOMI-jwEnqhIA_sxBz_jqCg&s=10",
+        "concluded": false,
+        "totalSeasons": 2,
+        "episodesPerSeason": [
+          10,
+          8
+        ],
+        "createdAt": "2026-07-14T17:37:43.044Z"
+      },
+      {
+        "id": "show-1784050036152",
+        "title": "The Great",
+        "streamingService": "Disney+",
+        "genres": [
+          "Historical Drama",
+          "Comedy"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 2,
+          "title": "Episode 2",
+          "airDate": "2026-07-28"
+        },
+        "rottenTomatoesScore": 96,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "A satirical, comedic drama about the rise of Catherine the Great from outsider to the longest-reigning female ruler in Russia's history.",
+        "directors": [
+          "Tony McNamara"
+        ],
+        "actors": [
+          "Elle Fanning",
+          "Nicholas Hoult",
+          "Phoebe Fox",
+          "Gwilym Lee",
+          "Sacha Dhawan"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTuw1an2kM_Fwjs1wYUwMz29mirossFh-Whe4ZELKv-dg&s=10",
+        "concluded": true,
+        "totalSeasons": 3,
+        "episodesPerSeason": [
+          10,
+          10,
+          10
+        ],
+        "createdAt": "2026-07-14T17:27:16.152Z"
+      },
+      {
+        "id": "show-1784009668530",
+        "title": "Daredevil: Born Again",
+        "streamingService": "Disney+",
+        "genres": [
+          "Action",
+          "Crime",
+          "Drama",
+          "Sci-Fi"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 1,
+          "title": "Born Again Series Premiere",
+          "airDate": "2026-09-18"
+        },
+        "rottenTomatoesScore": 92,
+        "userScore": 9,
+        "userNotes": "",
+        "overview": "Matt Murdock, a blind attorney with superhuman senses, fights for justice in the courtroom and as a masked vigilante named Daredevil on the streets of Hell's Kitchen.",
+        "directors": [
+          "Michael Cuesta",
+          "Jeffrey Nachmanoff"
+        ],
+        "actors": [
+          "Charlie Cox",
+          "Vincent D'Onofrio",
+          "Jon Bernthal",
+          "Deborah Ann Woll",
+          "Elden Henson"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQuy7sVt3veocWTt6fy6G1M7hpuOBMxf-Tj3FiZ3FZEvA&s",
+        "concluded": false,
+        "totalSeasons": 1,
+        "episodesPerSeason": [
+          9
+        ],
+        "createdAt": "2026-07-14T06:14:28.530Z"
+      },
+      {
+        "id": "show-1784008012793",
+        "title": "The Office",
+        "streamingService": "Peacock",
+        "genres": [
+          "Comedy"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 1,
+          "title": "",
+          "airDate": ""
+        },
+        "rottenTomatoesScore": 81,
+        "userScore": 10,
+        "userNotes": "",
+        "overview": "A mockumentary on a group of typical office workers, where the workday consists of ego clashes, inappropriate behavior, and tedium.",
+        "directors": [
+          "Greg Daniels",
+          "Ken Kwapis",
+          "Ken Whittingham",
+          "Paul Feig"
+        ],
+        "actors": [
+          "Steve Carell",
+          "Rainn Wilson",
+          "John Krasinski",
+          "Jenna Fischer",
+          "B.J. Novak",
+          "Leslie David Baker",
+          "Brian Baumgartner",
+          "Angela Kinsey",
+          "Phyllis Smith",
+          "Minday Kaling",
+          "Creed Bratton",
+          "Oscar Nunez",
+          "Paul Lieberstein",
+          "Ed Helms"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRCstQAdMI7ojIlAQaEbEhOg-ljIY3zm8bSKRIl9XoRdA&s=10",
+        "concluded": true,
+        "totalSeasons": 9,
+        "episodesPerSeason": [
+          6,
+          22,
+          25,
+          19,
+          28,
+          26,
+          26,
+          24,
+          25
+        ],
+        "createdAt": "2026-07-14T05:46:52.793Z"
+      },
+      {
+        "id": "show-1784007764291",
+        "title": "The Walking Dead",
+        "streamingService": "AMCplus",
+        "genres": [
+          "Drama",
+          "Horror",
+          "Sci-Fi & Fantasy"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 0,
+          "episode": 0,
+          "title": "Concluded",
+          "airDate": "2022-11-20"
+        },
+        "rottenTomatoesScore": 79,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "Sheriff Deputy Rick Grimes wakes up from a coma to learn the world is in ruins and must lead a group of survivors to stay alive.",
+        "directors": [
+          "Greg Nicotero",
+          "Ernest Dickerson",
+          "Frank Darabont"
+        ],
+        "actors": [
+          "Andrew Lincoln",
+          "Norman Reedus",
+          "Melissa McBride",
+          "Lauren Cohan",
+          "Danai Gurira"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQPWsAbgnSfrZMMc7-OGQUKy3FsMXw01oW5B-k-5Qc-Ag&s=10",
+        "concluded": true,
+        "totalSeasons": 11,
+        "episodesPerSeason": [
+          6,
+          13,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          16,
+          22,
+          24
+        ],
+        "createdAt": "2026-07-14T05:42:44.291Z"
+      },
+      {
+        "id": "show-1784007642939",
+        "title": "The Bear",
+        "streamingService": "Hulu",
+        "genres": [
+          "Drama",
+          "Comedy"
+        ],
+        "status": "Backlog",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 4,
+          "episode": 1,
+          "title": "Season 4 Episode 1",
+          "airDate": "2025-06-26"
+        },
+        "rottenTomatoesScore": 96,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "Carmen 'Carmy' Berzatto, a elite chef from the fine dining world, returns home to Chicago to run his family's Italian beef sandwich shop after the suicide of his older brother.",
+        "directors": [
+          "Christopher Storer",
+          "Joanna Calo"
+        ],
+        "actors": [
+          "Jeremy Allen White",
+          "Ebon Moss-Bachrach",
+          "Ayo Edebiri",
+          "Lionel Boyce",
+          "Liza Colón-Zayas",
+          "Abby Elliott",
+          "Matty Matheson"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxpFNAmFk_IZGbaryDs3GkM5lnyWEjGt6USNocYJPA&s=10",
+        "concluded": false,
+        "totalSeasons": 3,
+        "episodesPerSeason": [
+          8,
+          10,
+          10
+        ],
+        "createdAt": "2026-07-14T05:40:42.939Z"
+      },
+      {
+        "id": "show-1784003647693",
+        "title": "From",
+        "streamingService": "Prime Video",
+        "genres": [
+          "Horror",
+          "Mystery",
+          "Sci-Fi",
+          "Drama"
+        ],
+        "status": "Backlog",
+        "latestWatched": {
+          "season": 2,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 4,
+          "episode": 1,
+          "title": "Season 4 Premiere",
+          "airDate": "2025-10-12"
+        },
+        "rottenTomatoesScore": 94,
+        "userScore": 9,
+        "userNotes": "",
+        "overview": "Unravel the mystery of a nightmarish town in middle America that traps all those who enter. As the unwilling residents fight to keep a sense of normalcy and search for a way out, they must also survive the threats of the surrounding forest – including the terrifying creatures that come out when the sun goes down.",
+        "directors": [
+          "Jack Bender",
+          "Brad Turner",
+          "Jennifer Liao",
+          "Jeff Renfroe"
+        ],
+        "actors": [
+          "Harold Perrineau",
+          "Catalina Sandino Moreno",
+          "Eion Bailey",
+          "David Alpay",
+          "Elizabeth Saunders",
+          "Scott McCord"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTkoc8QUr2WysQmIUEQD-xsTyn1fW-Co-YZAH0-ghs-Kg&s",
+        "concluded": false,
+        "totalSeasons": 3,
+        "episodesPerSeason": [
+          10,
+          10,
+          10
+        ],
+        "createdAt": "2026-07-14T04:34:07.693Z"
+      },
+      {
+        "id": "show-1784003328161",
+        "title": "Rick and Morty",
+        "streamingService": "Hulu",
+        "genres": [
+          "Animation",
+          "Comedy",
+          "Sci-Fi",
+          "Adventure"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 9,
+          "episode": 5,
+          "title": "Season 9 Episode 5",
+          "airDate": "2026-07-20"
+        },
+        "rottenTomatoesScore": 90,
+        "userScore": 9,
+        "userNotes": "",
+        "overview": "After having been missing for nearly 20 years, Rick Sanchez suddenly arrives at daughter Beth's doorstep to move in with her and her family. Although Beth welcomes Rick into her home, her husband, Jerry, isn't as thrilled about the family reunion. Jerry is concerned about Rick, a sociopathic scientist, using the garage as his personal laboratory. In the lab, Rick works on a number of sci-fi gadgets, some of which could be considered dangerous. But that's not all Rick does that concerns Jerry. He also goes on adventures across the universe that often involve his grandchildren, Morty and Summer.",
+        "directors": [
+          "Wesley Archer",
+          "Pete Michels",
+          "Bryan Newton"
+        ],
+        "actors": [
+          "Ian Cardoni",
+          "Harry Belden",
+          "Chris Parnell",
+          "Spencer Grammer",
+          "Sarah Chalke"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStX3K4wUFwD4FHp7pQNkFl4hfNP6-a5xquJ1TIs_3PZw&s=10",
+        "concluded": false,
+        "totalSeasons": 9,
+        "episodesPerSeason": [
+          11,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "createdAt": "2026-07-14T04:28:48.161Z"
+      },
+      {
+        "id": "show-1784003012235",
+        "title": "House of the Dragon",
+        "streamingService": "HBO",
+        "genres": [
+          "Action",
+          "Adventure",
+          "Drama",
+          "Fantasy"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 3,
+          "episode": 2,
+          "title": "Episode 2"
+        },
+        "nextEpisode": {
+          "season": 3,
+          "episode": 3,
+          "title": "Episode 3",
+          "airDate": "2026-07-19"
+        },
+        "rottenTomatoesScore": 89,
+        "userScore": 9,
+        "userNotes": "",
+        "overview": "An internal succession war within House Targaryen at the height of its power, 172 years before the birth of Daenerys Targaryen.",
+        "directors": [
+          "Miguel Sapochnik",
+          "Clare Kilner",
+          "Geeta Vasant Patel",
+          "Greg Yaitanes",
+          "Alan Taylor"
+        ],
+        "actors": [
+          "Matt Smith",
+          "Emma D'Arcy",
+          "Olivia Cooke",
+          "Paddy Considine",
+          "Rhys Ifans",
+          "Steve Toussaint",
+          "Eve Best"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR7pIsFmg12Cv_3Q1P2kWK4ZGsDo8XeF-UkErBVCSjvFg&s=10",
+        "concluded": false,
+        "createdAt": "2026-07-14T04:23:32.235Z"
+      },
+      {
+        "id": "show-1784002799978",
+        "title": "Shōgun",
+        "streamingService": "Hulu",
+        "genres": [
+          "Historical Drama",
+          "Action",
+          "Adventure",
+          "Drama"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 2,
+          "episode": 1,
+          "title": "Season 2 Episode 1",
+          "airDate": "2026-03-01"
+        },
+        "rottenTomatoesScore": 99,
+        "userScore": 10,
+        "userNotes": "",
+        "overview": "Set in Japan in the year 1600 at the dawn of a century-defining civil war, Lord Yoshii Toranaga struggles for survival as his enemies on the Council of Regents unite against him. When a mysterious European ship is found marooned in a nearby fishing village, its English pilot, John Blackthorne, comes bearing secrets that could help Toranaga tip the scales of power.",
+        "directors": [
+          "Jonathan van Tulleken",
+          "Frederick E.O. Toye",
+          "Charlotte Brändström",
+          "Hiromi Kamata",
+          "Emmanuel Osei-Kuffour"
+        ],
+        "actors": [
+          "Hiroyuki Sanada",
+          "Cosmo Jarvis",
+          "Anna Sawai",
+          "Tadanobu Asano",
+          "Takehiro Hira",
+          "Tommy Bastow",
+          "Fumi Nikaido"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTouf15_KKf6F8ypTOh3XUFpq8rcBfo05msEXy01cMYXQ&s",
+        "concluded": false,
+        "createdAt": "2026-07-14T04:19:59.978Z"
+      },
+      {
+        "id": "show-1784002677755",
+        "title": "Peaky Blinders",
+        "streamingService": "Netflix",
+        "genres": [
+          "Crime",
+          "Drama"
+        ],
+        "status": "Backlog",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 1,
+          "title": "The First Cut",
+          "airDate": "2013-09-12"
+        },
+        "rottenTomatoesScore": 94,
+        "userScore": 9,
+        "userNotes": "",
+        "overview": "A gangster family epic set in 1919 Birmingham, England, centered on a gang who sew razor blades in the peaks of their caps, and their fierce boss Tommy Shelby.",
+        "directors": [
+          "Anthony Byrne",
+          "Colm McCarthy",
+          "Tim Mielants",
+          "Otto Bathurst"
+        ],
+        "actors": [
+          "Cillian Murphy",
+          "Paul Anderson",
+          "Helen McCrory",
+          "Sophie Rundle",
+          "Tom Hardy"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQL5_s11y4oGepKQoldiMgqXpN0FLBskXiEqFtLEzo9Gw&s=10",
+        "concluded": true,
+        "createdAt": "2026-07-14T04:17:57.755Z"
+      },
+      {
+        "id": "show-1784002362766",
+        "title": "Shameless",
+        "streamingService": "Netflix",
+        "genres": [
+          "Comedy",
+          "Drama"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 11,
+          "episode": 12,
+          "title": "Father Frank, Full of Grace",
+          "airDate": "2021-04-11"
+        },
+        "rottenTomatoesScore": 82,
+        "userScore": 8,
+        "userNotes": "",
+        "overview": "Frank Gallagher is the proud single father of six smart, industrious, independent kids, who without him would be... perhaps better off. When Frank's not at the bar spending what little money they have, he's passed out on the floor. But the kids have found ways to grow up in spite of him.",
+        "directors": [
+          "Mark Mylod",
+          "Christopher Chulack",
+          "Anthony Hemingway"
+        ],
+        "actors": [
+          "William H. Macy",
+          "Emmy Rossum",
+          "Jeremy Allen White",
+          "Cameron Monaghan",
+          "Emma Kenney",
+          "Ethan Cutkosky"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSm_kxJfnMuGgFwNjzqp4TMcCkho15qhOvEr7yTOt3I3Q&s=10",
+        "concluded": true,
+        "createdAt": "2026-07-14T04:12:42.766Z"
+      },
+      {
+        "id": "show-1784002194992",
+        "title": "Silo",
+        "streamingService": "Apple TV",
+        "genres": [
+          "Sci-Fi",
+          "Drama",
+          "Mystery",
+          "Dystopian"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 2,
+          "episode": 10,
+          "title": "Season 2 Finale"
+        },
+        "nextEpisode": {
+          "season": 3,
+          "episode": 1,
+          "title": "Season 3 Premiere",
+          "airDate": "2026-07-17"
+        },
+        "rottenTomatoesScore": 88,
+        "userScore": 9,
+        "userNotes": "",
+        "overview": "In a ruined and toxic future, a community exists in a giant underground silo that plunges hundreds of stories deep. There, men and women live in a society full of regulations they believe are meant to protect them.",
+        "directors": [
+          "Morten Tyldum",
+          "David Semel",
+          "Alethea Jones"
+        ],
+        "actors": [
+          "Rebecca Ferguson",
+          "Common",
+          "Tim Robbins",
+          "Harriet Walter",
+          "Chinaza Uche",
+          "Avi Nash"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGow7p2r8x9pAV8hTP2OzWwWNDhQa96bWgImV_ucRIDw&s=10",
+        "concluded": false,
+        "createdAt": "2026-07-14T04:09:54.992Z"
+      },
+      {
+        "id": "show-1784002006188",
+        "title": "Stranger Things",
+        "streamingService": "Netflix",
+        "genres": [
+          "Sci-Fi",
+          "Drama",
+          "Horror",
+          "Fantasy",
+          "Mystery"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 5,
+          "episode": 1,
+          "title": "Chapter One: The Crawl",
+          "airDate": "2025-10-0-120"
+        },
+        "rottenTomatoesScore": 91,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl.",
+        "directors": [
+          "The Duffer Brothers",
+          "Shawn Levy"
+        ],
+        "actors": [
+          "Winona Ryder",
+          "David Harbour",
+          "Millie Bobby Brown",
+          "Finn Wolfhard",
+          "Gaten Matarazzo",
+          "Caleb McLaughlin",
+          "Noah Schnapp",
+          "Sadie Sink",
+          "Natalia Dyer",
+          "Charlie Heaton",
+          "Joe Keery"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4Qf7wolgUB7X37sMbkSd93bUJlubb_qNmozDnQtHp4Q&s=10",
+        "concluded": false,
+        "createdAt": "2026-07-14T04:06:46.188Z"
+      },
+      {
+        "id": "show-1784001463882",
+        "title": "Supernatural",
+        "streamingService": "Netflix",
+        "genres": [
+          "Drama",
+          "Mystery",
+          "Sci-Fi & Fantasy",
+          "Horror"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 0,
+          "episode": 0,
+          "title": "",
+          "airDate": ""
+        },
+        "rottenTomatoesScore": 93,
+        "userScore": 10,
+        "userNotes": "The go back and watch comfort show. ",
+        "overview": "Two brothers, Sam and Dean Winchester, follow their father's footsteps as hunters, fighting evil supernatural beings of many kinds, including monsters, demons, and gods, while driving across the country in a 1967 Chevy Impala.",
+        "directors": [
+          "Robert Singer",
+          "Philip Sgriccia",
+          "John Showalter",
+          "Kim Manners"
+        ],
+        "actors": [
+          "Jared Padalecki",
+          "Jensen Ackles",
+          "Misha Collins",
+          "Mark Sheppard"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRcAtds1wdUIPpEjgpHKayk2vNk27yaBo8KEsvpA8zwMg&s=10",
+        "concluded": true,
+        "createdAt": "2026-07-14T03:57:43.882Z"
+      },
+      {
+        "id": "show-1784000830039",
+        "title": "X-Men '97",
+        "streamingService": "Disney+",
+        "genres": [
+          "Animation",
+          "Action",
+          "Adventure",
+          "Sci-Fi"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 2,
+          "episode": 3,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 2,
+          "episode": 4,
+          "title": "Episode 4",
+          "airDate": "2026-07-16"
+        },
+        "rottenTomatoesScore": 99,
+        "userScore": 10,
+        "userNotes": "",
+        "overview": "A continuation of the classic 1990s animated series, X-Men '97 revisits the iconic era of the X-Men as the band of mutants face dangerous new challenges following the loss of their leader, Professor Charles Xavier.",
+        "directors": [
+          "Jake Castorena",
+          "Chase Conley",
+          "Emi Yonemura"
+        ],
+        "actors": [
+          "Ray Chase",
+          "Jennifer Hale",
+          "Alison Sealy-Smith",
+          "Cal Dodd",
+          "Lenore Zann",
+          "George Buza",
+          "AJ LoCascio"
+        ],
+        "bannerImage": "https://images.squarespace-cdn.com/content/v1/51b3dc8ee4b051b96ceb10de/a3d300bb-f1b7-4fca-b376-03273a92de3e/X-MEN+%2797+Star+is+%2522Amazed+Disney+Greenlit%2522+Season+2+Because+It%E2%80%99s+%2522Very%2C+Very+Dark%2522+and+%2522A+Lot+of+People+Die%2522.jpg?format=2500w",
+        "concluded": false,
+        "createdAt": "2026-07-14T03:47:10.039Z",
+        "isBannerHidden": false,
+        "isFavorite": false
+      },
+      {
+        "id": "show-1784000223490",
+        "title": "Foundation",
+        "streamingService": "Apple TV",
+        "genres": [
+          "Sci-Fi",
+          "Drama",
+          "Adventure"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 3,
+          "episode": 1,
+          "title": "Season 3 Premiere",
+          "airDate": "2027-06-15"
+        },
+        "rottenTomatoesScore": 86,
+        "userScore": 10,
+        "userNotes": "",
+        "overview": "Based on the award-winning novels by Isaac Asimov, Foundation chronicles a band of exiles on their monumental journey to save humanity and rebuild civilization amid the fall of the Galactic Empire.",
+        "directors": [
+          "David S. Goyer",
+          "Alex Graves",
+          "Roxann Dawson"
+        ],
+        "actors": [
+          "Jared Harris",
+          "Lee Pace",
+          "Lou Llobell",
+          "Leah Harvey",
+          "Laura Birn",
+          "Terrence Mann",
+          "Cassian Bilton"
+        ],
+        "bannerImage": "https://m.media-amazon.com/images/S/pv-target-images/738a33dbb22b100bca29e782cf83abc2b99a17d16efa5f852107d51f2f1d0768.jpg",
+        "concluded": false,
+        "createdAt": "2026-07-14T03:37:03.490Z",
+        "isBannerHidden": true
+      },
+      {
+        "id": "show-1",
+        "title": "The Last of Us",
+        "streamingService": "HBO",
+        "genres": [
+          "Drama",
+          "Action",
+          "Sci-Fi"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 9,
+          "title": "Look for the Light"
+        },
+        "nextEpisode": {
+          "season": 2,
+          "episode": 1,
+          "title": "Season 2 Premiere",
+          "airDate": "2026-10-12"
+        },
+        "rottenTomatoesScore": 96,
+        "userScore": 9,
+        "userNotes": "Incredible adaptation of the game! Pedro Pascal and Bella Ramsey are stellar. Can't wait for Season 2.",
+        "overview": "Twenty years after modern civilization has been destroyed, Joel, a hardened survivor, is hired to smuggle Ellie, a 14-year-old girl, out of an oppressive quarantine zone.",
+        "directors": [
+          "Craig Mazin",
+          "Neil Druckmann"
+        ],
+        "actors": [
+          "Pedro Pascal",
+          "Bella Ramsey",
+          "Gabriel Luna"
+        ],
+        "bannerImage": "https://s10019.cdn.ncms.io/wp-content/uploads/2025/03/The-Last-Of-Us-S2_HO_KA_16x9_v03.jpg.jpeg",
+        "concluded": false,
+        "createdAt": "2026-07-14T03:23:34.045Z"
+      },
+      {
+        "id": "show-3",
+        "title": "Severance",
+        "streamingService": "Apple TV",
+        "genres": [
+          "Sci-Fi",
+          "Thriller",
+          "Mystery"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 9,
+          "title": "The We We Are"
+        },
+        "nextEpisode": {
+          "season": 2,
+          "episode": 1,
+          "title": "Season 2 Premiere",
+          "airDate": "2026-12-05"
+        },
+        "rottenTomatoesScore": 97,
+        "userScore": 9,
+        "userNotes": "The office environment is so eerie. That season finale cliffhanger was one of the best in TV history!",
+        "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+        "directors": [
+          "Ben Stiller",
+          "Aoife McArdle"
+        ],
+        "actors": [
+          "Adam Scott",
+          "Patricia Arquette",
+          "John Turturro",
+          "Britt Lower"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNACrAMoLkgMH0e47maB2DZ7OeMG3ZWBtuheU7rgkUdg&s=10",
+        "concluded": false,
+        "createdAt": "2026-07-14T03:23:34.045Z"
+      },
+      {
+        "id": "show-5",
+        "title": "The Mandalorian",
+        "streamingService": "Disney+",
+        "genres": [
+          "Sci-Fi",
+          "Action",
+          "Adventure"
+        ],
+        "status": "Completed",
+        "latestWatched": {
+          "season": 3,
+          "episode": 8,
+          "title": "The Return"
+        },
+        "nextEpisode": null,
+        "rottenTomatoesScore": 90,
+        "userScore": 8,
+        "userNotes": "Grogu is the cutest character ever. Season 3 ended the main arc nicely, heard there's a movie coming next.",
+        "overview": "The travels of a lone bounty hunter in the outer reaches of the galaxy, far from the authority of the New Republic.",
+        "directors": [
+          "Jon Favreau",
+          "Dave Filoni"
+        ],
+        "actors": [
+          "Pedro Pascal",
+          "Katee Sackhoff",
+          "Carl Weathers"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYxCCGjsy6Qz-8QFXGNNbWfyTcAbLe7J3A1DSnch1l5A&s=10",
+        "concluded": true,
+        "createdAt": "2026-07-14T03:23:34.045Z"
+      }
+    ],
+    "preferences": {
+      "genres": [],
+      "actors": [],
+      "directors": [],
+      "services": []
+    },
+    "owner": {
+      "id": "default",
+      "name": "Julio",
+      "email": "juliozaldivar@gmail.com",
+      "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=SuperFan",
+      "createdAt": "2026-07-14T17:27:16.152Z"
+    },
+    "updatedAt": "2026-07-15T23:35:27.075Z"
+  },
+  "user-lily-9367": {
+    "id": "user-lily-9367",
+    "name": "Lily's Collection",
+    "shows": [
+      {
+        "id": "show-1784158913658",
+        "title": "Little House on the Prairie",
+        "streamingService": "Netflix",
+        "genres": [
+          "Drama",
+          "Family",
+          "Western"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 1,
+          "title": "A Harvest of Friends",
+          "airDate": "1974-09-11"
+        },
+        "rottenTomatoesScore": 80,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "The life and adventures of the Ingalls family in the nineteenth century American Midwest, focusing on their struggles, triumphs, and daily experiences in the small town of Walnut Grove, Minnesota.",
+        "directors": [
+          "Michael Landon",
+          "William F. Claxton",
+          "Maury Dexter",
+          "Victor French"
+        ],
+        "actors": [
+          "Michael Landon",
+          "Karen Grassle",
+          "Melissa Gilbert",
+          "Melissa Sue Anderson",
+          "Lindsay Greenbush",
+          "Sidney Greenbush",
+          "Richard Bull",
+          "Katherine MacGregor"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNn8z46g9-Ydkl8xkV6kuD5OF9gpvylf88ReJBQOMvcw&s=10",
+        "concluded": true,
+        "totalSeasons": 9,
+        "episodesPerSeason": [
+          24,
+          22,
+          22,
+          22,
+          24,
+          24,
+          22,
+          22,
+          22
+        ],
+        "createdAt": "2026-07-15T23:41:53.658Z",
+        "isFavorite": true,
+        "isBannerHidden": false
+      },
+      {
+        "id": "show-1784141422110-326",
+        "title": "Slow Horses",
+        "streamingService": "Apple TV",
+        "genres": [
+          "Spy Thriller",
+          "Drama",
+          "Crime"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 5,
+          "episode": 1,
+          "title": "London Rules",
+          "airDate": "2025-09-03"
+        },
+        "rottenTomatoesScore": 98,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "This quick-witted spy thriller follows a dysfunctional team of MI5 agents and their obnoxious boss, the notorious Jackson Lamb, as they navigate the espionage world's smoke and mirrors to defend England from sinister forces.",
+        "directors": [
+          "James Hawes",
+          "Jeremy Lovering",
+          "Saul Metzstein",
+          "Adam Randall"
+        ],
+        "actors": [
+          "Gary Oldman",
+          "Jack Lowden",
+          "Kristin Scott Thomas",
+          "Rosalind Eleazar",
+          "Saskia Reeves",
+          "Christopher Chung"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6pzwPlJXnQcGY8BkO_z2ph4-asGzeaLDUAmNU8UM3AQ&s=10",
+        "concluded": false,
+        "totalSeasons": 4,
+        "episodesPerSeason": [
+          6,
+          6,
+          6,
+          6
+        ],
+        "createdAt": "2026-07-15T18:50:22.110Z"
+      },
+      {
+        "id": "show-1784141422110-508",
+        "title": "Pluribus",
+        "streamingService": "Apple TV",
+        "genres": [
+          "Horror",
+          "Sci-Fi"
+        ],
+        "status": "Watching",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 2,
+          "episode": 1,
+          "title": "Season 2 Premiere",
+          "airDate": "2027-06-01"
+        },
+        "rottenTomatoesScore": 89,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "A compelling television series tracking \"Pluribus\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Main Cast Star",
+          "Ensemble Cast Member"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL0jIu8CIbj8o9aY4whwMucEGJiJyuGdigiZNpE6gY&s",
+        "concluded": false,
+        "totalSeasons": 2,
+        "episodesPerSeason": [
+          10,
+          8
+        ],
+        "createdAt": "2026-07-15T18:50:22.110Z",
+        "isFavorite": false,
+        "isBannerHidden": false
+      },
+      {
+        "id": "show-1784141422110-972",
+        "title": "Sons of Anarchy",
+        "streamingService": "Hulu",
+        "genres": [
+          "Crime",
+          "Drama",
+          "Thriller"
+        ],
+        "status": "Backlog",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 0,
+          "episode": 0,
+          "title": "",
+          "airDate": ""
+        },
+        "rottenTomatoesScore": 87,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "Sons of Anarchy is an adrenaline-fueled drama with comedic undertones about a notorious outlaw motorcycle club (SAMCRO) intent on protecting their sheltered small town of Charming, California against encroaching drug dealers, corporate developers, and overzealous law officers.",
+        "directors": [
+          "Kurt Sutter",
+          "Paris Barclay",
+          "Guy Ferland",
+          "Gwyneth Horder-Payton"
+        ],
+        "actors": [
+          "Charlie Hunnam",
+          "Katey Sagal",
+          "Ron Perlman",
+          "Maggie Siff",
+          "Kim Coates",
+          "Tommy Flanagan",
+          "Mark Boone Junior"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTswcn_b-V5fpk75yok8qb1V2FYN1hxRhA7MmxYTwDI6A&s=10",
+        "concluded": true,
+        "totalSeasons": 7,
+        "episodesPerSeason": [
+          13,
+          13,
+          13,
+          14,
+          13,
+          13,
+          13
+        ],
+        "createdAt": "2026-07-15T18:50:22.110Z"
+      },
+      {
+        "id": "show-1784141422110-41",
+        "title": "Lioness",
+        "streamingService": "Paramount+",
+        "genres": [
+          "Drama",
+          "Comedy"
+        ],
+        "status": "Backlog",
+        "latestWatched": {
+          "season": 1,
+          "episode": 1,
+          "title": "Episode 1"
+        },
+        "nextEpisode": {
+          "season": 1,
+          "episode": 2,
+          "title": "Episode 2",
+          "airDate": "2026-07-28"
+        },
+        "rottenTomatoesScore": 84,
+        "userScore": null,
+        "userNotes": "",
+        "overview": "A compelling television series tracking \"Lioness\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Main Cast Star",
+          "Ensemble Cast Member"
+        ],
+        "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUqC_tu3W9jV36t_xdOh0sOMI-jwEnqhIA_sxBz_jqCg&s=10",
+        "concluded": false,
+        "totalSeasons": 2,
+        "episodesPerSeason": [
+          10,
+          8
+        ],
+        "createdAt": "2026-07-15T18:50:22.110Z"
+      }
+    ],
+    "preferences": {
+      "genres": [
+        "Action",
+        "Drama",
+        "Dystopian",
+        "Sci-Fi",
+        "Thriller",
+        "Horror",
+        "Western",
+        "Mystery"
+      ],
+      "actors": [],
+      "directors": [],
+      "services": [
+        "Netflix",
+        "Prime Video",
+        "Paramount+",
+        "Peacock",
+        "Hulu",
+        "HBO",
+        "Disney+",
+        "Apple TV",
+        "AMC+"
+      ]
+    },
+    "owner": {
+      "id": "user-lily-9367",
+      "name": "AnnaDee",
+      "email": "user-lily-9367@coughtater.com",
+      "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Sarah",
+      "createdAt": "2026-07-15T18:50:21.963Z"
+    },
+    "updatedAt": "2026-07-15T23:43:01.558Z"
+  }
+}
