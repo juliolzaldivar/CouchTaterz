@@ -1,5 +1,45 @@
 {
   "enrich": {
+    "24": {
+      "title": "24",
+      "streamingService": "Hulu",
+      "genres": [
+        "Action",
+        "Drama",
+        "Crime",
+        "Thriller"
+      ],
+      "rottenTomatoesScore": 87,
+      "overview": "Counterterrorism agent Jack Bauer fights the bad guys of the world, a day at a time. With each week's episode unfolding in real-time, \"24\" covers a single day in the life of Bauer each season.",
+      "directors": [
+        "Jon Cassar",
+        "Brad Turner",
+        "Milan Cheylov"
+      ],
+      "actors": [
+        "Kiefer Sutherland",
+        "Mary Lynn Rajskub",
+        "Kim Raver",
+        "Yvonne Strahovski",
+        "Carlos Bernard",
+        "Dennis Haysbert"
+      ],
+      "concluded": true,
+      "totalSeasons": 9,
+      "episodesPerSeason": [
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        12
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/be6mDIMv7cg8duWkcYVnTB8rphO.jpg",
+      "nextEpisode": null
+    },
     "little house on the prarie": {
       "title": "Little House on the Prairie",
       "streamingService": "Netflix",
@@ -46,7 +86,843 @@
         "title": "A Harvest of Friends",
         "airDate": "1974-09-11"
       }
-    }
+    },
+    "superman": {
+      "title": "Superman & Lois",
+      "streamingService": "HBO",
+      "genres": [
+        "Action",
+        "Drama",
+        "Sci-Fi",
+        "Adventure"
+      ],
+      "rottenTomatoesScore": 84,
+      "overview": "After years of facing megalomaniacal supervillains, monsters wreaking havoc on Metropolis, and alien invaders intent on wiping out the human race, the world's most famous superhero, Clark Kent, and comic books' most famous journalist, Lois Lane, come face to face with one of their greatest challenges ever - dealing with all the stress, pressures, and complexities that come with being working parents in today's society.",
+      "directors": [
+        "Gregory Smith",
+        "James Bamford",
+        "David Ramsey"
+      ],
+      "actors": [
+        "Tyler Hoechlin",
+        "Elizabeth Tulloch",
+        "Alex Garfin",
+        "Michael Bishop",
+        "Wolé Parks"
+      ],
+      "concluded": true,
+      "bannerImage": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80",
+      "totalSeasons": 4,
+      "episodesPerSeason": [
+        15,
+        15,
+        13,
+        10
+      ],
+      "nextEpisode": null
+    },
+    "invincible": {
+      "title": "Invincible",
+      "streamingService": "Prime Video",
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Sci-Fi",
+        "Drama"
+      ],
+      "rottenTomatoesScore": 99,
+      "overview": "Mark Grayson is a normal teenager, except for the fact that his father, Omni-Man, is the most powerful superhero on the planet. Shortly after his seventeenth birthday, Mark begins to develop powers of his own and enters into his father's tutelage.",
+      "directors": [
+        "Jeff Allen",
+        "Robert Kirkman"
+      ],
+      "actors": [
+        "Steven Yeun",
+        "Sandra Oh",
+        "J.K. Simmons",
+        "Zazie Beetz",
+        "Gillian Jacobs",
+        "Grey Griffin"
+      ],
+      "concluded": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/699vU867656LuJ08Z7Y76p6O66S.jpg",
+      "totalSeasons": 2,
+      "episodesPerSeason": [
+        8,
+        8
+      ],
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2025-02-06"
+      }
+    },
+    "chuck": {
+      "title": "Chuck",
+      "streamingService": "Prime Video",
+      "genres": [
+        "Action",
+        "Comedy",
+        "Drama",
+        "Spy"
+      ],
+      "rottenTomatoesScore": 90,
+      "overview": "When Chuck Bartowski, a computer geek at the Buy More, accidentally downloads a database of government secrets into his brain, CIA and NSA agents are dispatched to protect him and utilize his new-found skills, turning his mundane life upside down.",
+      "directors": [
+        "Robert Duncan McNeill",
+        "Allan Kroeker",
+        "Jason Ensler",
+        "McG"
+      ],
+      "actors": [
+        "Zachary Levi",
+        "Yvonne Strahovski",
+        "Joshua Gomez",
+        "Adam Baldwin",
+        "Sarah Lancaster",
+        "Ryan McPartlin",
+        "Vik Sahay",
+        "Scott Krinsky"
+      ],
+      "concluded": true,
+      "bannerImage": "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&q=80",
+      "totalSeasons": 5,
+      "episodesPerSeason": [
+        13,
+        22,
+        19,
+        24,
+        13
+      ],
+      "nextEpisode": null
+    },
+    "smallville": {
+      "title": "Smallville",
+      "streamingService": "Hulu",
+      "genres": [
+        "Action",
+        "Adventure",
+        "Drama",
+        "Sci-Fi"
+      ],
+      "rottenTomatoesScore": 78,
+      "overview": "An interpretation of the Superman mythology, Smallville chronicles the life of a young Clark Kent as he copes with his emerging superpowers and growing up in the Kansas town of Smallville.",
+      "directors": [
+        "Alfred Gough",
+        "Miles Millar",
+        "James Marshall",
+        "Greg Beeman",
+        "Jeannot Szwarc"
+      ],
+      "actors": [
+        "Tom Welling",
+        "Kristin Kreuk",
+        "Michael Rosenbaum",
+        "Allison Mack",
+        "Erica Durance",
+        "Annette O'Toole",
+        "John Schneider",
+        "John Glover"
+      ],
+      "concluded": true,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2Kj9U3mSq60v1H67vCjY0STg.jpg",
+      "totalSeasons": 10,
+      "episodesPerSeason": [
+        21,
+        23,
+        22,
+        22,
+        22,
+        22,
+        20,
+        22,
+        21,
+        22
+      ],
+      "nextEpisode": null
+    },
+    "buffy the vampire slayer": {
+      "title": "Buffy the Vampire Slayer",
+      "streamingService": "Hulu",
+      "genres": [
+        "Drama",
+        "Sci-Fi & Fantasy",
+        "Action & Adventure"
+      ],
+      "rottenTomatoesScore": 85,
+      "overview": "A young woman, destined to slay vampires, demons, and other infernal creatures, fights her life of identity and destiny with the help of her close friends, the Scooby Gang.",
+      "directors": [
+        "Joss Whedon",
+        "David Greenwalt",
+        "Marti Noxon",
+        "David Solomon",
+        "James A. Contner"
+      ],
+      "actors": [
+        "Sarah Michelle Gellar",
+        "Nicholas Brendon",
+        "Alyson Hannigan",
+        "Anthony Head",
+        "James Marsters",
+        "Emma Caulfield",
+        "Michelle Trachtenberg",
+        "David Boreanaz"
+      ],
+      "concluded": true,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+      "totalSeasons": 7,
+      "episodesPerSeason": [
+        12,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22
+      ],
+      "nextEpisode": null
+    },
+    "big bang theory": {
+      "title": "The Big Bang Theory",
+      "streamingService": "Max",
+      "genres": [
+        "Comedy",
+        "Sitcom"
+      ],
+      "rottenTomatoesScore": 81,
+      "overview": "Physicists Leonard and Sheldon find their nerd-centric social circle with pals Howard and Raj expanding when aspiring actress Penny moves in next door.",
+      "directors": [
+        "Mark Cendrowski",
+        "Chuck Lorre",
+        "Bill Prady"
+      ],
+      "actors": [
+        "Jim Parsons",
+        "Johnny Galecki",
+        "Kaley Cuoco",
+        "Simon Helberg",
+        "Kunal Nayyar",
+        "Melissa Rauch",
+        "Mayim Bialik"
+      ],
+      "concluded": true,
+      "totalSeasons": 12,
+      "episodesPerSeason": [
+        17,
+        23,
+        23,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/rwYvhVv0vwbulMwxOfEsuAr1JrT.jpg",
+      "nextEpisode": null
+    },
+    "the big bang theory": {
+      "title": "The Big Bang Theory",
+      "streamingService": "Max",
+      "genres": [
+        "Comedy",
+        "Sitcom"
+      ],
+      "rottenTomatoesScore": 81,
+      "overview": "Physicists Leonard and Sheldon find their nerd-centric social circle with pals Howard and Raj expanding when aspiring actress Penny moves in next door.",
+      "directors": [
+        "Mark Cendrowski",
+        "Chuck Lorre",
+        "Bill Prady"
+      ],
+      "actors": [
+        "Jim Parsons",
+        "Johnny Galecki",
+        "Kaley Cuoco",
+        "Simon Helberg",
+        "Kunal Nayyar",
+        "Melissa Rauch",
+        "Mayim Bialik"
+      ],
+      "concluded": true,
+      "totalSeasons": 12,
+      "episodesPerSeason": [
+        17,
+        23,
+        23,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/rwYvhVv0vwbulMwxOfEsuAr1JrT.jpg",
+      "nextEpisode": null
+    },
+    "big bang": {
+      "title": "The Big Bang Theory",
+      "streamingService": "Max",
+      "genres": [
+        "Comedy",
+        "Sitcom"
+      ],
+      "rottenTomatoesScore": 81,
+      "overview": "Physicists Leonard and Sheldon find their nerd-centric social circle with pals Howard and Raj expanding when aspiring actress Penny moves in next door.",
+      "directors": [
+        "Mark Cendrowski",
+        "Chuck Lorre",
+        "Bill Prady"
+      ],
+      "actors": [
+        "Jim Parsons",
+        "Johnny Galecki",
+        "Kaley Cuoco",
+        "Simon Helberg",
+        "Kunal Nayyar",
+        "Melissa Rauch",
+        "Mayim Bialik"
+      ],
+      "concluded": true,
+      "totalSeasons": 12,
+      "episodesPerSeason": [
+        17,
+        23,
+        23,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/rwYvhVv0vwbulMwxOfEsuAr1JrT.jpg",
+      "nextEpisode": null
+    },
+    "bigbang": {
+      "title": "The Big Bang Theory",
+      "streamingService": "Max",
+      "genres": [
+        "Comedy",
+        "Sitcom"
+      ],
+      "rottenTomatoesScore": 81,
+      "overview": "Physicists Leonard and Sheldon find their nerd-centric social circle with pals Howard and Raj expanding when aspiring actress Penny moves in next door.",
+      "directors": [
+        "Mark Cendrowski",
+        "Chuck Lorre",
+        "Bill Prady"
+      ],
+      "actors": [
+        "Jim Parsons",
+        "Johnny Galecki",
+        "Kaley Cuoco",
+        "Simon Helberg",
+        "Kunal Nayyar",
+        "Melissa Rauch",
+        "Mayim Bialik"
+      ],
+      "concluded": true,
+      "totalSeasons": 12,
+      "episodesPerSeason": [
+        17,
+        23,
+        23,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24,
+        24
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/rwYvhVv0vwbulMwxOfEsuAr1JrT.jpg",
+      "nextEpisode": null
+    },
+    "swamp thing": {
+      "title": "Swamp Thing",
+      "streamingService": "HBO",
+      "genres": [
+        "Action",
+        "Adventure",
+        "Drama",
+        "Horror",
+        "Sci-Fi",
+        "Fantasy"
+      ],
+      "rottenTomatoesScore": 92,
+      "overview": "CDC researcher Abby Arcane returns to her childhood home of Houma, Louisiana, to investigate a deadly swamp-borne virus. There, she develops a bond with scientist Alec Holland — only to have him tragically taken from her. But as powerful forces descend on Houma, Abby discovers that the swamp holds mystical and terrifying secrets, and the love of her life may not be dead after all.",
+      "directors": [
+        "Len Wiseman",
+        "Deran Sarafian",
+        "Toa Fraser"
+      ],
+      "actors": [
+        "Crystal Reed",
+        "Virginia Madsen",
+        "Andy Bean",
+        "Derek Mears",
+        "Henderson Wade",
+        "Maria Sten",
+        "Jeryl Prescott",
+        "Will Patton"
+      ],
+      "concluded": true,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+      "totalSeasons": 1,
+      "episodesPerSeason": [
+        10
+      ],
+      "nextEpisode": null
+    },
+    "seinfeld": {
+      "title": "Seinfeld",
+      "streamingService": "Netflix",
+      "genres": [
+        "Comedy",
+        "Sitcom"
+      ],
+      "rottenTomatoesScore": 89,
+      "overview": "The daily trials and tribulations of four neurotic friends living in New York City: stand-up comedian Jerry Seinfeld, his neurotic best friend George Costanza, his Elaine Benes, and his eccentric neighbor Cosmo Kramer.",
+      "directors": [
+        "Andy Ackerman",
+        "Tom Cherones"
+      ],
+      "actors": [
+        "Jerry Seinfeld",
+        "Jason Alexander",
+        "Julia Louis-Dreyfus",
+        "Michael Richards"
+      ],
+      "concluded": true,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/xA8O6D81uXz40M79H4rB2wA9bYh.jpg",
+      "totalSeasons": 9,
+      "episodesPerSeason": [
+        5,
+        12,
+        23,
+        24,
+        22,
+        24,
+        24,
+        22,
+        24
+      ],
+      "nextEpisode": null
+    },
+    "3rd rock from the sun": [
+      {
+        "title": "3rd Rock from the Sun",
+        "streamingService": "Peacock",
+        "genres": [
+          "Comedy",
+          "Sci-Fi"
+        ],
+        "rottenTomatoesScore": 85,
+        "overview": "A group of aliens are sent to Earth, which they deem to be an insignificant third-rate planet, to observe human behavior. Posing as a normal human family in an Ohio college town, they find that Earth's customs and emotions are far more complex than they ever expected.",
+        "directors": [
+          "Terry Hughes",
+          "Robert Berlinger"
+        ],
+        "actors": [
+          "John Lithgow",
+          "Kristen Johnston",
+          "French Stewart",
+          "Joseph Gordon-Levitt",
+          "Jane Curtin",
+          "Simbi Khali",
+          "Elmarie Wendel",
+          "Wayne Knight"
+        ],
+        "concluded": true,
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+        "totalSeasons": 6,
+        "episodesPerSeason": [
+          20,
+          26,
+          27,
+          24,
+          22,
+          20
+        ],
+        "nextEpisode": null
+      }
+    ],
+    "3rd rock": [
+      {
+        "title": "3rd Rock from the Sun",
+        "streamingService": "Other",
+        "genres": [
+          "Family",
+          "Sci-Fi & Fantasy",
+          "Comedy",
+          "Drama"
+        ],
+        "rottenTomatoesScore": 75,
+        "overview": "The high commander of an alien expedition lands on Earth -- what he considers to be the least-important planet -- in human form as Dick Solomon. Along for the ride are his alien compatriots Harry, Sally and Tommy -- who is the eldest of the group but is now angrily trapped in a teen's body.",
+        "directors": [
+          "Terry Turner",
+          "Bonnie Turner",
+          "Bob Kushell"
+        ],
+        "actors": [
+          "John Lithgow",
+          "Kristen Johnston",
+          "Jane Curtin",
+          "Joseph Gordon-Levitt",
+          "French Stewart"
+        ],
+        "concluded": true,
+        "totalSeasons": 6,
+        "episodesPerSeason": [
+          20,
+          26,
+          27,
+          24,
+          22,
+          20
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/adsc78pBssCRr3iTgzxgdCPI1v2.jpg",
+        "nextEpisode": null
+      }
+    ],
+    "3rd rock of the sun": [
+      {
+        "title": "3rd Rock Of The Sun",
+        "streamingService": "AMC+",
+        "genres": [
+          "Horror",
+          "Sci-Fi"
+        ],
+        "rottenTomatoesScore": 95,
+        "overview": "A compelling television series tracking \"3rd Rock Of The Sun\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Main Cast Star",
+          "Ensemble Cast Member"
+        ],
+        "concluded": false,
+        "totalSeasons": 2,
+        "episodesPerSeason": [
+          10,
+          8
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+        "nextEpisode": {
+          "season": 1,
+          "episode": 2,
+          "title": "Episode 2",
+          "airDate": "2026-07-31"
+        }
+      }
+    ],
+    "wonderman": [
+      {
+        "title": "Wonderman",
+        "streamingService": "AMC+",
+        "genres": [
+          "Horror",
+          "Sci-Fi"
+        ],
+        "rottenTomatoesScore": 80,
+        "overview": "A compelling television series tracking \"Wonderman\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Main Cast Star",
+          "Ensemble Cast Member"
+        ],
+        "concluded": false,
+        "totalSeasons": 2,
+        "episodesPerSeason": [
+          10,
+          8
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/acevLdSl5I2MK5RYAm7gwAndt1w.jpg",
+        "nextEpisode": {
+          "season": 1,
+          "episode": 2,
+          "title": "Episode 2",
+          "airDate": "2026-07-31"
+        }
+      }
+    ],
+    "from": [
+      {
+        "title": "FROM",
+        "streamingService": "Other",
+        "genres": [
+          "Mystery",
+          "Drama",
+          "Sci-Fi & Fantasy"
+        ],
+        "rottenTomatoesScore": 85,
+        "overview": "Unravel the mystery of a nightmarish town in middle America that traps all those who enter. As the unwilling residents fight to keep a sense of normalcy and search for a way out, they must also survive the threats of the surrounding forest – including the terrifying creatures that come out when the sun goes down.",
+        "directors": [
+          "John Griffin",
+          "Jack Bender",
+          "Josh Appelbaum"
+        ],
+        "actors": [
+          "Harold Perrineau",
+          "Catalina Sandino Moreno",
+          "Ricky He",
+          "David Alpay",
+          "Chloe Van Landschoot"
+        ],
+        "concluded": false,
+        "totalSeasons": 4,
+        "episodesPerSeason": [
+          10,
+          10,
+          10,
+          10
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/xLdw1xdHocKYFFvx7w41NchXMfJ.jpg",
+        "nextEpisode": null
+      },
+      {
+        "title": "Live from E!",
+        "streamingService": "Other",
+        "genres": [
+          "Talk",
+          "Reality"
+        ],
+        "rottenTomatoesScore": 37,
+        "overview": "The pre-show to the major award shows that airs on E! Entertainment Television. Live From the Red Carpet covers celebrity arrivals and gets you right up for a first-row seat to see the stars and all the excitement with live coverage of the fashion, flair, glitz and glamour.",
+        "directors": [
+          "Showrunner Creator"
+        ],
+        "actors": [
+          "Ryan Seacrest",
+          "Giuliana Rancic"
+        ],
+        "concluded": false,
+        "totalSeasons": 22,
+        "episodesPerSeason": [
+          2,
+          10,
+          10,
+          10,
+          5,
+          5,
+          4,
+          5,
+          5,
+          4,
+          6,
+          5,
+          3,
+          3,
+          4,
+          3,
+          3,
+          3,
+          1,
+          3,
+          1,
+          4
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/nQ66QAIVatqCeJkX23b4aheAOKD.jpg",
+        "nextEpisode": null
+      },
+      {
+        "title": "Tales from the Darkside",
+        "streamingService": "Other",
+        "genres": [
+          "Drama",
+          "Sci-Fi & Fantasy"
+        ],
+        "rottenTomatoesScore": 72,
+        "overview": "Tales from the Darkside is an anthology horror TV series created by George A. Romero, each episode was an individual short story that ended with a plot twist. The series' episodes spanned the genres of horror, science fiction, and fantasy, and some episodes featured elements of black comedy or more lighthearted themes.",
+        "directors": [
+          "George A. Romero"
+        ],
+        "actors": [
+          "Paul Sparer"
+        ],
+        "concluded": true,
+        "totalSeasons": 4,
+        "episodesPerSeason": [
+          23,
+          24,
+          22,
+          20
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/ikPFxMgZP9RWIDpqGiFDTm4Gymc.jpg",
+        "nextEpisode": null
+      },
+      {
+        "title": "From These Roots",
+        "streamingService": "Other",
+        "genres": [
+          "Soap"
+        ],
+        "rottenTomatoesScore": 50,
+        "overview": "Follow the life of successful writer Elizabeth “Liz” Fraser Allen as she returns to her New England hometown of Strathfield to run her family’s newspaper after her father suffers a heart attack.",
+        "directors": [
+          "Frank Provo",
+          "John Pickard"
+        ],
+        "actors": [
+          "Barbara Berjer",
+          "Julie Bovasso",
+          "Millette Alexander",
+          "Robert Mandan",
+          "Audra Lindley"
+        ],
+        "concluded": true,
+        "totalSeasons": 3,
+        "episodesPerSeason": [
+          257,
+          85,
+          1
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/or0E36KfzJYZwqXeiCfm1JgepKF.jpg",
+        "nextEpisode": null
+      },
+      {
+        "title": "3rd Rock from the Sun",
+        "streamingService": "Other",
+        "genres": [
+          "Family",
+          "Sci-Fi & Fantasy",
+          "Comedy",
+          "Drama"
+        ],
+        "rottenTomatoesScore": 75,
+        "overview": "The high commander of an alien expedition lands on Earth -- what he considers to be the least-important planet -- in human form as Dick Solomon. Along for the ride are his alien compatriots Harry, Sally and Tommy -- who is the eldest of the group but is now angrily trapped in a teen's body.",
+        "directors": [
+          "Terry Turner",
+          "Bonnie Turner",
+          "Bob Kushell"
+        ],
+        "actors": [
+          "John Lithgow",
+          "Kristen Johnston",
+          "Jane Curtin",
+          "Joseph Gordon-Levitt",
+          "French Stewart"
+        ],
+        "concluded": true,
+        "totalSeasons": 6,
+        "episodesPerSeason": [
+          20,
+          26,
+          27,
+          24,
+          22,
+          20
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/adsc78pBssCRr3iTgzxgdCPI1v2.jpg",
+        "nextEpisode": null
+      },
+      {
+        "title": "Miles from Tomorrowland",
+        "streamingService": "Disney+",
+        "genres": [
+          "Family",
+          "Animation",
+          "Action & Adventure",
+          "Sci-Fi & Fantasy"
+        ],
+        "rottenTomatoesScore": 70,
+        "overview": "This intergalactic adventure charts the outer space missions of young adventurer Miles Callisto and his family – mom and ship captain, Phoebe; mechanical engineer dad, Leo; tech-savvy big sister, Loretta; and robo-ostrich pet, Merc – as they help connect the universe on behalf of the Tomorrowland Transit Authority.",
+        "directors": [
+          "Sascha Paladino",
+          "Paul Demeyer"
+        ],
+        "actors": [
+          "Fiona Bishop",
+          "Dee Bradley Baker",
+          "Diedrich Bader",
+          "Danny Jacobs",
+          "Ivy Bishop"
+        ],
+        "concluded": true,
+        "totalSeasons": 3,
+        "episodesPerSeason": [
+          59,
+          46,
+          39
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/6Y9hVj4lFw8w0lsDj35ZGded7Cm.jpg",
+        "nextEpisode": null
+      }
+    ],
+    "american dad": [
+      {
+        "title": "American Dad!",
+        "streamingService": "Hulu",
+        "genres": [
+          "Animation",
+          "Comedy"
+        ],
+        "rottenTomatoesScore": 70,
+        "overview": "The series focuses on an eccentric motley crew that is the Smith family and their three housemates: Father, husband, and breadwinner Stan Smith; his better half housewife, Francine Smith; their college-aged daughter, Hayley Smith; and their high-school-aged son, Steve Smith. Outside of the Smith family, there are three additional main characters, including Hayley's boyfriend turned husband, Jeff Fischer; the family's man-in-a-goldfish-body pet, Klaus; and most notably the family's zany alien, Roger, who is \"full of masquerades, brazenness, and shocking antics.\"",
+        "directors": [
+          "Mike Barker",
+          "Matt Weitzman",
+          "Seth MacFarlane"
+        ],
+        "actors": [
+          "Seth MacFarlane",
+          "Wendy Schaal",
+          "Rachael MacFarlane",
+          "Scott Grimes",
+          "Dee Bradley Baker"
+        ],
+        "concluded": false,
+        "totalSeasons": 22,
+        "episodesPerSeason": [
+          7,
+          16,
+          19,
+          16,
+          20,
+          18,
+          19,
+          18,
+          19,
+          20,
+          3,
+          15,
+          22,
+          22,
+          22,
+          20,
+          24,
+          22,
+          22,
+          22,
+          22,
+          13
+        ],
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/iixxhk3ycXmFqBn616pAsC3lu53.jpg",
+        "nextEpisode": {
+          "season": 22,
+          "episode": 12,
+          "title": "400",
+          "airDate": "2026-09-13"
+        }
+      }
+    ]
   },
   "recaps": {},
   "teasers": {}

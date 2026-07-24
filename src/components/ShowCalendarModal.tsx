@@ -132,26 +132,63 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
 
   // Auto-jump to the nearest upcoming airing show across any month
   const handleJumpToNextAiring = () => {
-    // Find all future air dates (from today onwards)
-    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const todayTime = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     
+    // Determine the reference time to search from
+    let refTime = todayTime;
+    let isCurrentDateARelease = false;
+
+    if (selectedDateKey) {
+      const parts = selectedDateKey.split('-');
+      if (parts.length === 3) {
+        const selectedTime = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2])).getTime();
+        
+        // Only use the selected date if it's today or in the future
+        if (selectedTime >= todayTime) {
+          refTime = selectedTime;
+          // Check if the currently selected date is a release date
+          if (showsByDate[selectedDateKey] && showsByDate[selectedDateKey].length > 0) {
+            isCurrentDateARelease = true;
+          }
+        }
+      }
+    }
+
     let nearestDateStr: string | null = null;
     let nearestTime = Infinity;
 
+    // First, try to find a release date either strictly after or starting from refTime
     Object.keys(showsByDate).forEach((dateKey) => {
       const dateParts = dateKey.split('-');
       if (dateParts.length === 3) {
         const time = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2])).getTime();
-        const todayTime = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
         
-        if (time >= todayTime && time < nearestTime) {
+        const isEligible = isCurrentDateARelease ? (time > refTime) : (time >= refTime);
+        
+        if (isEligible && time < nearestTime) {
           nearestTime = time;
           nearestDateStr = dateKey;
         }
       }
     });
 
-    // If we found a future date, navigate to it!
+    // If we didn't find any upcoming release (we are at the end of the list), wrap around to the first upcoming release from today onwards
+    if (!nearestDateStr) {
+      nearestTime = Infinity;
+      Object.keys(showsByDate).forEach((dateKey) => {
+        const dateParts = dateKey.split('-');
+        if (dateParts.length === 3) {
+          const time = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2])).getTime();
+          
+          if (time >= todayTime && time < nearestTime) {
+            nearestTime = time;
+            nearestDateStr = dateKey;
+          }
+        }
+      });
+    }
+
+    // If we found a future/upcoming date, navigate to it!
     if (nearestDateStr) {
       const [y, m, d] = (nearestDateStr as string).split('-');
       const targetYear = Number(y);
@@ -380,11 +417,11 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
 
                       {/* Episode items list dot/mini-badges inside cell */}
                       <div className="w-full flex flex-row flex-wrap gap-0.5 mt-0.5 overflow-hidden max-h-[14px] md:max-h-[36px]">
-                        {dayShows.slice(0, 4).map((show) => {
+                        {dayShows.slice(0, 4).map((show, sIdx) => {
                           const svcColor = SERVICE_COLORS[show.streamingService] || SERVICE_COLORS['Other'];
                           return (
                             <div 
-                              key={show.id} 
+                              key={`${show.id}-${sIdx}`} 
                               className={`w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full ${svcColor.accent} shadow-sm shrink-0`}
                               title={`${show.title} - S${show.nextEpisode?.season}E${show.nextEpisode?.episode}`}
                             />
@@ -432,11 +469,11 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
               </div>
             ) : (
               <div className="flex-1 space-y-4">
-                {selectedDateShows.map((show) => {
+                {selectedDateShows.map((show, sIdx) => {
                   const colors = SERVICE_COLORS[show.streamingService] || SERVICE_COLORS['Other'];
                   return (
                     <div 
-                      key={show.id}
+                      key={`${show.id}-${sIdx}`}
                       className="p-3.5 rounded-2xl bg-[#1A1D23] border border-white/5 hover:border-white/10 transition flex flex-col gap-3"
                     >
                       {/* Card layout inside detail */}
@@ -445,6 +482,7 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
                           src={show.bannerImage} 
                           alt={show.title}
                           className="w-16 h-10 rounded-lg object-cover bg-slate-800 border border-white/5"
+                          style={{ objectPosition: show.bannerPosition || 'center 25%' }}
                           referrerPolicy="no-referrer"
                         />
                         <div className="flex-1 min-w-0">

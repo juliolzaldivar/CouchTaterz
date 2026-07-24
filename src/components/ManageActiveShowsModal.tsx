@@ -94,7 +94,7 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
               <Film className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black tracking-tight uppercase">Manage Active Series</h3>
+              <h3 className="text-base font-black tracking-tight uppercase">Manage Watching Series</h3>
               <p className="text-xs text-slate-500 font-medium">Edit status, release dates, or delete tracked shows</p>
             </div>
           </div>
@@ -112,112 +112,116 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
           {activeShows.length === 0 ? (
             <div className="p-12 text-center space-y-3">
               <Tv className="w-10 h-10 text-slate-600 mx-auto animate-pulse" />
-              <h4 className="text-sm font-semibold text-slate-300">No Active Countdown Shows</h4>
+              <h4 className="text-sm font-semibold text-slate-300">No Watching Countdown Shows</h4>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
                 All your tracked shows are concluded or don't have scheduled upcoming episodes. Add more shows, or enrich existing ones with future seasons!
               </p>
             </div>
           ) : (
             <div className="space-y-4">
-              {activeShows.map((show) => {
+              {activeShows.map((show, idx) => {
                 const colors = SERVICE_COLORS[show.streamingService] || SERVICE_COLORS['Other'];
                 const isEditing = editingShowId === show.id;
 
                 return (
                   <div
-                    key={show.id}
+                    key={`${show.id}-${idx}`}
                     className="p-4 rounded-2xl bg-[#1E2128] border border-white/5 space-y-4 transition hover:border-white/10"
                   >
                     {/* Top Row: Info & Quick Action buttons */}
-                    <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                      {/* Left Block: Image & Show Details */}
                       <div className="flex items-center gap-3">
                         <img
                           src={show.bannerImage}
                           alt={show.title}
-                          className="w-16 h-10 rounded-lg object-cover bg-slate-800 border border-white/5"
+                          className="w-16 h-10 rounded-lg object-cover bg-slate-800 border border-white/5 shrink-0"
+                          style={{ objectPosition: show.bannerPosition || 'center 25%' }}
                           referrerPolicy="no-referrer"
                         />
-                        <div>
-                          <h4 className="text-sm font-bold text-white leading-snug">{show.title}</h4>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className={`px-2 py-0.5 text-[9px] uppercase tracking-wider font-extrabold rounded border ${colors.bg} ${colors.text} ${colors.border}`}>
+                        <div className="min-w-0">
+                          <h4 className="text-sm font-bold text-white leading-snug truncate">{show.title}</h4>
+                          <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            <span className={`px-2 py-0.5 text-[9px] uppercase tracking-wider font-extrabold rounded border ${colors.bg} ${colors.text} ${colors.border} shrink-0`}>
                               {show.streamingService}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-medium">
+                            <span className="text-[10px] text-slate-400 font-medium truncate">
                               S{show.nextEpisode?.season}E{show.nextEpisode?.episode} — {show.nextEpisode?.title}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      {/* Top Action block */}
-                      <div className="flex items-center gap-1.5">
+                      {/* Right Block: Action buttons */}
+                      <div className="flex items-center gap-2 w-full sm:w-auto">
                         {!isEditing ? (
-                          <>
+                          <div className="flex flex-col sm:flex-row gap-1.5 w-full sm:w-auto">
                             <button
                               onClick={() => handleStartEdit(show)}
-                              className="px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-xs font-bold text-slate-200 border border-white/5 transition"
+                              className="w-full sm:w-auto text-center px-3 py-2 sm:py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 text-xs font-bold text-slate-200 border border-white/5 transition whitespace-nowrap"
                             >
                               Edit Countdown
                             </button>
                             <button
                               onClick={() => handleToggleConcluded(show)}
-                              className="px-2.5 py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/40 text-xs font-bold text-emerald-400 border border-emerald-800/20 transition"
+                              className="w-full sm:w-auto text-center px-3 py-2 sm:py-1.5 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/40 text-xs font-bold text-emerald-400 border border-emerald-800/20 transition whitespace-nowrap"
                               title="Mark as ended/concluded"
                             >
                               Conclude
                             </button>
-                          </>
+                          </div>
                         ) : (
-                          <>
+                          <div className="flex flex-col sm:flex-row gap-1.5 w-full sm:w-auto">
                             <button
                               onClick={() => handleSaveEdit(show.id)}
-                              className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1 text-xs font-bold px-2.5"
+                              className="w-full sm:w-auto justify-center p-2 sm:p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition flex items-center gap-1 text-xs font-bold px-3 whitespace-nowrap"
                             >
                               <Save className="w-3.5 h-3.5" />
                               Save
                             </button>
                             <button
                               onClick={() => setEditingShowId(null)}
-                              className="px-2.5 py-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 text-xs font-bold text-slate-400 transition"
+                              className="w-full sm:w-auto text-center px-3 py-2 sm:py-1.5 rounded-lg bg-slate-850 hover:bg-slate-800 text-xs font-bold text-slate-400 transition whitespace-nowrap"
                             >
                               Cancel
                             </button>
-                          </>
+                          </div>
                         )}
 
                         {/* Direct Delete Trigger */}
-                        {deletingShowId === show.id ? (
-                          <div className="flex items-center gap-1 bg-[#0F1115]/80 p-1 rounded-xl border border-rose-500/30">
+                        <div className="shrink-0">
+                          {deletingShowId === show.id ? (
+                            <div className="flex items-center gap-1 bg-[#0F1115]/80 p-1 rounded-xl border border-rose-500/30">
+                              <button
+                                onClick={() => {
+                                  onDeleteShow(show.id);
+                                  setDeletingShowId(null);
+                                }}
+                                className="px-2.5 py-1.5 bg-rose-600 hover:bg-rose-500 text-[10px] font-black rounded text-white transition cursor-pointer"
+                              >
+                                Delete?
+                              </button>
+                              <button
+                                onClick={() => setDeletingShowId(null)}
+                                className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold rounded text-slate-300 transition cursor-pointer"
+                              >
+                                No
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               onClick={() => {
-                                onDeleteShow(show.id);
-                                setDeletingShowId(null);
+                                setDeletingShowId(show.id);
+                                // Auto reset after 4 seconds
+                                setTimeout(() => setDeletingShowId(null), 4000);
                               }}
-                              className="px-2 py-1 bg-rose-600 hover:bg-rose-500 text-[10px] font-black rounded text-white transition cursor-pointer"
+                              className="p-2 rounded-lg bg-rose-950/20 hover:bg-rose-900/20 text-rose-400 border border-rose-800/20 hover:text-white transition cursor-pointer flex items-center justify-center h-[36px] w-[36px] sm:h-[32px] sm:w-[32px]"
+                              title="Delete show from board"
                             >
-                              Delete?
+                              <Trash2 className="w-3.5 h-3.5" />
                             </button>
-                            <button
-                              onClick={() => setDeletingShowId(null)}
-                              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-[10px] font-bold rounded text-slate-300 transition cursor-pointer"
-                            >
-                              No
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setDeletingShowId(show.id);
-                              // Auto reset after 4 seconds
-                              setTimeout(() => setDeletingShowId(null), 4000);
-                            }}
-                            className="p-2 rounded-lg bg-rose-950/20 hover:bg-rose-900/20 text-rose-400 border border-rose-800/20 hover:text-white transition cursor-pointer"
-                            title="Delete show from board"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
 

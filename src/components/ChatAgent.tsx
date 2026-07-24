@@ -4,14 +4,16 @@
  */
 
 import React, { useState, useRef, useEffect } from 'react';
-import { TvShow, ChatMessage } from '../types';
+import { TvShow, ChatMessage, User, UserPreferences } from '../types';
 import { Send, Sparkles, Tv, RefreshCw, MessageSquare, Bot, AlertCircle, Trash2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
 
 interface ChatAgentProps {
   shows: TvShow[];
+  preferences?: UserPreferences;
   onClose?: () => void;
+  currentUser?: User | null;
 }
 
 const QUICK_PROMPTS = [
@@ -24,8 +26,8 @@ const QUICK_PROMPTS = [
     prompt: "Can you give me a quick, spoiler-friendly recap of what happened in Season 3 of The Bear? Focus on the main character arcs and what the season finale set up."
   },
   {
-    label: "🏢 Tell me about Severance S2",
-    prompt: "Is Severance returning for Season 2? What are the rumored plot points, directors, and casting details?"
+    label: "🎨 Lets chat about animation as art",
+    prompt: "Let's chat about animation as a profound art form. Look at my list, highlight the animated shows, and let's discuss why animation is such an incredible medium!"
   },
   {
     label: "⭐️ Rate my taste",
@@ -33,12 +35,12 @@ const QUICK_PROMPTS = [
   }
 ];
 
-export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, onClose }) => {
+export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClose, currentUser }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'model',
-      content: "Dude, I’m all over your watchlist. Instead of scrolling endlessly until your dinner gets cold, you can ask me to:\n\n- **Find your next jam**: I'll judge your current taste and tell you what to watch next (so you can stop scrolling looking for crap).\n- **Do a memory jog**: Need a quick recap because you definitely fell asleep three episodes ago? I got you.\n- **Spill the tea**: Let's nerd out over cast trivia, unhinged fan theories, and creator secrets.\n\nSo, what are we turning our brains off to today?",
+      content: "Dude, I’m all over your watchlist. Instead of scrolling endlessly until your grub gets cold, you can ask me to:\n\n- **Find your next jam**: I'll judge your current taste and tell you what to watch next (so you can stop scrolling looking for crap).\n- **Do a memory jog**: Need a quick recap because you definitely fell asleep three episodes ago? I got you.\n- **Spill the tea**: Let's nerd out over cast trivia, unhinged fan theories, and creator secrets.\n\nSo, what are we turning our brains off to today?",
       timestamp: new Date().toISOString()
     }
   ]);
@@ -48,6 +50,28 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, onClose }) => {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Customize welcome greeting if the user is named Rafael and is opening the agent for the first time
+  useEffect(() => {
+    if (currentUser && currentUser.name.trim().toLowerCase() === 'rafael') {
+      const storageKey = `seen_rafael_welcome_${currentUser.id}`;
+      const hasSeen = localStorage.getItem(storageKey) === 'true';
+      if (!hasSeen) {
+        setMessages(prev => {
+          if (prev.length > 0 && prev[0].id === 'welcome') {
+            const updated = [...prev];
+            updated[0] = {
+              ...updated[0],
+              content: "Coño, chico... Rafael, eh? I've heard about you. I'm turning on the guardrails before we go any further..."
+            };
+            return updated;
+          }
+          return prev;
+        });
+        localStorage.setItem(storageKey, 'true');
+      }
+    }
+  }, [currentUser]);
 
   // Auto scroll to bottom
   useEffect(() => {
@@ -89,12 +113,13 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, onClose }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: payloadMessages,
-          shows: shows
+          shows: shows,
+          preferences: preferences
         }),
       });
 
       if (!response.ok) {
-        throw new Error("CouchTaterz encountered a transmission glitch. Let's try again.");
+        throw new Error("Spudz Agent encountered a transmission glitch. Let's try again.");
       }
 
       const data = await response.json();
@@ -109,7 +134,7 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, onClose }) => {
       setMessages(prev => [...prev, botMessage]);
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to reach CouchTaterz.");
+      setError(err.message || "Failed to reach Spudz.");
     } finally {
       setIsLoading(false);
     }
@@ -129,7 +154,7 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, onClose }) => {
   };
 
   return (
-    <div className="flex flex-col h-full md:h-auto md:max-h-full bg-[#1A1D23] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
+    <div className="flex flex-col h-full md:h-[680px] lg:h-[750px] max-h-full bg-[#1A1D23] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
       {/* Agent Top Header */}
       <div className="p-4 border-b border-white/5 bg-[#0F1115]/40 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -141,7 +166,7 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, onClose }) => {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h3 className="text-sm font-bold text-white tracking-tight">CouchTaterz</h3>
+              <h3 className="text-sm font-bold text-white tracking-tight">Spudz</h3>
               <span className="px-1.5 py-0.5 text-[8px] font-extrabold bg-[#262A33] text-slate-400 border border-white/5 rounded tracking-widest uppercase">Agent</span>
             </div>
             <p className="text-[10px] text-slate-500 font-medium">Synced with your active watchlist</p>
@@ -257,7 +282,7 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, onClose }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
-            placeholder="Ask CouchTaterz..."
+            placeholder="Ask Spudz..."
             className="w-full bg-[#1e222b] text-slate-100 pl-4 pr-12 py-3 rounded-2xl border-2 border-emerald-500/80 shadow-[0_0_12px_rgba(16,185,129,0.2)] focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 placeholder-slate-400 text-xs transition-all duration-200"
           />
           <button

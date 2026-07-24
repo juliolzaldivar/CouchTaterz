@@ -23,7 +23,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 
 interface LoginPageProps {
-  onLogin: (board: Board, options?: { showStarterPackAlert?: boolean }) => void;
+  onLogin: (board: Board, options?: { showStarterPackAlert?: boolean; isNewAccount?: boolean }) => void;
 }
 
 const GENRE_OPTIONS = [
@@ -31,7 +31,7 @@ const GENRE_OPTIONS = [
 ];
 
 const SERVICE_OPTIONS: StreamingService[] = [
-  'Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+', 'Other'
+  'Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+'
 ];
 
 const BACKGROUND_IMAGES = [
@@ -274,23 +274,25 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
             // If we have matches, take up to 4. Otherwise, take top 3 default shows.
             if (matching.length >= 2) {
-              starterShows = matching.slice(0, 4).map(s => ({
+              starterShows = matching.slice(0, 4).map((s, idx) => ({
                 ...s,
-                id: `show-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}-${idx}`,
                 status: 'Backlog', // Start fresh in backlog
                 latestWatched: { season: 1, episode: 1, title: 'Episode 1' },
                 userScore: null,
                 userNotes: '',
+                isStarter: true,
                 createdAt: new Date().toISOString()
               }));
             } else {
-              starterShows = defaultShows.slice(0, 3).map(s => ({
+              starterShows = defaultShows.slice(0, 3).map((s, idx) => ({
                 ...s,
-                id: `show-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}-${idx}`,
                 status: 'Backlog',
                 latestWatched: { season: 1, episode: 1, title: 'Episode 1' },
                 userScore: null,
                 userNotes: '',
+                isStarter: true,
                 createdAt: new Date().toISOString()
               }));
             }
@@ -323,7 +325,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       });
 
       if (saveRes.ok) {
-        onLogin(newBoard, { showStarterPackAlert: !!formData.starterPack });
+        onLogin(newBoard, { showStarterPackAlert: !!formData.starterPack, isNewAccount: true });
       } else {
         setWizardError("Server rejected profile registration. Try a different name.");
       }
@@ -415,17 +417,19 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         className="w-full max-w-md bg-[#131720]/80 border border-slate-800/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl relative z-10"
       >
         {/* Brand Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6">
           <div className="inline-flex items-center justify-center p-3.5 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-2xl shadow-lg shadow-blue-500/10 mb-4 ring-1 ring-blue-400/20">
             <Tv className="w-8 h-8 text-white stroke-[2.2]" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
-            CouchTaterz
+          <h1 className="text-3xl font-black tracking-tighter uppercase text-blue-500">
+            COUCH<span className="text-slate-100">TATERZ</span>
           </h1>
           <p className="text-slate-400 text-sm mt-1.5 font-medium">
-            Your Ultimate TV Fandom & Queue Tracker
+            Stop Scrolling. Start Watching.
           </p>
         </div>
+
+
 
         <AnimatePresence mode="wait">
           {/* LOGIN MODE */}
@@ -445,9 +449,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     Who's Watching?
                   </label>
                   <div className="grid grid-cols-3 gap-3">
-                    {users.map((user) => (
+                    {users.map((user, idx) => (
                       <button
-                        key={user.id}
+                        key={`${user.id}-${idx}`}
                         onClick={() => handleSelectUser(user.id)}
                         disabled={isLoggingIn}
                         className="flex flex-col items-center p-3 bg-slate-900/40 hover:bg-slate-900 border border-slate-800/50 hover:border-blue-500/40 rounded-2xl transition-all duration-300 group"
@@ -492,21 +496,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 )}
 
                 <div className="flex flex-col gap-3">
-                  {/* Google Sign-In button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginError(null);
-                      setGoogleEmail('');
-                      setGoogleStep(1);
-                      setViewMode('google-sim');
-                    }}
-                    className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-100 border border-slate-800 hover:border-slate-700 font-bold rounded-xl text-sm flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.99] transition-all cursor-pointer"
-                  >
-                    <Chrome className="w-4.5 h-4.5 text-blue-500 fill-blue-500/10" />
-                    <span>Sign in with Google</span>
-                  </button>
-
                   {/* Join as a New Member button */}
                   <button
                     type="button"
@@ -525,6 +514,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   >
                     <Plus className="w-4.5 h-4.5 stroke-[2.5]" />
                     <span>Join as a New Member</span>
+                  </button>
+
+                  {/* Google Sign-In button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginError(null);
+                      setGoogleEmail('');
+                      setGoogleStep(1);
+                      setViewMode('google-sim');
+                    }}
+                    className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-100 border border-slate-800 hover:border-slate-700 font-bold rounded-xl text-sm flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.99] transition-all cursor-pointer"
+                  >
+                    <Chrome className="w-4.5 h-4.5 text-blue-500 fill-blue-500/10" />
+                    <span>Sign in with Google</span>
                   </button>
                 </div>
               </div>
@@ -564,9 +568,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {/* Wizard Content */}
               {wizardStep === 1 && (
                 <div className="space-y-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-slate-200">Set Up Your Member Profile</h2>
-                    <p className="text-xs text-slate-400">Join the TV fandom board! All you need is a display name.</p>
+                  <div className="space-y-0.5">
+                    <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Set Up Your Member Profile</h2>
+                    <p className="text-[11px] text-slate-400">Join the TV fandom board! All you need is a display name.</p>
                   </div>
 
                   <div className="space-y-3.5 pt-2">
@@ -579,6 +583,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                         <input
                           type="text"
                           required
+                          autoFocus
                           placeholder="e.g. Sarah"
                           value={formData.name}
                           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -607,13 +612,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               )}
 
               {wizardStep === 2 && (
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-slate-200">Curate Your Vibe</h2>
-                    <p className="text-xs text-slate-400">Select at least one genre you enjoy watching. We use this to curate your starter pack!</p>
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-0.5">
+                      <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Curate Your Vibe</h2>
+                      <p className="text-[11px] text-slate-400">Select at least one genre you enjoy watching. We use this to curate your starter pack!</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allSelected = GENRE_OPTIONS.every(g => formData.genres.includes(g));
+                        setFormData(prev => ({
+                          ...prev,
+                          genres: allSelected ? [] : [...GENRE_OPTIONS]
+                        }));
+                      }}
+                      className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1.5 rounded-lg border border-blue-500/20 whitespace-nowrap"
+                    >
+                      {GENRE_OPTIONS.every(g => formData.genres.includes(g)) ? 'Deselect All' : 'Select All'}
+                    </button>
                   </div>
 
-                  <div className="flex flex-wrap gap-2 pt-2 max-h-56 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 gap-2 pt-1.5 max-h-72 overflow-y-auto pr-1">
                     {GENRE_OPTIONS.map((genre) => {
                       const isSelected = formData.genres.includes(genre);
                       return (
@@ -621,14 +641,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                           key={genre}
                           type="button"
                           onClick={() => handleToggleGenre(genre)}
-                          className={`px-3.5 py-1.5 rounded-xl text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                          className={`p-2 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between ${
                             isSelected 
-                              ? 'bg-blue-500/15 border-blue-500/40 text-blue-300 shadow-sm shadow-blue-500/5' 
-                              : 'bg-slate-900/50 border-slate-800 hover:border-slate-700 text-slate-400'
+                              ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' 
+                              : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-700 text-slate-400'
                           }`}
                         >
-                          {isSelected && <Check className="w-3.5 h-3.5 stroke-[2.5]" />}
-                          {genre}
+                          <span>{genre}</span>
+                          {isSelected ? (
+                            <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </span>
+                          ) : (
+                            <span className="w-4 h-4 rounded-full border border-slate-700" />
+                          )}
                         </button>
                       );
                     })}
@@ -637,13 +663,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               )}
 
               {wizardStep === 3 && (
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-slate-200">Your Streaming Channels</h2>
-                    <p className="text-xs text-slate-400">Select the streaming platforms you actively use (optional).</p>
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-0.5">
+                      <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Your Streaming Channels</h2>
+                      <p className="text-[11px] text-slate-400">Select the streaming platforms you actively use (optional).</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const allSelected = SERVICE_OPTIONS.every(s => formData.services.includes(s));
+                        setFormData(prev => ({
+                          ...prev,
+                          services: allSelected ? [] : [...SERVICE_OPTIONS]
+                        }));
+                      }}
+                      className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer bg-blue-500/10 hover:bg-blue-500/20 px-2.5 py-1.5 rounded-lg border border-blue-500/20 whitespace-nowrap"
+                    >
+                      {SERVICE_OPTIONS.every(s => formData.services.includes(s)) ? 'Deselect All' : 'Select All'}
+                    </button>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 pt-2 max-h-56 overflow-y-auto pr-1">
+                  <div className="grid grid-cols-2 gap-2 pt-1.5 max-h-72 overflow-y-auto pr-1">
                     {SERVICE_OPTIONS.map((service) => {
                       const isSelected = formData.services.includes(service);
                       return (
@@ -651,7 +692,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                           key={service}
                           type="button"
                           onClick={() => handleToggleService(service)}
-                          className={`p-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between ${
+                          className={`p-2 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between ${
                             isSelected 
                               ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' 
                               : 'bg-slate-900/40 border-slate-800/80 hover:border-slate-700 text-slate-400'
@@ -674,9 +715,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
               {wizardStep === 4 && (
                 <div className="space-y-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-bold text-slate-200">Configure Dashboard</h2>
-                    <p className="text-xs text-slate-400">How would you like to initialize your collection board?</p>
+                  <div className="space-y-0.5">
+                    <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Configure Dashboard</h2>
+                    <p className="text-[11px] text-slate-400">How would you like to initialize your collection board?</p>
                   </div>
 
                   <div className="space-y-3 pt-2">

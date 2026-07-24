@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { TvShow, UserPreferences, StreamingService } from '../types';
+import { TvShow, UserPreferences, StreamingService, User } from '../types';
 import { 
   Sparkles, 
   ChevronLeft, 
@@ -17,7 +17,7 @@ import {
   Award, 
   Check, 
   Film, 
-  User, 
+  User as UserIcon, 
   UserCheck 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -28,6 +28,7 @@ interface RecommendationsCarouselProps {
   preferences: UserPreferences;
   onSavePreferences: (updatedPrefs: UserPreferences) => void;
   onAddRecommendedShow: (show: TvShow) => void;
+  currentUser?: User | null;
 }
 
 export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
@@ -35,6 +36,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   preferences,
   onSavePreferences,
   onAddRecommendedShow,
+  currentUser,
 }) => {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -45,6 +47,25 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   const [prefGenres, setPrefGenres] = useState(preferences.genres.join(', '));
   const [prefActors, setPrefActors] = useState(preferences.actors.join(', '));
   const [prefDirectors, setPrefDirectors] = useState(preferences.directors.join(', '));
+
+  // Determine if we should open the taste profile on load (first-time access)
+  useEffect(() => {
+    const key = currentUser?.id 
+      ? `coughtater_seen_taste_profile_${currentUser.id}` 
+      : `coughtater_seen_taste_profile_generic`;
+    const hasSeen = localStorage.getItem(key) === 'true';
+    if (!hasSeen) {
+      setIsEditingTaste(true);
+      localStorage.setItem(key, 'true');
+    }
+  }, [currentUser?.id]);
+
+  // Sync state with preferences when they change
+  useEffect(() => {
+    setPrefGenres(preferences.genres.join(', '));
+    setPrefActors(preferences.actors.join(', '));
+    setPrefDirectors(preferences.directors.join(', '));
+  }, [preferences]);
 
   // State to track if we've already run a recommendation query
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -101,7 +122,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
 
   const handleAddShowToWatchlist = (rec: any) => {
     const newShow: TvShow = {
-      id: `rec-${Date.now()}-${Math.floor(Math.random() * 10000)}`,
+      id: `rec-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
       title: rec.title,
       streamingService: (rec.streamingService || 'Other') as StreamingService,
       genres: rec.genres || ['Drama'],
@@ -114,7 +135,8 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
       overview: rec.overview || '',
       directors: rec.directors || [],
       actors: rec.actors || [],
-      bannerImage: rec.bannerImage || 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800&q=80',
+      bannerImage: rec.bannerImage || 'https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg',
+      bannerPosition: rec.bannerPosition || 'center 25%',
       concluded: rec.concluded ?? false,
       createdAt: new Date().toISOString(),
     };
@@ -179,7 +201,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
               </div>
               <div>
                 <h4 className="text-sm font-bold text-white">Your Entertainment Taste Profile</h4>
-                <p className="text-[11px] text-slate-500 font-medium">Guide CouchTaterz with your specific entertainment criteria</p>
+                <p className="text-[11px] text-slate-500 font-medium">Guide Spudz with your specific entertainment criteria</p>
               </div>
             </div>
 
@@ -281,7 +303,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
               <Sparkles className="w-6 h-6 animate-pulse" />
             </div>
             <div className="max-w-md space-y-1 z-10">
-              <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wide">CouchTaterz Suggestions</h4>
+              <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wide">Ask Spudz Suggestions</h4>
               <p className="text-xs text-slate-500 leading-relaxed">
                 Connect your unique watchlists, ratings, custom notes, and favorite director preferences with Gemini Flash to generate 5 real, customized television suggestions.
               </p>
@@ -314,6 +336,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.5 }}
                   className="w-full h-full object-cover filter brightness-[0.45]"
+                  style={{ objectPosition: currentRec.bannerPosition || 'center 25%' }}
                   referrerPolicy="no-referrer"
                 />
               </AnimatePresence>
@@ -355,7 +378,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-900/80 border border-white/5 text-rose-400">
                     <Award className="w-3.5 h-3.5" />
-                    <span>RT: {currentRec.rottenTomatoesScore}%</span>
+                    <span>RT: {currentRec.rottenTomatoesScore != null ? `${currentRec.rottenTomatoesScore}%` : 'TBD'}</span>
                   </div>
                   <div className="hidden sm:flex items-center gap-1 text-[9px] text-slate-500">
                     <span>{activeIndex + 1} of {recommendations.length}</span>
@@ -370,8 +393,8 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                     {currentRec.title}
                   </h4>
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {currentRec.genres.map((g: string) => (
-                      <span key={g} className="px-2 py-0.5 text-[9px] uppercase tracking-wider font-bold text-slate-300 bg-slate-900/50 rounded border border-white/5">
+                    {currentRec.genres.map((g: string, gIdx: number) => (
+                      <span key={`${g}-${gIdx}`} className="px-2 py-0.5 text-[9px] uppercase tracking-wider font-bold text-slate-300 bg-slate-900/50 rounded border border-white/5">
                         {g}
                       </span>
                     ))}
@@ -381,7 +404,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                 {/* Custom AI Reasoning */}
                 <div className="p-3 rounded-2xl bg-blue-950/15 border border-blue-500/10 backdrop-blur-sm">
                   <p className="text-xs md:text-xs text-blue-200 leading-relaxed font-medium">
-                    <span className="font-extrabold text-blue-400 uppercase tracking-widest text-[9px] block mb-0.5">CouchTaterz Reason:</span>
+                    <span className="font-extrabold text-blue-400 uppercase tracking-widest text-[9px] block mb-0.5">Ask Spudz Reason:</span>
                     &ldquo;{currentRec.reason}&rdquo;
                   </p>
                 </div>

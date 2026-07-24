@@ -148,13 +148,13 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
       if (isSubscribed && cost > 0) {
         if (activeCount > 2) {
           valueRating = 'excellent';
-          valueExplanation = `${activeCount} active shows. Highly cost-effective!`;
+          valueExplanation = `${activeCount} watching shows. Highly cost-effective!`;
         } else if (activeCount > 0 || queueCount > 1) {
           valueRating = 'good';
-          valueExplanation = 'Active watchlist coverage is steady.';
+          valueExplanation = 'Watching watchlist coverage is steady.';
         } else if (totalCount > 0) {
           valueRating = 'poor';
-          valueExplanation = 'Paying but no active shows right now. Consider pausing!';
+          valueExplanation = 'Paying but no watching shows right now. Consider pausing!';
         } else {
           valueRating = 'unused';
           valueExplanation = 'Subscribed with 0 shows on your tracker.';
@@ -320,7 +320,7 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
                   <Tv className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">Active Series</span>
+                  <span className="text-[10px] uppercase font-black tracking-wider text-slate-400">Watching Series</span>
                   <div className="text-2xl font-black">
                     {totals.activeShowsCount} <span className="text-xs text-slate-500 font-medium">watching</span>
                   </div>
@@ -363,7 +363,7 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
                   <div className="flex items-center justify-between pb-3 border-b border-white/5 mb-4">
                     <div className="flex items-center gap-2">
                       <Sparkles className="w-4 h-4 text-blue-400" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Weekly Engagement & Active Shows</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Weekly Engagement & Watching Shows</span>
                     </div>
                     <span className="text-[10px] text-slate-500 font-bold">Estimated by Service</span>
                   </div>
@@ -371,7 +371,7 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
                   {watchTimeStats.activeShowsCount === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#0F1115] rounded-2xl border border-white/5">
                       <Tv className="w-10 h-10 text-slate-600 mb-2 animate-pulse" />
-                      <p className="text-xs font-bold text-slate-400">No active watchlists found</p>
+                      <p className="text-xs font-bold text-slate-400">No watching series found</p>
                       <p className="text-[10px] text-slate-500 mt-1">
                         Change any tracked show's status to "Watching" to start compiling visual entertainment metrics!
                       </p>
@@ -421,12 +421,12 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
                                 />
                               </div>
 
-                              {/* Nested Active Shows List */}
+                              {/* Nested Watching Shows List */}
                               <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">Active Content:</span>
-                                {activeShowsInService.map(show => (
+                                <span className="text-[9px] font-black uppercase tracking-wider text-slate-500">Watching Content:</span>
+                                {activeShowsInService.map((show, idx) => (
                                   <span 
-                                    key={show.id} 
+                                    key={`${show.id}-${idx}`} 
                                     className="text-[10px] bg-[#0F1115] text-slate-300 border border-white/5 px-2.5 py-1 rounded-lg font-bold flex items-center gap-1"
                                   >
                                     <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: serviceColor }} />
@@ -509,9 +509,9 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
                   </div>
 
                   <div className="flex justify-between text-[8px] text-slate-500 font-bold uppercase tracking-wider pt-2 mt-2 border-t border-white/5">
-                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Active</span>
-                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Queue</span>
-                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Done</span>
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-blue-500" /> Watching</span>
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-amber-500" /> Up Next</span>
+                    <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Watched</span>
                   </div>
                 </div>
 

@@ -69,7 +69,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({ currentBoardId
             </div>
             <div>
               <h3 className="text-lg font-bold text-white tracking-tight">Share Watchlist</h3>
-              <p className="text-xs text-slate-500">Collaborate with family on the same tracker</p>
+              <p className="text-xs text-slate-500">Collaborate with watch buddies on the same tracker</p>
             </div>
           </div>
           <button 
@@ -108,7 +108,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({ currentBoardId
 
             {/* Board code */}
             <div className="space-y-1 pt-1">
-              <span className="text-[11px] text-slate-500 font-medium">Board Code (for family profiles)</span>
+              <span className="text-[11px] text-slate-500 font-medium">Board Code (for watch buddies' profiles)</span>
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -135,7 +135,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({ currentBoardId
 
         {/* Join another board */}
         <div className="border-t border-white/5 pt-5 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Join a Family Board</h4>
+          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Join a Buddy Board</h4>
           
           <form onSubmit={handleJoin} className="space-y-3">
             <div className="flex gap-2">
@@ -147,7 +147,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({ currentBoardId
                     setInputCode(e.target.value);
                     setError(null);
                   }}
-                  placeholder="Enter family-board-code..."
+                  placeholder="Enter buddy-board-code..."
                   className="w-full bg-[#0F1115] text-slate-100 px-3 py-2 rounded-xl border border-white/10 placeholder-slate-600 text-xs text-center font-bold tracking-wide focus:outline-none"
                 />
                 <button

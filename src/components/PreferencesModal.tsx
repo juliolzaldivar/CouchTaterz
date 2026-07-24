@@ -14,6 +14,8 @@ interface PreferencesModalProps {
   onSave: (updatedUser: User, updatedPrefs: UserPreferences) => void;
   onDelete: () => void;
   onClose: () => void;
+  showWorkflowGuide: boolean;
+  onToggleWorkflowGuide: (show: boolean) => void;
 }
 
 const GENRE_OPTIONS = [
@@ -42,7 +44,9 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   preferences,
   onSave,
   onDelete,
-  onClose
+  onClose,
+  showWorkflowGuide,
+  onToggleWorkflowGuide
 }) => {
   const [name, setName] = useState(currentUser.name || '');
   const [email, setEmail] = useState(currentUser.email || '');
@@ -58,6 +62,8 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   
   // Services they own
   const [selectedServices, setSelectedServices] = useState<StreamingService[]>(preferences?.services || []);
+
+  const [localShowWorkflowGuide, setLocalShowWorkflowGuide] = useState(showWorkflowGuide);
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -103,7 +109,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
 
         if (res.ok) {
           const result = await res.json();
-          alert(`Success! Successfully restored ${result.boardsCount} family member watchlists, reviews, and ratings! The app will now reload to apply all data.`);
+          alert(`Success! Successfully restored ${result.boardsCount} watch buddies' watchlists, reviews, and ratings! The app will now reload to apply all data.`);
           window.location.reload();
         } else {
           const errData = await res.json();
@@ -165,6 +171,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
       services: selectedServices
     };
 
+    onToggleWorkflowGuide(localShowWorkflowGuide);
     onSave(updatedUser, updatedPrefs);
     onClose();
   };
@@ -344,12 +351,24 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
 
           {/* Preferred Genres */}
           <div className="space-y-2 border-t border-white/5 pt-4">
-            <div className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              <label className="text-xs font-bold text-slate-300">Preferred Show Genres</label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                <label className="text-xs font-bold text-slate-300">Preferred Show Genres</label>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const allSelected = GENRE_OPTIONS.every(g => selectedGenres.includes(g));
+                  setSelectedGenres(allSelected ? [] : [...GENRE_OPTIONS]);
+                }}
+                className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer bg-blue-500/10 hover:bg-blue-500/20 px-2 py-0.5 rounded-lg border border-blue-500/20 whitespace-nowrap"
+              >
+                {GENRE_OPTIONS.every(g => selectedGenres.includes(g)) ? 'Deselect All' : 'Select All'}
+              </button>
             </div>
             <p className="text-[11px] text-slate-500 leading-none mb-2">We use this to curate recommendation boards.</p>
-            <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto pr-1">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto pr-1">
               {GENRE_OPTIONS.map((genre) => {
                 const isSelected = selectedGenres.includes(genre);
                 return (
@@ -357,14 +376,20 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                     key={genre}
                     type="button"
                     onClick={() => handleToggleGenre(genre)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1 cursor-pointer ${
+                    className={`p-2 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between cursor-pointer ${
                       isSelected 
-                        ? 'bg-blue-500/15 border-blue-500/40 text-blue-300' 
+                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-300' 
                         : 'bg-[#0F1115] border-white/5 text-slate-400 hover:border-white/10'
                     }`}
                   >
-                    {isSelected && <Check className="w-3 h-3 stroke-[2.5]" />}
-                    {genre}
+                    <span>{genre}</span>
+                    {isSelected ? (
+                      <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                        <Check className="w-2.5 h-2.5 stroke-[3]" />
+                      </span>
+                    ) : (
+                      <span className="w-4 h-4 rounded-full border border-white/10" />
+                    )}
                   </button>
                 );
               })}
@@ -373,11 +398,23 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
 
           {/* Owned Streaming Channels */}
           <div className="space-y-2 border-t border-white/5 pt-4">
-            <div className="flex items-center gap-1">
-              <Sparkles className="w-3.5 h-3.5 text-blue-500" />
-              <label className="text-xs font-bold text-slate-300">Your Streaming Subscriptions</label>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
+                <label className="text-xs font-bold text-slate-300">Your Streaming Subscriptions</label>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const allSelected = SERVICE_OPTIONS.every(s => selectedServices.includes(s));
+                  setSelectedServices(allSelected ? [] : [...SERVICE_OPTIONS]);
+                }}
+                className="text-[10px] font-bold text-blue-400 hover:text-blue-300 transition-colors cursor-pointer bg-blue-500/10 hover:bg-blue-500/20 px-2 py-0.5 rounded-lg border border-blue-500/20 whitespace-nowrap"
+              >
+                {SERVICE_OPTIONS.every(s => selectedServices.includes(s)) ? 'Deselect All' : 'Select All'}
+              </button>
             </div>
-            <p className="text-[11px] text-slate-500 leading-none mb-2">Toggle the streaming platforms you actively own.</p>
+            <p className="text-[11px] text-slate-500 leading-none mb-2">Toggle the streaming platforms you actively own to enable our Play feature.</p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto pr-1">
               {SERVICE_OPTIONS.map((service) => {
                 const isSelected = selectedServices.includes(service);
@@ -406,48 +443,79 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
             </div>
           </div>
 
-          {/* Database Backup & Restore */}
+          {/* App Settings & Guides */}
           <div className="space-y-3 border-t border-white/5 pt-4">
             <div className="flex items-center gap-1.5">
-              <Download className="w-4 h-4 text-blue-500" />
-              <label className="text-xs font-bold text-slate-300">Data Backup & Portability</label>
+              <Sliders className="w-4 h-4 text-blue-500" />
+              <label className="text-xs font-bold text-slate-300">App Settings</label>
             </div>
-            <p className="text-[11px] text-slate-400 leading-normal">
-              Cloud Run containers are stateless and ephemeral. To prevent losing your family's customized reviews, comments, and ratings when publishing updates, use these options to export or restore your data anytime.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-[#0F1115] p-3.5 rounded-2xl border border-white/5 flex items-center justify-between gap-4">
+              <div className="space-y-0.5 text-left">
+                <h4 className="text-xs font-bold text-slate-200">Watchlist Pipeline Guide</h4>
+                <p className="text-[10px] text-slate-400 leading-normal">
+                  Bring back the interactive guide panel on the main board explaining Watching, Up Next, and Watched pipelines.
+                </p>
+              </div>
               <button
                 type="button"
-                onClick={handleExportBackup}
-                className="flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/5 bg-[#0F1115] hover:bg-[#1C2028] text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
-                title="Download CouchTaterz backup JSON file"
+                onClick={() => setLocalShowWorkflowGuide(!localShowWorkflowGuide)}
+                className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                  localShowWorkflowGuide ? 'bg-blue-600' : 'bg-slate-700'
+                }`}
               >
-                <Download className="w-4 h-4 text-emerald-500" />
-                <span>Export Backup File</span>
-              </button>
-
-              <div className="relative">
-                <input
-                  type="file"
-                  accept=".json"
-                  onChange={handleImportFile}
-                  disabled={restoreLoading}
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                <span
+                  className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    localShowWorkflowGuide ? 'translate-x-4' : 'translate-x-0'
+                  }`}
                 />
+              </button>
+            </div>
+          </div>
+
+          {/* Database Backup & Restore */}
+          {(currentUser.id === 'default' || currentUser.name?.toLowerCase() === 'julio' || currentUser.name?.toLowerCase() === 'julian' || currentUser.email?.toLowerCase() === 'juliozaldivar@gmail.com') && (
+            <div className="space-y-3 border-t border-white/5 pt-4">
+              <div className="flex items-center gap-1.5">
+                <Download className="w-4 h-4 text-blue-500" />
+                <label className="text-xs font-bold text-slate-300">Data Backup & Portability</label>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-normal">
+                Cloud Run containers are stateless and ephemeral. To prevent losing your watch buddies' customized reviews, comments, and ratings when publishing updates, use these options to export or restore your data anytime. <strong className="text-emerald-400">Note: This backup file is comprehensive and includes everyone's comments, data, scores, and streaming selections, not just your own.</strong>
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  disabled={restoreLoading}
-                  className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/5 bg-[#0F1115] hover:bg-[#1C2028] text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+                  onClick={handleExportBackup}
+                  className="flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/5 bg-[#0F1115] hover:bg-[#1C2028] text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+                  title="Download CouchTaterz backup JSON file"
                 >
-                  <Upload className="w-4 h-4 text-blue-500" />
-                  <span>{restoreLoading ? "Restoring..." : "Import/Restore Data"}</span>
+                  <Download className="w-4 h-4 text-emerald-500" />
+                  <span>Export Backup File</span>
                 </button>
+
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportFile}
+                    disabled={restoreLoading}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                  />
+                  <button
+                    type="button"
+                    disabled={restoreLoading}
+                    className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-white/5 bg-[#0F1115] hover:bg-[#1C2028] text-xs font-bold text-slate-300 hover:text-white transition cursor-pointer"
+                  >
+                    <Upload className="w-4 h-4 text-blue-500" />
+                    <span>{restoreLoading ? "Restoring..." : "Import/Restore Data"}</span>
+                  </button>
+                </div>
               </div>
+              {restoreError && (
+                <p className="text-[10px] text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">{restoreError}</p>
+              )}
             </div>
-            {restoreError && (
-              <p className="text-[10px] text-rose-400 bg-rose-500/10 p-2 rounded-lg border border-rose-500/20">{restoreError}</p>
-            )}
-          </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-t border-white/5 pt-4">
