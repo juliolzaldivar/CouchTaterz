@@ -95,7 +95,9 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
 
       if (response.ok) {
         const data = await response.json();
-        setRecommendations(data);
+        const existingTitles = new Set((shows || []).map(s => s.title.toLowerCase().trim()));
+        const filtered = Array.isArray(data) ? data.filter((rec: any) => !existingTitles.has(rec.title?.toLowerCase().trim())) : [];
+        setRecommendations(filtered);
         setActiveIndex(0);
       } else {
         console.error('Failed to retrieve AI recommendations');
@@ -127,7 +129,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
       streamingService: (rec.streamingService || 'Other') as StreamingService,
       genres: rec.genres || ['Drama'],
       status: 'Watching',
-      latestWatched: { season: 1, episode: 1, title: 'Episode 1' },
+      latestWatched: { season: 1, episode: 0, title: 'Not Started' },
       nextEpisode: rec.nextEpisode || null,
       rottenTomatoesScore: rec.rottenTomatoesScore || 85,
       userScore: null,
@@ -365,10 +367,10 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
               {/* Top Row: Service details & Match percentage */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg border backdrop-blur-md ${colors.bg} ${colors.text} ${colors.border}`}>
+                  <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg border ${colors.bg} ${colors.text} ${colors.border}`}>
                     {currentRec.streamingService}
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-blue-950/50 text-blue-300 border border-blue-800/30 backdrop-blur-md">
+                  <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-blue-950/80 text-blue-300 border border-blue-800/30">
                     <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
                     {currentRec.matchingScore}% MATCH
                   </span>
@@ -402,7 +404,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                 </div>
 
                 {/* Custom AI Reasoning */}
-                <div className="p-3 rounded-2xl bg-blue-950/15 border border-blue-500/10 backdrop-blur-sm">
+                <div className="p-3 rounded-2xl bg-blue-950/40 border border-blue-500/20">
                   <p className="text-xs md:text-xs text-blue-200 leading-relaxed font-medium">
                     <span className="font-extrabold text-blue-400 uppercase tracking-widest text-[9px] block mb-0.5">Ask Spudz Reason:</span>
                     &ldquo;{currentRec.reason}&rdquo;

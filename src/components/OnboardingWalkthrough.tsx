@@ -33,6 +33,8 @@ export const OnboardingWalkthrough: React.FC<OnboardingWalkthroughProps> = ({
   autoDeleteShow,
   setAutoDeleteShow
 }) => {
+  const [isMinimized, setIsMinimized] = React.useState(false);
+
   const getStepText = () => {
     switch (step) {
       case 1:
@@ -40,7 +42,7 @@ export const OnboardingWalkthrough: React.FC<OnboardingWalkthroughProps> = ({
           <>
             <div className="space-y-2">
               <p>
-                👉 <strong className="text-white">Step 1/9: Start a show!</strong> Tap <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Watching</span> on the first show card in the list below to move it to your active watchlist.
+                👉 <strong className="text-white">Step 1/4: Start a show!</strong> Tap <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Watching</span> on the first show card below to move it to your Active board.
               </p>
               <label className="flex items-center gap-2 mt-1.5 p-2 rounded-xl bg-slate-900/50 border border-white/5 cursor-pointer hover:border-purple-500/35 hover:bg-slate-900/80 transition-all select-none">
                 <input
@@ -49,7 +51,7 @@ export const OnboardingWalkthrough: React.FC<OnboardingWalkthroughProps> = ({
                   onChange={(e) => setAutoDeleteShow(e.target.checked)}
                   className="accent-purple-500 rounded border-white/10 w-3.5 h-3.5 cursor-pointer"
                 />
-                <span className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Auto-delete this show when tutorial ends</span>
+                <span className="text-[10px] text-slate-300 font-extrabold uppercase tracking-wider">Auto-delete test show when tutorial ends</span>
               </label>
             </div>
           </>
@@ -57,49 +59,26 @@ export const OnboardingWalkthrough: React.FC<OnboardingWalkthroughProps> = ({
       case 2:
         return (
           <>
-            🎉 <strong className="text-white">Nice work! Step 2/9: Go to active list.</strong> Now highlight the main tab bar at the top of the workspace. Tap the <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Watching</span> tab to see where it went.
+            <div className="space-y-1.5">
+              <p>
+                🍿 <strong className="text-white">Step 2/4: Switched to Watching!</strong> Notice your show moved from <span className="bg-amber-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Up Next</span> (orange) to <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Watching</span> (blue) at the top!
+              </p>
+              <p className="text-[11px] text-purple-100/90 leading-relaxed">
+                Tap the <span className="bg-purple-600 text-white px-1.5 py-0.5 rounded text-[11px] font-black shadow-sm">+</span> button next to the episode count on <strong className="text-amber-300">{targetShowTitle || 'your show'}</strong> below to log an episode. Shows in Watching also feature in your top hero billboard!
+              </p>
+            </div>
           </>
         );
       case 3:
         return (
           <>
-            👉 <strong className="text-white">Step 3/9: Track progress & Banners!</strong> Tap the <span className="bg-purple-600 text-white px-1.5 py-0.5 rounded text-[11px] font-black shadow-sm">+</span> button next to the episode number on <strong className="text-purple-300">{targetShowTitle || 'your show'}</strong> to log an episode. Moving a show into Active automatically creates a billboard banner at the top of the screen!
+            🔍 <strong className="text-white">Step 3/4: Add & Discover!</strong> Tap <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">+ Add Show</span> at the top to search any title, or switch to <span className="text-purple-300 font-extrabold uppercase bg-purple-950/60 px-1.5 py-0.5 rounded">Buddy Picks</span> inside the modal to borrow a show from friends!
           </>
         );
       case 4:
         return (
           <>
-            🚀 <strong className="text-white">Incredible, {userName}!</strong> See that amazing carousel banner at the top of the screen? Now tap the <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">+ Add Show</span> button at the top of the page.
-          </>
-        );
-      case 5:
-        return (
-          <>
-            🔍 <strong className="text-white">Step 5/9: Manual Add!</strong> Search for a show like <span className="text-blue-300 font-bold">The Simpsons</span>, select its status, and then click the blue <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase">Add to Watchlist</span> button!
-          </>
-        );
-      case 6:
-        return (
-          <>
-            👀 <strong className="text-white">Step 6/9: Peek at friends!</strong> Scroll down below your tab bar and tap the purple <span className="text-purple-300 font-extrabold uppercase bg-purple-950/50 px-1.5 py-0.5 rounded">Buddy Picks</span> scope filter. (Julio is your first watch buddy!)
-          </>
-        );
-      case 7:
-        return (
-          <>
-            🍿 <strong className="text-white">Step 7/9: Steal a show!</strong> Scroll down Julio's list and click <span className="bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 px-2 py-0.5 rounded text-[10px] font-black">Add to Up Next</span> on any show to copy it to your queue!
-          </>
-        );
-      case 8:
-        return (
-          <>
-            🔙 <strong className="text-white">Step 8/9: Head back!</strong> Tap the <span className="text-slate-200 font-extrabold bg-[#2E333F] px-1.5 py-0.5 rounded">My Board</span> scope switch under filters to return to your board.
-          </>
-        );
-      case 9:
-        return (
-          <>
-            ✨ <strong className="text-white">Step 9/9: Ready to go!</strong> You are officially set to track like a master. Wash, rinse, repeat! Do you want to keep that first show we started, or delete it?
+            ✨ <strong className="text-white">Step 4/4: You're all set!</strong> You now know how to track status, log progress, showcase hero banners, and discover recommendations. Ready to dive in?
           </>
         );
       default:
@@ -107,15 +86,32 @@ export const OnboardingWalkthrough: React.FC<OnboardingWalkthroughProps> = ({
     }
   };
 
-  const pct = Math.min(100, Math.round((step / 9) * 100));
-  const isStep6 = step === 5;
+  const pct = Math.min(100, Math.round((step / 4) * 100));
+
+  if (isMinimized) {
+    return (
+      <div className="fixed bottom-3 left-1/2 -translate-x-1/2 md:bottom-4 md:left-6 md:right-auto md:translate-x-0 bg-gradient-to-r from-purple-700 to-indigo-700 border border-purple-400/50 px-4 py-2.5 rounded-full shadow-2xl z-50 flex items-center gap-3 backdrop-blur-md animate-fade-in">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
+          <span className="text-xs font-black text-white">Step {step}/4 ({pct}%)</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsMinimized(false)}
+          className="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white rounded-lg text-[10px] font-extrabold uppercase tracking-wider cursor-pointer transition-all"
+        >
+          Expand
+        </button>
+      </div>
+    );
+  }
+
+  const isLowProfile = step === 1 || step === 2;
 
   return (
-    <div className={`fixed ${
-      isStep6 
-        ? 'top-4 bottom-auto left-1/2 -translate-x-1/2 md:top-auto md:bottom-6 md:right-6 md:left-auto md:translate-x-0' 
-        : 'bottom-6 left-1/2 -translate-x-1/2 md:bottom-6 md:right-6 md:left-auto md:translate-x-0'
-    } w-[92%] max-w-lg bg-gradient-to-r from-purple-600 to-indigo-600 border border-purple-500 p-4 rounded-2xl shadow-2xl shadow-purple-950/40 z-50 flex flex-col gap-3 transition-all duration-300`}>
+    <div className={`fixed bottom-3 left-1/2 -translate-x-1/2 md:bottom-4 md:left-6 md:right-auto md:translate-x-0 w-[calc(100%-1.5rem)] sm:w-[92%] max-w-lg bg-gradient-to-r from-purple-700 via-indigo-700 to-purple-800 border border-purple-400/60 rounded-2xl shadow-2xl shadow-purple-950/60 z-50 flex flex-col transition-all duration-300 ${
+      isLowProfile ? 'p-3 gap-2 backdrop-blur-md' : 'p-4 gap-3'
+    }`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -124,20 +120,31 @@ export const OnboardingWalkthrough: React.FC<OnboardingWalkthroughProps> = ({
           </div>
           <div>
             <span className="text-[10px] font-black uppercase text-purple-100 tracking-wider">Interactive Tutorial</span>
-            <div className="text-[9px] font-bold text-purple-200">Step {step} of 10 ({pct}%)</div>
+            <span className="text-[9px] font-extrabold text-amber-300 ml-2">Step {step} of 4 ({pct}%)</span>
           </div>
         </div>
-        <button
-          onClick={onSkip}
-          className="text-[10px] font-extrabold uppercase tracking-widest text-purple-200 hover:text-white px-2.5 py-1.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-xl cursor-pointer transition-all duration-200"
-          title="Skip onboarding"
-        >
-          Skip
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setIsMinimized(true)}
+            className="text-[10px] font-extrabold uppercase tracking-wider text-purple-200 hover:text-white px-2 py-0.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-lg cursor-pointer transition-all duration-200"
+            title="Minimize tutorial card"
+          >
+            Minimize
+          </button>
+          <button
+            type="button"
+            onClick={onSkip}
+            className="text-[10px] font-extrabold uppercase tracking-wider text-purple-200 hover:text-white px-2 py-0.5 bg-white/10 hover:bg-white/20 border border-white/5 rounded-lg cursor-pointer transition-all duration-200"
+            title="Skip onboarding"
+          >
+            Skip
+          </button>
+        </div>
       </div>
 
       {/* Progress Bar */}
-      <div className="h-1.5 w-full bg-purple-950/40 rounded-full overflow-hidden border border-purple-500/10">
+      <div className="h-1 w-full bg-purple-950/50 rounded-full overflow-hidden border border-purple-500/20">
         <motion.div
           animate={{ width: `${pct}%` }}
           className="h-full bg-gradient-to-r from-amber-400 to-yellow-400"
@@ -146,12 +153,14 @@ export const OnboardingWalkthrough: React.FC<OnboardingWalkthroughProps> = ({
       </div>
 
       {/* Instructions */}
-      <div className="text-[11px] sm:text-xs text-purple-100 leading-relaxed font-medium bg-black/20 p-3.5 rounded-xl border border-white/5">
+      <div className={`text-[11px] sm:text-xs text-purple-100 leading-relaxed font-medium bg-black/25 rounded-xl border border-white/10 ${
+        isLowProfile ? 'p-2.5' : 'p-3.5'
+      }`}>
         {getStepText()}
       </div>
 
-      {/* Action choices for Step 9 */}
-      {step === 9 && (
+      {/* Action choices for Step 4 */}
+      {step === 4 && (
         <div className="grid grid-cols-2 gap-2 mt-1">
           <button
             onClick={onKeepTargetShow}

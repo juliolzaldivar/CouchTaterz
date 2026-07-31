@@ -51,8 +51,10 @@ export interface TvShow {
   concluded: boolean;
   totalSeasons?: number;
   episodesPerSeason?: number[];
+  episodes?: Record<string, string>; // Map of "S1E1" or "1-1" -> "Episode Title"
   isFavorite?: boolean;
   isBannerHidden?: boolean;
+  hasAirDateReminder?: boolean;
   isStarter?: boolean;
   redundancyVerified?: boolean;
   redundancyCheckedAt?: string;
@@ -64,6 +66,7 @@ export interface User {
   name: string;
   email: string;
   avatarUrl?: string;
+  isOnline?: boolean;
   createdAt: string;
 }
 
@@ -72,6 +75,18 @@ export interface UserPreferences {
   actors: string[];
   directors: string[];
   services?: StreamingService[];
+  gender?: string;
+  ageRange?: string;
+  geography?: string;
+  country?: string;
+  stateRegion?: string;
+  city?: string;
+  timezone?: string;
+  eras?: string[];
+  vibes?: string[];
+  favoriteShows?: string[];
+  alertPreference?: 'email' | 'text';
+  alertDestination?: string;
 }
 
 export interface AppNotification {

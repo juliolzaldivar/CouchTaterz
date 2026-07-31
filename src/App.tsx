@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { TvShow, Board, StreamingService, ShowStatus, User, UserPreferences, AppNotification } from './types';
 import { ShowCard } from './components/ShowCard';
 import { UpcomingCarousel } from './components/UpcomingCarousel';
@@ -19,6 +19,35 @@ import { PreferencesModal } from './components/PreferencesModal';
 import { QueueOnboardingModal } from './components/QueueOnboardingModal';
 import { OnboardingWalkthrough } from './components/OnboardingWalkthrough';
 import { 
+  getFriendsData, 
+  fetchFriendsDataAsync, 
+  respondToFriendRequest, 
+  autoConnectUsers, 
+  JULIO_USER_ID, 
+  FriendsData, 
+  FriendRequestDetail 
+} from './utils/friendsStorage';
+
+// Helper checks for Julio and user equality
+const isUserJulio = (user?: { id?: string; email?: string; name?: string } | null) => {
+  if (!user) return false;
+  const idMatch = user.id === JULIO_USER_ID || user.id === 'default' || user.id === 'user-julio';
+  const emailMatch = user.email?.toLowerCase() === 'juliozaldivar@gmail.com';
+  const nameMatch = user.name?.trim().toLowerCase() === 'julio';
+  return idMatch || emailMatch || nameMatch;
+};
+
+const isUserSelf = (
+  target: { id?: string; email?: string; name?: string } | null | undefined,
+  current: { id?: string; email?: string; name?: string } | null
+) => {
+  if (!target || !current) return false;
+  if (target.id && current.id && target.id === current.id) return true;
+  if (target.email && current.email && target.email.toLowerCase() === current.email.toLowerCase()) return true;
+  if (isUserJulio(target) && isUserJulio(current)) return true;
+  return false;
+};
+import { 
   Tv, 
   Plus, 
   Search, 
@@ -30,11 +59,13 @@ import {
   ChevronRight, 
   ChevronDown,
   Share2,
+  UserPlus,
   Compass, 
   Filter,
   SlidersHorizontal,
   Bot,
   Check,
+  CheckCircle2,
   Calendar as CalendarIcon,
   BarChart3,
   Archive,
@@ -42,6 +73,8 @@ import {
   LogOut,
   ArrowLeft,
   User as UserIcon,
+  Star,
+  ChevronUp,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -111,13 +144,14 @@ export default function App() {
       setCurrentUserShows(board.shows);
       setCurrentUserPrefs(board.preferences || { genres: [], actors: [], directors: [], services: [] });
     } else {
+      let isMounted = true;
       fetch(`/api/boards?id=${currentUser.id}`)
         .then(res => {
           if (res.ok) return res.json();
-          throw new Error();
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         })
         .then((data: Board) => {
-          if (data) {
+          if (isMounted && data) {
             if (Array.isArray(data.shows)) {
               setCurrentUserShows(data.shows);
             }
@@ -127,28 +161,158 @@ export default function App() {
           }
         })
         .catch(err => {
-          console.error("Failed to fetch current user's shows and preferences:", err);
+          if (isMounted) {
+            console.error("Failed to fetch current user's shows and preferences:", err?.message || err);
+          }
         });
+
+      return () => {
+        isMounted = false;
+      };
     }
   }, [currentUser, boardId, board]);
 
   useEffect(() => {
     if (!currentUser) return;
-    fetch('/api/users')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setAllUsers(data);
-        }
-      })
-      .catch(err => console.error("Failed to load users:", err));
-  }, [currentUser, boardId]);
+
+    const sendPresence = () => {
+      fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email
+        })
+      }).catch(() => {});
+    };
+
+    const fetchUsers = () => {
+      fetch(`/api/users?currentUserId=${encodeURIComponent(currentUser.id)}&email=${encodeURIComponent(currentUser.email || '')}&name=${encodeURIComponent(currentUser.name || '')}`)
+        .then(res => {
+          const contentType = res.headers.get('content-type');
+          if (res.ok && contentType && contentType.includes('application/json')) {
+            return res.json();
+          }
+          return null;
+        })
+        .then(data => {
+          if (Array.isArray(data)) {
+            setAllUsers(data);
+          }
+        })
+        .catch(() => {});
+    };
+
+    sendPresence();
+    fetchUsers();
+
+    // Poll presence and users every 30 seconds for live active status sync (only when tab is visible)
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        sendPresence();
+        fetchUsers();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [currentUser]);
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+  // Friends & Binge Buddies state
+  const [friendsState, setFriendsState] = useState<FriendsData>(() => 
+    getFriendsData(currentUser?.id || JULIO_USER_ID)
+  );
+  const [inviteConnectedToast, setInviteConnectedToast] = useState<string | null>(null);
+  const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
+
+  // Sync friends state when currentUser changes (syncing local + server)
+  useEffect(() => {
+    if (currentUser) {
+      setFriendsState(getFriendsData(currentUser.id));
+      fetchFriendsDataAsync(currentUser.id).then(serverData => {
+        setFriendsState(serverData);
+      });
+    }
+  }, [currentUser]);
+
+  // Compute pending incoming requests list with full details
+  const pendingIncomingRequests = useMemo(() => {
+    if (!friendsState || !Array.isArray(friendsState.pendingReceived)) return [];
+    return friendsState.pendingReceived.map(item => {
+      if (typeof item === 'string') {
+        const foundUser = allUsers.find(u => u.id === item);
+        return {
+          fromUserId: item,
+          fromUserName: foundUser?.name || 'A CouchTaterz Member',
+          fromUserAvatar: foundUser?.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${item}`,
+          message: undefined
+        };
+      } else {
+        const foundUser = allUsers.find(u => u.id === item.fromUserId);
+        return {
+          fromUserId: item.fromUserId,
+          fromUserName: item.fromUserName || foundUser?.name || 'A CouchTaterz Member',
+          fromUserAvatar: item.fromUserAvatar || foundUser?.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${item.fromUserId}`,
+          message: item.message,
+          sentAt: item.sentAt
+        };
+      }
+    });
+  }, [friendsState, allUsers]);
+
+  const handleAcceptBuddyRequest = async (fromUserId: string, fromUserName: string) => {
+    if (!currentUser) return;
+    const replyMsg = replyMessages[fromUserId];
+    respondToFriendRequest(currentUser.id, fromUserId, 'accept', replyMsg);
+    const updated = await fetchFriendsDataAsync(currentUser.id);
+    setFriendsState(updated);
+    setInviteConnectedToast(`🎉 You are now Binge Buddies with ${fromUserName}!`);
+    setTimeout(() => setInviteConnectedToast(null), 5000);
+  };
+
+  const handleDeclineBuddyRequest = async (fromUserId: string, fromUserName: string) => {
+    if (!currentUser) return;
+    const replyMsg = replyMessages[fromUserId];
+    respondToFriendRequest(currentUser.id, fromUserId, 'reject', replyMsg);
+    const updated = await fetchFriendsDataAsync(currentUser.id);
+    setFriendsState(updated);
+  };
+
+  // Handle URL invite link parameter (?inviteFrom=userId or ?inviteCode=userId)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const inviteFrom = params.get('inviteFrom') || params.get('inviteCode');
+
+    if (inviteFrom && inviteFrom !== currentUser.id) {
+      autoConnectUsers(currentUser.id, inviteFrom);
+      const updated = getFriendsData(currentUser.id);
+      setFriendsState(updated);
+
+      // Clean invite URL parameters without removing the board parameter
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('inviteFrom');
+        url.searchParams.delete('inviteCode');
+        url.searchParams.delete('inviterName');
+        window.history.replaceState({}, document.title, url.toString());
+      } catch (e) {}
+
+      const inviterName = params.get('inviterName') || allUsers.find(u => u.id === inviteFrom)?.name || 'a CouchTaterz friend';
+      setInviteConnectedToast(`🎉 Connected with ${inviterName}! You are now Binge Buddies on CouchTaterz.`);
+      setTimeout(() => setInviteConnectedToast(null), 5000);
+    }
+  }, [currentUser, allUsers]);
+
   // Modals / Panels
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [addModalInitialTab, setAddModalInitialTab] = useState<'search' | 'buddies'>('search');
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isBuddyMenuOpen, setIsBuddyMenuOpen] = useState(false);
+  const buddyMenuRef = useRef<HTMLDivElement>(null);
   const [isChatOpen, setIsChatOpen] = useState(false); // Mobile chat panel toggle
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false); // Desktop sidebar toggle
   const chatAgentRef = useRef<HTMLDivElement>(null);
@@ -164,6 +328,20 @@ export default function App() {
   const [onboardingTargetShowId, setOnboardingTargetShowId] = useState<string | null>(null);
   const [isNewlyRegisteredUser, setIsNewlyRegisteredUser] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Lock body scroll whenever any modal or panel overlay is active to eliminate background thrashing/flicker
+  const isAnyModalOpen = isAddOpen || isShareOpen || isManageActiveOpen || isCalendarOpen || isStatsOpen || isPreferencesOpen || showQueueOnboarding;
+
+  useEffect(() => {
+    if (isAnyModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isAnyModalOpen]);
 
   useEffect(() => {
     // Clean up legacy new user keys from localStorage to prevent issues on existing accounts
@@ -183,8 +361,17 @@ export default function App() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 30);
     };
+    const handleClickOutside = (e: MouseEvent) => {
+      if (buddyMenuRef.current && !buddyMenuRef.current.contains(e.target as Node)) {
+        setIsBuddyMenuOpen(false);
+      }
+    };
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
   }, []);
 
   // Filters & Search State
@@ -198,6 +385,66 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'airingNext' | 'recent' | 'rtScore' | 'userScore' | 'title' | 'category'>('airingNext');
   const [showStarterAlert, setShowStarterAlert] = useState(false);
   const lastBoardIdRef = useRef<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Global keyboard shortcut ('/' or 'Cmd/Ctrl+K') to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        (e.key === '/' || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) &&
+        !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement)?.tagName)
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Back to top scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Scroll overflow detection for Streaming Services Coverage ribbon
+  const serviceRibbonRef = useRef<HTMLDivElement>(null);
+  const [canScrollServiceLeft, setCanScrollServiceLeft] = useState(false);
+  const [canScrollServiceRight, setCanScrollServiceRight] = useState(false);
+
+  const checkServiceScroll = useCallback(() => {
+    const el = serviceRibbonRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    setCanScrollServiceLeft(scrollLeft > 8);
+    setCanScrollServiceRight(scrollLeft + clientWidth < scrollWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    checkServiceScroll();
+    const timer = setTimeout(checkServiceScroll, 100);
+    const el = serviceRibbonRef.current;
+    if (el) {
+      const observer = new ResizeObserver(() => checkServiceScroll());
+      observer.observe(el);
+      window.addEventListener('resize', checkServiceScroll);
+      return () => {
+        clearTimeout(timer);
+        observer.disconnect();
+        window.removeEventListener('resize', checkServiceScroll);
+      };
+    }
+    return () => clearTimeout(timer);
+  }, [checkServiceScroll, board?.shows]);
 
   const [showWorkflowGuide, setShowWorkflowGuide] = useState<boolean>(true);
 
@@ -311,39 +558,69 @@ export default function App() {
     }
   }, [board?.id]);
 
-  // Sync all family boards from the backend when family search is toggled
+  // Sync all family boards from the backend whenever logged in, searching family, or opening add modal
   useEffect(() => {
-    if (searchFamily) {
+    let isMounted = true;
+    let retryTimer: NodeJS.Timeout;
+
+    const loadFamilyBoards = (attempt = 1) => {
+      if (!currentUser) return;
       setIsLoadingFamilyBoards(true);
+
       fetch('/api/boards?all=true')
         .then(res => {
           if (res.ok) return res.json();
-          throw new Error();
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         })
         .then((data: Record<string, Board>) => {
-          setFamilyBoards(data);
-          setIsLoadingFamilyBoards(false);
+          if (isMounted && data && typeof data === 'object') {
+            setFamilyBoards(data);
+            setIsLoadingFamilyBoards(false);
+            if (boardId && data[boardId]) {
+              setBoard(prev => {
+                if (!prev || prev.id === boardId) return data[boardId];
+                return prev;
+              });
+            }
+          }
         })
         .catch(err => {
-          console.error("Failed to load family boards:", err);
-          setIsLoadingFamilyBoards(false);
+          if (!isMounted) return;
+          if (attempt < 3) {
+            retryTimer = setTimeout(() => {
+              if (isMounted) loadFamilyBoards(attempt + 1);
+            }, 1500);
+          } else {
+            console.error("Failed to load family boards after retries:", err?.message || err);
+            setIsLoadingFamilyBoards(false);
+          }
         });
+    };
+
+    if (currentUser) {
+      loadFamilyBoards(1);
     }
-  }, [searchFamily]);
+
+    return () => {
+      isMounted = false;
+      if (retryTimer) clearTimeout(retryTimer);
+    };
+  }, [currentUser, searchFamily, isAddOpen]);
 
   // Load board code from URL query parameter
   useEffect(() => {
+    if (!currentUser) return;
     const params = new URLSearchParams(window.location.search);
     const queryBoard = params.get('board');
     if (queryBoard) {
       const cleanCode = queryBoard.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-      if (cleanCode) {
+      if (cleanCode && cleanCode !== boardId) {
         setBoardId(cleanCode);
       }
-    } else if (currentUser) {
+    } else if (!boardId) {
       setBoardId(currentUser.id);
     }
-  }, [currentUser]);
+  }, [currentUser, boardId]);
 
   // Default to 'View All' if visiting a friend's board, default to 'active' on own board
   useEffect(() => {
@@ -354,8 +631,7 @@ export default function App() {
         } else {
           const isNewUser = isNewlyRegisteredUser;
           const hasSeenOnboarding = localStorage.getItem(`seen_queue_onboarding_${currentUser.id}`) === 'true';
-          const hasStarterPack = localStorage.getItem(`coughtater_starter_pack_${currentUser.id}`) !== 'false';
-          if (showStarterAlert || (isNewUser && !hasSeenOnboarding && hasStarterPack)) {
+          if (showStarterAlert || (isNewUser && !hasSeenOnboarding)) {
             setActiveTab('queue');
           } else {
             setActiveTab('active');
@@ -377,49 +653,79 @@ export default function App() {
     }
   }, [activeTab]);
 
-  // Sync / Fetch board data
+  // Sync / Fetch active board data safely without overwriting friend boards
   useEffect(() => {
-    if (!currentUser) return; // Wait until logged in
+    if (!currentUser || !boardId) return;
+
+    // Check memory (familyBoards) or disk cache first for instant synchronous board update
+    if (familyBoards[boardId] && (!board || board.id !== boardId)) {
+      setBoard(familyBoards[boardId]);
+    } else {
+      const localKey = `couchtater_board_${boardId}`;
+      const localSaved = localStorage.getItem(localKey);
+      if (localSaved && (!board || board.id !== boardId)) {
+        try {
+          const parsed = JSON.parse(localSaved);
+          if (parsed && parsed.shows) {
+            setBoard(parsed);
+          }
+        } catch (e) {}
+      }
+    }
+
+    let isSubscribed = true;
+
     const fetchBoard = async () => {
       try {
         const localKey = `couchtater_board_${boardId}`;
         const localSaved = localStorage.getItem(localKey);
-        if (localSaved) {
-          try {
-            const parsed = JSON.parse(localSaved);
-            if (parsed && parsed.shows) {
-              setBoard(parsed);
-            }
-          } catch (e) {}
-        }
 
-        const res = await fetch(`/api/boards?id=${boardId}`);
+        const res = await fetch(`/api/boards?id=${encodeURIComponent(boardId)}`);
         const contentType = res.headers.get('content-type');
         if (res.ok && contentType && contentType.includes('application/json')) {
           const data = await res.json();
-          if (data && data.shows) {
-            data.shows = data.shows.map((s: any) => {
-              if (s.status === 'Dropped') {
-                return { ...s, status: 'Backlog' as ShowStatus };
-              }
-              return s;
-            });
-          }
-          
+          if (!isSubscribed) return;
+
           let finalBoard = data;
-          if (localSaved) {
+          // Only sync local cache back to server if it's the user's OWN board
+          if (localSaved && boardId === currentUser.id) {
             try {
               const parsedLocal = JSON.parse(localSaved);
-              if (parsedLocal && parsedLocal.updatedAt && data.updatedAt) {
-                const localTime = new Date(parsedLocal.updatedAt).getTime();
-                const serverTime = new Date(data.updatedAt).getTime();
-                if (localTime > serverTime) {
-                  // Local modifications are newer! Sync them back to server
-                  finalBoard = parsedLocal;
+              if (parsedLocal && Array.isArray(parsedLocal.shows) && Array.isArray(data.shows)) {
+                const localTime = new Date(parsedLocal.updatedAt || 0).getTime();
+                const serverTime = new Date(data.updatedAt || 0).getTime();
+
+                // If local cache has more shows or a newer timestamp, merge and push to server
+                if (parsedLocal.shows.length > data.shows.length || localTime > serverTime) {
+                  const showMap = new Map<string, any>();
+                  data.shows.forEach((s: any) => {
+                    if (s && s.title) showMap.set(s.title.toLowerCase().trim(), s);
+                  });
+                  parsedLocal.shows.forEach((s: any) => {
+                    if (s && s.title) {
+                      const k = s.title.toLowerCase().trim();
+                      if (!showMap.has(k)) {
+                        showMap.set(k, s);
+                      } else {
+                        const existing = showMap.get(k);
+                        const exProg = ((existing.latestWatched?.season || 0) * 1000) + (existing.latestWatched?.episode || 0);
+                        const locProg = ((s.latestWatched?.season || 0) * 1000) + (s.latestWatched?.episode || 0);
+                        showMap.set(k, locProg >= exProg ? { ...existing, ...s } : { ...s, ...existing });
+                      }
+                    }
+                  });
+
+                  finalBoard = {
+                    ...data,
+                    ...parsedLocal,
+                    shows: Array.from(showMap.values()),
+                    updatedAt: new Date().toISOString()
+                  };
+
                   await fetch('/api/boards', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(parsedLocal),
+                    body: JSON.stringify(finalBoard),
                   });
                 }
               }
@@ -428,21 +734,26 @@ export default function App() {
           
           setBoard(finalBoard);
           localStorage.setItem(localKey, JSON.stringify(finalBoard));
-        } else {
-          console.log("Skipping parse: response is not valid JSON or request failed", res.status);
+          setFamilyBoards(prev => ({ ...prev, [boardId]: finalBoard }));
         }
       } catch (err) {
         console.warn("Transient: Failed to load board data from server:", err);
       }
     };
+
     fetchBoard();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [boardId, currentUser]);
 
-  // Poll for board/notifications updates every 10 seconds
+  // Poll for board/notifications updates every 15 seconds (only when active tab)
   useEffect(() => {
     if (!currentUser || !boardId) return;
     
     const interval = setInterval(async () => {
+      if (document.hidden) return;
       try {
         const res = await fetch(`/api/boards?id=${boardId}`);
         const contentType = res.headers.get('content-type');
@@ -450,11 +761,22 @@ export default function App() {
           const data = await res.json();
           setBoard(prevBoard => {
             if (!prevBoard) return data;
+
+            const serverTime = new Date(data.updatedAt || 0).getTime();
+            const localTime = new Date(prevBoard.updatedAt || 0).getTime();
             const hasNotifChanges = JSON.stringify(prevBoard.notifications || []) !== JSON.stringify(data.notifications || []);
-            if (data.updatedAt !== prevBoard.updatedAt || hasNotifChanges) {
+
+            // Strictly accept server state only if it is NEWER than local optimistic state
+            if (serverTime > localTime) {
               const localKey = `couchtater_board_${boardId}`;
               localStorage.setItem(localKey, JSON.stringify(data));
               return data;
+            } else if (hasNotifChanges) {
+              // Update notifications without overwriting local show state/progress
+              const updated = { ...prevBoard, notifications: data.notifications || [] };
+              const localKey = `couchtater_board_${boardId}`;
+              localStorage.setItem(localKey, JSON.stringify(updated));
+              return updated;
             }
             return prevBoard;
           });
@@ -462,7 +784,7 @@ export default function App() {
       } catch (err) {
         console.warn("Transient: Failed to poll board updates:", err);
       }
-    }, 10000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [boardId, currentUser]);
@@ -471,11 +793,12 @@ export default function App() {
   const saveBoardToServer = async (updatedShows: TvShow[], customName?: string) => {
     if (!board) return;
     try {
+      const nowIso = new Date().toISOString();
       const updatedBoard: Board = {
         ...board,
         name: customName || board.name,
         shows: updatedShows,
-        updatedAt: new Date().toISOString()
+        updatedAt: nowIso
       };
       
       // Optimistic update
@@ -484,11 +807,27 @@ export default function App() {
       // Instantly cache locally so progress is never lost
       localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(updatedBoard));
 
-      await fetch('/api/boards', {
+      const res = await fetch('/api/boards', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedBoard),
       });
+
+      if (res.ok) {
+        const savedData = await res.json();
+        if (savedData && savedData.updatedAt) {
+          setBoard(prevBoard => {
+            if (!prevBoard) return savedData;
+            const serverTime = new Date(savedData.updatedAt).getTime();
+            const localTime = new Date(prevBoard.updatedAt).getTime();
+            if (serverTime >= localTime) {
+              localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(savedData));
+              return savedData;
+            }
+            return prevBoard;
+          });
+        }
+      }
     } catch (err) {
       console.error("Failed to save board updates to server:", err);
     }
@@ -511,17 +850,33 @@ export default function App() {
   };
 
   const handleUpdateProfileAndPreferences = (updatedUser: User, updatedPrefs: UserPreferences) => {
+    setCurrentUser(updatedUser);
+    localStorage.setItem('coughtater_user', JSON.stringify(updatedUser));
+    setCurrentUserPrefs(updatedPrefs);
+
     if (!board) return;
+
+    // Sync shows isFavorite flag with updatedPrefs.favoriteShows
+    const updatedFavList = (updatedPrefs.favoriteShows || [])
+      .filter(s => typeof s === 'string')
+      .map(s => s.toLowerCase().trim());
+    const updatedShows = (board.shows || []).map(show => {
+      if (!show || typeof show.title !== 'string') return show;
+      const isFav = updatedFavList.includes(show.title.toLowerCase().trim());
+      if (show.isFavorite !== isFav) {
+        return { ...show, isFavorite: isFav };
+      }
+      return show;
+    });
+
     const updatedBoard: Board = {
       ...board,
+      shows: updatedShows,
       owner: updatedUser,
       preferences: updatedPrefs,
       updatedAt: new Date().toISOString()
     };
-    setCurrentUser(updatedUser);
-    localStorage.setItem('coughtater_user', JSON.stringify(updatedUser));
     setBoard(updatedBoard);
-    setCurrentUserPrefs(updatedPrefs);
 
     fetch('/api/boards', {
       method: 'POST',
@@ -545,17 +900,11 @@ export default function App() {
   const handleAddShow = (newShow: TvShow) => {
     if (!board) return;
 
-    // Progress Step 5 to Step 6 when a show is added
-    if (onboardingStep === 5) {
-      setOnboardingStep(6);
+    // Progress Step 3 to Step 4 when a show is added
+    if (onboardingStep === 3) {
+      setOnboardingStep(4);
       setActiveTab('active');
       setSearchFamily(false);
-      setTimeout(() => {
-        const element = searchBarRef.current;
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-      }, 300);
     }
 
     const exists = board.shows.some(s => s.title.toLowerCase().trim() === newShow.title.toLowerCase().trim());
@@ -596,16 +945,19 @@ export default function App() {
     if (onboardingStep === 1 && updatedShow.status === 'Watching' && prevShow && prevShow.status === 'Backlog') {
       setOnboardingTargetShowId(updatedShow.id);
       setOnboardingStep(2);
+      setActiveTab('active');
     }
 
-    // Onboarding Step 3: Increment episode progress on the targeted show
-    if (onboardingStep === 3 && updatedShow.id === onboardingTargetShowId && prevShow) {
+    // Onboarding Step 2: Increment episode progress on the targeted show
+    if (onboardingStep === 2 && updatedShow.id === onboardingTargetShowId && prevShow) {
       const prevEp = prevShow.latestWatched?.episode || 0;
       const newEp = updatedShow.latestWatched?.episode || 0;
       const prevSeas = prevShow.latestWatched?.season || 0;
       const newSeas = updatedShow.latestWatched?.season || 0;
       if (newEp > prevEp || newSeas > prevSeas) {
-        setOnboardingStep(4);
+        setTimeout(() => {
+          setOnboardingStep(3);
+        }, 1400);
       }
     }
     
@@ -636,7 +988,54 @@ export default function App() {
 
   // Change board / join family board
   const handleJoinBoard = (newCode: string) => {
+    setIsBuddyMenuOpen(false);
+
+    // Synchronously set board state immediately from memory or disk cache for instant feedback
+    let cachedBoard: Board | null = familyBoards[newCode] || null;
+    if (!cachedBoard) {
+      const localKey = `couchtater_board_${newCode}`;
+      const localSaved = localStorage.getItem(localKey);
+      if (localSaved) {
+        try {
+          const parsed = JSON.parse(localSaved);
+          if (parsed && parsed.shows) {
+            cachedBoard = parsed;
+          }
+        } catch (e) {}
+      }
+    }
+
+    if (cachedBoard) {
+      setBoard(cachedBoard);
+    } else {
+      // Create instant target board object so UI turns into Friend View immediately without lagging on previous board
+      const targetUser = allUsers.find(u => u.id === newCode || (u as any).id === newCode);
+      setBoard({
+        id: newCode,
+        name: targetUser?.name ? `${targetUser.name}'s Collection` : 'Watch Buddy Collection',
+        shows: [],
+        owner: targetUser || {
+          id: newCode,
+          name: targetUser?.name || 'Buddy',
+          email: '',
+          avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${newCode}`,
+          createdAt: new Date().toISOString()
+        },
+        preferences: { genres: [], actors: [], directors: [] },
+        updatedAt: new Date().toISOString()
+      });
+    }
+
+    // Set tab appropriately
+    if (currentUser && newCode !== currentUser.id) {
+      setActiveTab('all');
+    } else {
+      setActiveTab('active');
+    }
+
+    setSearchFamily(false);
     setBoardId(newCode);
+
     const params = new URLSearchParams(window.location.search);
     params.set('board', newCode);
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
@@ -654,7 +1053,8 @@ export default function App() {
       localStorage.setItem('coughtater_user', JSON.stringify(loggedBoard.owner));
       if (options?.isNewAccount) {
         setIsNewlyRegisteredUser(true);
-        localStorage.setItem(`coughtater_starter_pack_${loggedBoard.owner.id}`, options?.showStarterPackAlert ? 'true' : 'false');
+        localStorage.setItem(`coughtater_starter_pack_${loggedBoard.owner.id}`, 'true');
+        localStorage.removeItem(`seen_queue_onboarding_${loggedBoard.owner.id}`);
       } else {
         setIsNewlyRegisteredUser(false);
         localStorage.removeItem(`coughtater_is_new_user_${loggedBoard.owner.id}`);
@@ -667,11 +1067,9 @@ export default function App() {
     params.set('board', loggedBoard.id);
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
 
-    if (options?.showStarterPackAlert) {
+    if (options?.showStarterPackAlert || options?.isNewAccount) {
       setActiveTab('queue');
-      setSortBy('rtScore');
-    } else if (options?.isNewAccount) {
-      setActiveTab('queue');
+      if (options?.showStarterPackAlert) setSortBy('rtScore');
     } else {
       setActiveTab('active');
     }
@@ -687,16 +1085,35 @@ export default function App() {
     }
   }, [showStarterAlert]);
 
-  // Trigger interactive onboarding instead of slide modal when they visit queue for the first time
+  // Trigger interactive onboarding when new user visits for the first time
   useEffect(() => {
-    if (currentUser && activeTab === 'queue' && onboardingStep === null) {
+    if (currentUser && onboardingStep === null) {
       const isNewUser = isNewlyRegisteredUser;
       const hasSeen = localStorage.getItem(`seen_queue_onboarding_${currentUser.id}`) === 'true';
       if (isNewUser && !hasSeen) {
+        setActiveTab('queue');
         setOnboardingStep(1);
       }
     }
-  }, [currentUser, activeTab, isNewlyRegisteredUser, onboardingStep]);
+  }, [currentUser, isNewlyRegisteredUser, onboardingStep]);
+
+  // Enforce What's Next (queue) tab during Onboarding Step 1 & ensure Backlog show exists
+  useEffect(() => {
+    if (currentUser && board && onboardingStep === 1) {
+      if (activeTab !== 'queue') {
+        setActiveTab('queue');
+      }
+      const backlogShows = board.shows.filter(s => s.status === 'Backlog');
+      if (backlogShows.length === 0 && board.shows.length > 0) {
+        const targetShow = board.shows.find(s => s.title.toLowerCase().includes('severance')) || board.shows[board.shows.length - 1];
+        if (targetShow) {
+          const updatedShows = board.shows.map(s => s.id === targetShow.id ? { ...s, status: 'Backlog' as const } : s);
+          setBoard(prev => prev ? { ...prev, shows: updatedShows } : prev);
+          saveBoardToServer(updatedShows);
+        }
+      }
+    }
+  }, [currentUser, board, onboardingStep, activeTab]);
 
   const handleSkipOnboarding = () => {
     if (currentUser) {
@@ -732,40 +1149,7 @@ export default function App() {
     }
   };
 
-  // Auto-progress Step 2 -> Step 3 when Watching tab is activated
-  useEffect(() => {
-    if (onboardingStep === 2 && activeTab === 'active') {
-      setOnboardingStep(3);
-    }
-  }, [activeTab, onboardingStep]);
 
-  // Auto-progress Step 4 -> Step 5 when Add Show modal is opened
-  useEffect(() => {
-    if (onboardingStep === 4 && isAddOpen) {
-      setOnboardingStep(5);
-    }
-  }, [isAddOpen, onboardingStep]);
-
-  // Auto-progress Step 8 -> Step 9 when returning to My Board from Buddy Picks
-  useEffect(() => {
-    if (onboardingStep === 8 && !searchFamily) {
-      setActiveTab('queue'); // Return to the queue tab to celebrate
-      if (autoDeleteOnboardingShow) {
-        // Automatically delete the show and complete onboarding immediately
-        handleCompleteInteractiveOnboarding(false);
-      } else {
-        const trigger = typeof confetti === 'function' ? confetti : (confetti as any).default;
-        if (trigger) {
-          trigger({
-            particleCount: 150,
-            spread: 80,
-            origin: { y: 0.6 }
-          });
-        }
-        setOnboardingStep(9);
-      }
-    }
-  }, [searchFamily, onboardingStep, autoDeleteOnboardingShow]);
 
   // Onboarding Step Scrolling effects
   useEffect(() => {
@@ -775,7 +1159,7 @@ export default function App() {
       selector: string,
       retries = 20,
       delay = 100,
-      options?: { mobileAlign?: 'top' | 'bottom' | 'center'; duration?: number; twoStage?: boolean }
+      options?: { mobileAlign?: 'top' | 'bottom' | 'center'; duration?: number; twoStage?: boolean; alignTop?: boolean; offset?: number }
     ) => {
       let count = 0;
       let lastTop = -1;
@@ -858,7 +1242,10 @@ export default function App() {
             // Standard single-stage scroll
             let targetScrollY = 0;
 
-            if (isMobile) {
+            if (options?.alignTop) {
+              const offset = options.offset !== undefined ? options.offset : 12;
+              targetScrollY = absoluteElementTop - offset;
+            } else if (isMobile) {
               if (options?.mobileAlign === 'top') {
                 targetScrollY = absoluteElementTop - 20;
               } else if (options?.mobileAlign === 'center') {
@@ -915,36 +1302,26 @@ export default function App() {
     };
 
     switch (onboardingStep) {
-      case 1:
-        // Scroll to the first show card, showing the top photo first, then smoothly continuing down to the status buttons
-        safeScrollTo('[id^="show-card-"]', 15, 150, { twoStage: true, duration: 1500 });
-        break;
-      case 2:
-        // Scroll to category tabs slowly so user can see where it went
-        safeScrollTo('#category-tabs-container', 15, 150, { duration: 1500 });
-        break;
-      case 3:
-        // Scroll to the target show card, showing the top first, then smoothly continuing down to the logging controls
-        if (onboardingTargetShowId) {
-          safeScrollTo(`#show-card-${onboardingTargetShowId}`, 15, 150, { twoStage: true, duration: 1500 });
-        }
-        break;
-      case 4:
-        // Scroll to desktop or mobile Add Show button so the user can easily find and tap it
-        safeScrollTo('#add-show-button-desktop, #add-show-button-mobile', 15, 150, { mobileAlign: 'top', duration: 1500 });
-        break;
-      case 5: {
-        // The Add Show modal is now open; its internal search field will auto-focus and scroll itself into view
+      case 1: {
+        // Scroll target show card flush underneath top category nav
+        const cardSel = onboardingTargetShowId ? `#show-card-${onboardingTargetShowId}` : '[id^="show-card-"]';
+        safeScrollTo(cardSel, 15, 150, { alignTop: true, offset: 64, duration: 600 });
         break;
       }
-      case 6:
-      case 8:
-        // Scroll to scope tabs container
-        safeScrollTo('#scope-tabs-container', 15, 150, { duration: 1500 });
+      case 2: {
+        // Scroll target show card higher up on mobile so the + button in the stepper toolbar is well above the purple bottom modal
+        const cardSel = onboardingTargetShowId ? `#show-card-${onboardingTargetShowId}` : '[id^="show-card-"]';
+        const isMobile = window.innerWidth < 768 || window.innerHeight < 820;
+        const offset = isMobile ? -170 : 10;
+        safeScrollTo(cardSel, 15, 150, { alignTop: true, offset, duration: 600 });
         break;
-      case 7: {
-        // Scroll to the first buddy card, showing the top photo first, then smoothly continuing down to the "Add to Up Next" button
-        safeScrollTo('[id^="show-card-"]', 15, 150, { twoStage: true, duration: 1500 });
+      }
+      case 3: {
+        // Always scroll to top on step 3 without scrolling down
+        const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+        scrollToTop();
+        setTimeout(scrollToTop, 100);
+        setTimeout(scrollToTop, 350);
         break;
       }
       default:
@@ -1004,10 +1381,17 @@ export default function App() {
   };
 
   // Handle delete profile and start over
-  const handleDeleteProfileAndStartOver = async () => {
+  const handleDeleteProfileAndStartOver = async (password?: string) => {
     if (!currentUser) return;
+    const isJulio = currentUser.id === 'default' || currentUser.id === 'user-julio' || currentUser.name?.trim().toLowerCase() === 'julio' || currentUser.email?.toLowerCase() === 'juliozaldivar@gmail.com';
+
+    if (isJulio && password !== '3713') {
+      alert("Incorrect password. Julio's profile is protected from deletion.");
+      return;
+    }
+
     try {
-      await fetch(`/api/boards?id=${currentUser.id}`, {
+      await fetch(`/api/boards?id=${currentUser.id}${password ? `&password=${encodeURIComponent(password)}` : ''}`, {
         method: 'DELETE'
       });
       localStorage.removeItem(`couchtater_board_${currentUser.id}`);
@@ -1055,9 +1439,9 @@ export default function App() {
 
   // Accept a shared show recommendation
   const handleAcceptRecommendation = async (notif: AppNotification) => {
-    if (!board) return;
+    if (!board || !notif.show) return;
     
-    const exists = board.shows.some(s => s.title.toLowerCase().trim() === notif.show.title.toLowerCase().trim());
+    const exists = board.shows.some(s => s.title.toLowerCase().trim() === notif.show!.title.toLowerCase().trim());
     if (exists) {
       alert(`"${notif.show.title}" is already in your collection!`);
       handleDismissNotification(notif.id);
@@ -1098,7 +1482,7 @@ export default function App() {
           ...friendShow,
           id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
           status: 'Backlog',
-          latestWatched: { season: 1, episode: 1, title: 'Episode 1' },
+          latestWatched: { season: 1, episode: 0, title: 'Not Started' },
           userScore: null,
           userNotes: '',
           createdAt: new Date().toISOString()
@@ -1119,8 +1503,9 @@ export default function App() {
 
         if (saveRes.ok) {
           setCurrentUserShows(updatedShows);
-          if (onboardingStep === 7) {
-            setOnboardingStep(8);
+          if (onboardingStep === 3) {
+            setOnboardingStep(4);
+            setSearchFamily(false);
           }
         }
       }
@@ -1130,6 +1515,18 @@ export default function App() {
     }
   };
 
+  // Compute list of connected Watch Buddies for current user
+  const connectedBuddies = useMemo(() => {
+    if (!currentUser) return [];
+    const isCurrentUserJulio = isUserJulio(currentUser);
+
+    return allUsers.filter(u => {
+      if (isUserSelf(u, currentUser)) return false;
+      if (isCurrentUserJulio && isUserJulio(u)) return false;
+      return (!isCurrentUserJulio && isUserJulio(u)) || friendsState.friends.includes(u.id);
+    });
+  }, [allUsers, currentUser, friendsState]);
+
   // Compute list of shows to filter based on search scope
   const showsToSearch = useMemo(() => {
     if (!searchFamily || !board) {
@@ -1137,12 +1534,28 @@ export default function App() {
       return (board?.shows || []).map(s => ({ ...s, ownerName: myName, ownerNames: [myName] }));
     }
 
+    const isCurrentUserJulio = isUserJulio(currentUser);
+
     const allShows: (TvShow & { ownerName: string })[] = [];
     const seenShowBoardKeys = new Set<string>();
 
     Object.entries(familyBoards).forEach(([bId, b]) => {
       if (b && Array.isArray(b.shows)) {
-        const ownerName = b.owner?.name || allUsers.find(u => u.id === b.id)?.name || (b.id === 'default' ? 'Julio' : b.name) || `Board ${b.id}`;
+        // Exclude current user's own board from Buddy Picks
+        const isMyBoard = isUserSelf(b.owner, currentUser) || bId === board.id || bId === currentUser?.id;
+        if (isMyBoard) return;
+
+        // Exclude Julio's board if current user is Julio
+        const isJulioBoard = isUserJulio(b.owner) || bId === JULIO_USER_ID || bId === 'default' || bId === 'user-julio' || (b.name && b.name.toLowerCase().includes('julio'));
+        if (isCurrentUserJulio && isJulioBoard) return;
+
+        const isConnectedBuddy = friendsState.friends.includes(bId) || (b.owner?.id && friendsState.friends.includes(b.owner.id));
+
+        if (!isJulioBoard && !isConnectedBuddy) {
+          return;
+        }
+
+        const ownerName = b.owner?.name || allUsers.find(u => u.id === b.id)?.name || (isJulioBoard ? 'Julio' : b.name) || `Board ${b.id}`;
         b.shows.forEach(s => {
           const key = `${bId}-${s.id}`;
           if (!seenShowBoardKeys.has(key)) {
@@ -1152,18 +1565,6 @@ export default function App() {
         });
       }
     });
-
-    // Fallback: If current board is not yet in familyBoards, ensure we include its shows too
-    if (board && !familyBoards[board.id]) {
-      const myName = board.owner?.name || currentUser?.name || 'My Tracker';
-      board.shows.forEach(s => {
-        const key = `${board.id}-${s.id}`;
-        if (!seenShowBoardKeys.has(key)) {
-          seenShowBoardKeys.add(key);
-          allShows.push({ ...s, ownerName: myName });
-        }
-      });
-    }
 
     // Now group/consolidate shows by title (case-insensitive, trimmed)
     const groupedMap = new Map<string, (TvShow & { ownerName: string })[]>();
@@ -1177,7 +1578,6 @@ export default function App() {
     const consolidatedShows: any[] = [];
 
     groupedMap.forEach((instances) => {
-      // Find the most comprehensive / active instance as base or simply the first one
       const first = instances[0];
       const ownerNames = Array.from(new Set(instances.map(i => i.ownerName)));
       const familyDetails = instances.map(i => ({
@@ -1197,7 +1597,55 @@ export default function App() {
     });
 
     return consolidatedShows;
-  }, [searchFamily, familyBoards, board, currentUser, allUsers]);
+  }, [searchFamily, familyBoards, board, currentUser, allUsers, friendsState]);
+
+  const buddyShowsForModal = useMemo(() => {
+    if (!board) return [];
+    const isCurrentUserJulio = isUserJulio(currentUser);
+
+    const list: { show: TvShow; ownerName: string }[] = [];
+    const seenPerOwner = new Set<string>();
+
+    Object.entries(familyBoards).forEach(([bId, fBoard]) => {
+      if (bId === board.id) return;
+      if (isUserSelf(fBoard.owner, currentUser)) return;
+
+      const isJulioBoard = isUserJulio(fBoard.owner) || bId === JULIO_USER_ID || bId === 'default' || bId === 'user-julio' || (fBoard.name && fBoard.name.toLowerCase().includes('julio'));
+      if (isCurrentUserJulio && isJulioBoard) return;
+
+      const isConnectedBuddy = friendsState.friends.includes(bId) || (fBoard.owner?.id && friendsState.friends.includes(fBoard.owner.id));
+
+      if (!isJulioBoard && !isConnectedBuddy) {
+        return;
+      }
+
+      const owner = fBoard.owner;
+      let ownerName = owner?.name;
+      if (!ownerName) {
+        const matchedUser = allUsers.find(u => u.id === bId || (owner?.id && u.id === owner.id));
+        if (matchedUser) {
+          ownerName = matchedUser.name;
+        } else if (isJulioBoard) {
+          ownerName = 'Julio';
+        } else {
+          ownerName = fBoard.name.replace(/['’]s Collection/i, '').replace(/Family Board \([^)]+\)/i, '').trim() || 'Julio';
+        }
+      }
+
+      if (Array.isArray(fBoard.shows)) {
+        fBoard.shows.forEach(s => {
+          const normTitle = s.title.toLowerCase().trim();
+          const ownerKey = `${ownerName.toLowerCase().trim()}_${normTitle}`;
+          if (!seenPerOwner.has(ownerKey)) {
+            seenPerOwner.add(ownerKey);
+            list.push({ show: s, ownerName });
+          }
+        });
+      }
+    });
+
+    return list;
+  }, [familyBoards, board, allUsers, friendsState, currentUser]);
 
   if (!currentUser) {
     return <LoginPage onLogin={handleLogin} />;
@@ -1212,8 +1660,9 @@ export default function App() {
     );
   }
 
-  // Compute list of unique genres present in the searched shows list
-  const allGenres = ['All', ...Array.from(new Set(showsToSearch.flatMap(s => s.genres)))].sort();
+  // Compute list of unique genres present in the searched shows list with 'All' at the front
+  const genreList = Array.from(new Set(showsToSearch.flatMap(s => s.genres))).sort();
+  const allGenres = ['All', ...genreList];
 
   // Filter & Sort shows
   const filteredShows = showsToSearch
@@ -1231,7 +1680,7 @@ export default function App() {
         } else if (activeTab === 'active') {
           matchesTab = s.status === 'Watching';
         } else if (activeTab === 'library') {
-          matchesTab = s.status === 'Completed' || s.status === 'Dropped' || (s.isFavorite === true && s.status !== 'Watching' && s.status !== 'Backlog');
+          matchesTab = s.status === 'Completed' || s.status === 'Dropped';
         } else if (activeTab === 'queue') {
           matchesTab = s.status === 'Backlog';
         }
@@ -1240,6 +1689,13 @@ export default function App() {
       return matchesSearch && matchesService && matchesGenre && matchesTab;
     })
     .sort((a, b) => {
+      if (onboardingStep === 1 || onboardingStep === 2) {
+        const targetId = onboardingTargetShowId || (board?.shows.find(s => s.status === 'Backlog')?.id);
+        if (targetId) {
+          if (a.id === targetId && b.id !== targetId) return -1;
+          if (b.id === targetId && a.id !== targetId) return 1;
+        }
+      }
       if (sortBy === 'airingNext') {
         const getAirTime = (s: typeof a) => {
           if (s.concluded || !s.nextEpisode || !s.nextEpisode.airDate) {
@@ -1306,7 +1762,7 @@ export default function App() {
     'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+'
   ];
 
-  const isFriendView = !!(board.owner && currentUser && board.owner.id !== currentUser.id);
+  const isFriendView = !!(currentUser && boardId && !isUserSelf({ id: boardId }, currentUser));
 
   // Helper to calculate days until an episode airs
   const getDaysUntilEpisode = (airDateStr: string): number => {
@@ -1392,77 +1848,192 @@ export default function App() {
         {/* Top Header Group */}
         <div className="space-y-3">
           {/* Top Utility Bar (Board switcher, Collab, Member status) */}
-          <div className="flex flex-row items-center justify-between gap-2.5 px-2 text-[11px] text-slate-500 dark:text-slate-400">
-            {/* Board Selector & Collaboration Tools on Left */}
-            <div className="flex items-center gap-2 shrink-0">
-              {/* Dashboard Selector */}
-              {allUsers.length > 1 && (
-                <div className="relative flex items-center">
-                  <select
-                    value={boardId}
-                    onChange={(e) => handleJoinBoard(e.target.value)}
-                    className="bg-blue-600 border border-blue-500 text-white text-[10px] font-bold rounded-xl pl-6 pr-6 py-1 appearance-none cursor-pointer focus:outline-none focus:ring-0 shadow-md hover:bg-blue-500 hover:border-blue-400 transition-colors"
-                  >
-                    <option value={currentUser.id} className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>
-                      {isFriendView ? "Back to My Board" : "My Watch Buddies"}
-                    </option>
-                     {allUsers
-                       .filter(u => u.id !== currentUser.id)
-                       .map((u, idx) => (
-                         <option key={`${u.id}-${idx}`} value={u.id} className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>
-                           {u.name}'s Shows
-                         </option>
-                       ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 left-2 flex items-center text-white/90">
-                    <Users className="w-2.5 h-2.5" />
-                  </div>
-                  <div className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-white/90">
-                    <ChevronDown className="w-2 h-2" />
-                  </div>
-                </div>
-              )}
-
-              {/* Collaboration/Share button (hidden for now) */}
-              {false && (
+          <div className="flex flex-row items-center justify-between gap-2 px-1 sm:px-2 text-[11px] text-slate-500 dark:text-slate-400">
+            {/* Board Selector & Invite Buddy Tool on Left */}
+            <div className="flex items-center gap-1.5 shrink min-w-0">
+              {/* Custom Board / Watch Buddies Selector with Sticky Top Invite Action */}
+              <div className="relative shrink min-w-0" ref={buddyMenuRef}>
                 <button
-                  onClick={() => setIsShareOpen(true)}
-                  className={`p-1.5 rounded-xl border transition hover:scale-[1.02] cursor-pointer ${
-                    boardId === 'default' || boardId === currentUser.id
-                      ? theme === 'dark'
-                        ? 'bg-transparent border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
-                        : 'bg-transparent border-neutral-300 text-neutral-500 hover:text-neutral-700 hover:border-neutral-400'
-                      : theme === 'dark'
-                        ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400 hover:bg-[#1E3029]'
-                        : 'bg-emerald-50 border-emerald-200 text-emerald-600 hover:bg-emerald-100'
-                  }`}
-                  title={boardId === currentUser.id ? 'Personal Watchlist (Click to collaborate)' : `Collaborating on "${boardId}"`}
+                  onClick={() => setIsBuddyMenuOpen(!isBuddyMenuOpen)}
+                  className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-[11px] font-extrabold rounded-xl px-2.5 py-1 sm:py-1.5 flex items-center gap-1.5 shadow-md border border-blue-500 transition-colors cursor-pointer max-w-[130px] xs:max-w-[190px] sm:max-w-none"
+                  title="Switch TV Shows View or Invite Buddies"
                 >
-                  <Share2 className="w-3.5 h-3.5" />
+                  <Users className="w-3 h-3 text-white/90 shrink-0" />
+                  <span className="truncate">
+                    {isFriendView ? (
+                      boardId === JULIO_USER_ID ? "Julio's Shows" : `${allUsers.find(u => u.id === boardId)?.name || 'Buddy'}'s Shows`
+                    ) : (
+                      "Binge Buddies"
+                    )}
+                  </span>
+                  <ChevronDown className={`w-3 h-3 text-white/80 shrink-0 transition-transform ${isBuddyMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
-              )}
+
+                {/* Custom Popover Dropdown Menu with Sticky Invite Header */}
+                <AnimatePresence>
+                  {isBuddyMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                      transition={{ duration: 0.15 }}
+                      className={`absolute left-0 top-full mt-1.5 w-64 xs:w-72 max-w-[calc(100vw-2rem)] border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col text-xs transition-colors ${
+                        theme === 'dark' ? 'bg-[#141720] border-white/10 text-white' : 'bg-neutral-200 border-neutral-300 text-neutral-950'
+                      }`}
+                    >
+                      {/* Sticky Top Header: Invite & Add Buddy Action */}
+                      <div className={`p-2 border-b sticky top-0 z-10 shadow-sm ${
+                        theme === 'dark' ? 'bg-[#1B1F2C] border-white/10' : 'bg-neutral-300 border-neutral-300'
+                      }`}>
+                        <button
+                          onClick={() => {
+                            setIsBuddyMenuOpen(false);
+                            setIsShareOpen(true);
+                          }}
+                          className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-md shadow-purple-950/50 border border-purple-400/30 active:scale-[0.98]"
+                        >
+                          <UserPlus className="w-3.5 h-3.5 text-purple-200" />
+                          <span>+ Add & Manage Buddies</span>
+                        </button>
+                      </div>
+
+                      {/* Scrollable List of Boards / Buddies */}
+                      <div className="max-h-60 overflow-y-auto p-1.5 space-y-1 scrollbar-thin">
+                        <button
+                          onClick={() => {
+                            handleJoinBoard(currentUser.id);
+                            setIsBuddyMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl transition flex items-center justify-between cursor-pointer ${
+                            !isFriendView
+                              ? theme === 'dark'
+                                ? 'bg-blue-600/20 text-blue-300 font-extrabold border border-blue-500/30'
+                                : 'bg-blue-100 text-blue-950 font-extrabold border border-blue-300 shadow-2xs'
+                              : theme === 'dark'
+                                ? 'hover:bg-white/5 text-slate-300'
+                                : 'hover:bg-neutral-300 text-neutral-900 font-bold'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <div className="relative shrink-0">
+                              <img
+                                src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
+                                alt={currentUser.name}
+                                className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-blue-500/30' : 'border-blue-500'}`}
+                              />
+                              <span
+                                className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#141720] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
+                                title="Active now (Logged in)"
+                              />
+                            </div>
+                            <span className="truncate">My TV Shows</span>
+                          </div>
+                          {!isFriendView && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-700'}`} />}
+                        </button>
+
+                        {/* Section Header */}
+                        <div className={`px-2 pt-2.5 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider font-black border-t mt-1 ${
+                          theme === 'dark' ? 'text-slate-400 border-white/5' : 'text-neutral-900 border-neutral-300'
+                        }`}>
+                          <span className="flex items-center gap-1.5">
+                            <Users className={`w-3 h-3 shrink-0 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-700'}`} />
+                            Binge Buddies
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black shrink-0 ${
+                            theme === 'dark' ? 'bg-purple-500/15 text-purple-300 border-purple-500/20' : 'bg-purple-200 text-purple-950 border-purple-300'
+                          }`}>
+                            {connectedBuddies.length}
+                          </span>
+                        </div>
+
+                        {/* List of Buddies */}
+                        {connectedBuddies.map((u, idx) => {
+                          const isSelected = isFriendView && boardId === u.id;
+                          const isJulio = u.id === JULIO_USER_ID || u.id === 'default' || u.id === 'user-julio';
+                          const isOnline = isUserSelf(u, currentUser) || (u as any).isOnline === true;
+                            return (
+                              <button
+                                key={`${u.id}-${idx}`}
+                                onClick={() => {
+                                  handleJoinBoard(u.id);
+                                  setIsBuddyMenuOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 rounded-xl transition flex items-center justify-between cursor-pointer ${
+                                  isSelected
+                                    ? theme === 'dark'
+                                      ? 'bg-purple-600/20 text-purple-300 font-extrabold border border-purple-500/30'
+                                      : 'bg-purple-100 text-purple-950 font-extrabold border border-purple-300 shadow-2xs'
+                                    : theme === 'dark'
+                                      ? 'hover:bg-white/5 text-slate-300 font-medium'
+                                      : 'hover:bg-neutral-300 text-neutral-900 font-bold'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2 truncate">
+                                  <div className="relative shrink-0">
+                                    <img
+                                      src={u.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${u.name}`}
+                                      alt={u.name}
+                                      className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-white/10' : 'border-neutral-400'}`}
+                                    />
+                                    <span
+                                      className={`w-1.5 h-1.5 rounded-full absolute -bottom-0.5 -right-0.5 ${
+                                        isOnline
+                                          ? 'bg-emerald-500 ring-1 ring-[#141720] shadow-[0_0_4px_rgba(16,185,129,0.9)]'
+                                          : 'bg-slate-400 ring-1 ring-white'
+                                      }`}
+                                      title={isOnline ? "Active now" : "Offline"}
+                                    />
+                                  </div>
+                                  <span className="truncate">
+                                    {isJulio ? "Julio's Shows" : `${u.name}'s Shows`}
+                                  </span>
+                                  {isJulio && (
+                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${
+                                      theme === 'dark'
+                                        ? 'bg-purple-500/20 text-purple-300'
+                                        : 'bg-purple-200 text-purple-950 border border-purple-300'
+                                    }`}>
+                                      Host
+                                    </span>
+                                  )}
+                                </div>
+                                {isSelected && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-700'}`} />}
+                              </button>
+                            );
+                          })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             {/* Active Session info on Right */}
             <div className="flex items-center gap-1.5 sm:gap-3 ml-auto shrink-0">
               <button
                 onClick={() => setIsPreferencesOpen(true)}
-                className="flex items-center gap-1 cursor-pointer hover:opacity-85 active:scale-98 transition-all group"
-                title="View & Edit Preferences / Profile"
+                className="flex items-center gap-1.5 cursor-pointer hover:opacity-85 active:scale-98 transition-all group"
+                title="View & Edit Preferences / Profile (Online)"
               >
-                <img
-                  src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
-                  alt={currentUser.name}
-                  className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-blue-500/30 group-hover:border-blue-400 transition-colors"
-                />
-                <span className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors max-w-[70px] sm:max-w-none truncate">{currentUser.name}</span>
+                <div className="relative shrink-0">
+                  <img
+                    src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
+                    alt={currentUser.name}
+                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-blue-500/30 group-hover:border-blue-400 transition-colors object-cover shrink-0"
+                  />
+                  <span
+                    className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#0F1115] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
+                    title="Active now (Logged in)"
+                  />
+                </div>
+                <span className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors max-w-[65px] xs:max-w-[100px] sm:max-w-none truncate">{currentUser.name}</span>
               </button>
 
               <span className="text-slate-300 dark:text-slate-800">|</span>
 
               <button
                 onClick={handleLogout}
-                className="hover:text-rose-500 font-bold transition flex items-center gap-1 cursor-pointer"
+                className="hover:text-rose-500 font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
                 title="Sign Out of CouchTaterz"
               >
                 <LogOut className="w-3 h-3" />
@@ -1473,71 +2044,44 @@ export default function App() {
           </div>
 
           {/* Navigation / Header */}
-          <header className={`flex flex-row items-center justify-between gap-4 p-4 rounded-3xl border transition-all ${
+          <header className={`flex flex-row items-center justify-between gap-4 p-3.5 sm:p-4 rounded-2xl sm:rounded-3xl border transition-all ${
             theme === 'dark' ? 'bg-[#1A1D23] border-white/5' : 'bg-white border-neutral-200/80 shadow-sm'
           }`}>
             {/* Brand Logo & Name */}
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-2xl flex items-center justify-center transition ${
-                theme === 'dark' ? 'bg-[#262A33] text-blue-500' : 'bg-neutral-100 text-neutral-800'
-              }`}>
-                <Tv className="w-6 h-6" />
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-600/25 text-white shrink-0">
+                <Tv className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h1 className="text-base sm:text-lg font-black tracking-tighter uppercase text-blue-500">COUCH<span className={theme === 'dark' ? 'text-white' : 'text-neutral-900'}>TATERZ</span></h1>
-                  <span className="hidden sm:inline px-1.5 py-0.5 text-[8px] font-extrabold bg-[#262A33] text-slate-400 border border-white/5 rounded tracking-widest uppercase">Sync v1.2</span>
-                </div>
-                <p className="text-[10px] sm:text-xs text-slate-500 font-medium">Stop Scrolling. Start Watching.</p>
+              <div className="flex flex-col justify-center">
+                <h1 className="text-base sm:text-lg font-black tracking-tight uppercase leading-none">
+                  <span className="text-blue-500">COUCH</span>
+                  <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>TATERZ</span>
+                </h1>
+                <p className="text-[9.5px] sm:text-[10.5px] font-extrabold tracking-[0.2em] text-slate-400 uppercase mt-1 leading-none whitespace-nowrap">
+                  YOUR BINGE BUDDY
+                </p>
               </div>
             </div>
 
-            {/* Core Tools Panel - Highly focused and clutter-free */}
+            {/* Core Tools Panel */}
             <div className="flex items-center gap-2">
               {/* Toggle Theme */}
               <button
                 onClick={toggleTheme}
-                className={`p-2.5 rounded-2xl border transition hover:scale-105 cursor-pointer ${
+                className={`p-2.5 rounded-xl sm:rounded-2xl border transition hover:scale-105 cursor-pointer ${
                   theme === 'dark' 
                     ? 'bg-[#262A33] border-white/5 text-slate-400 hover:bg-[#1A1D23] hover:text-slate-300' 
                     : 'bg-neutral-100 border-neutral-200 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800'
                 }`}
                 title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </button>
-
-              {/* AI Scout Toggle (Mobile and Desktop integrated) */}
-              <button
-                onClick={() => {
-                  const isCurrentlyOpen = typeof window !== 'undefined' && window.innerWidth < 768 ? isChatOpen : isAiSidebarOpen;
-                  const nextVal = !isCurrentlyOpen;
-                  setIsAiSidebarOpen(nextVal);
-                  setIsChatOpen(nextVal);
-                  if (nextVal) {
-                    setTimeout(() => {
-                      chatAgentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }, 150);
-                  }
-                }}
-                className={`p-2.5 rounded-2xl border transition hover:scale-105 cursor-pointer ${
-                  isAiSidebarOpen || isChatOpen 
-                    ? theme === 'dark'
-                      ? 'bg-emerald-600/20 border-emerald-500/30 text-emerald-400'
-                      : 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                    : theme === 'dark'
-                      ? 'bg-emerald-600/10 border-emerald-500/15 text-emerald-400 hover:bg-emerald-600/20'
-                      : 'bg-neutral-100 border-neutral-200 text-emerald-600 hover:bg-neutral-200'
-                }`}
-                title="Ask Spudz"
-              >
-                <Bot className={`w-4 h-4 ${(isAiSidebarOpen || isChatOpen) ? 'animate-pulse' : ''}`} />
+                {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
               </button>
 
               {/* View Calendar Trigger */}
               <button
                 onClick={() => setIsCalendarOpen(true)}
-                className={`p-2.5 rounded-2xl border transition hover:scale-105 cursor-pointer ${
+                className={`p-2.5 rounded-xl sm:rounded-2xl border transition hover:scale-105 cursor-pointer ${
                   theme === 'dark'
                     ? 'bg-[#262A33] border-white/5 text-blue-400 hover:bg-[#1C2028]'
                     : 'bg-neutral-100 border-neutral-200 text-blue-600 hover:bg-neutral-200'
@@ -1547,45 +2091,55 @@ export default function App() {
                 <CalendarIcon className="w-4 h-4" />
               </button>
 
-              {/* Add Show Trigger - Desktop only inside the header */}
-              {!isFriendView && !searchFamily && (
-                <button
-                  id="add-show-button-desktop"
-                  onClick={() => setIsAddOpen(true)}
-                  className={`hidden sm:flex px-4 py-2.5 rounded-2xl font-bold text-xs items-center justify-center gap-1.5 transition hover:scale-[1.02] cursor-pointer ${
-                    onboardingStep === 4
-                      ? 'ring-4 ring-purple-400 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-purple-500/40 relative z-50 animate-pulse border border-purple-400'
-                      : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-950/20 border border-blue-500/25'
-                  }`}
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Show</span>
-                </button>
+              {/* Add Show Trigger - Desktop */}
+              {!isFriendView && (
+                <div className="hidden sm:flex items-center gap-2">
+                  <button
+                    id="add-show-button-desktop"
+                    onClick={() => {
+                      setAddModalInitialTab('search');
+                      setIsAddOpen(true);
+                    }}
+                    className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition hover:scale-[1.02] cursor-pointer ${
+                      onboardingStep === 3
+                        ? 'ring-4 ring-purple-400 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-purple-500/40 relative z-50 animate-pulse border border-purple-400'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-950/20 border border-blue-500/25'
+                    }`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Show</span>
+                  </button>
+                </div>
               )}
             </div>
           </header>
 
-          {/* Mobile-only Add Show Button (outside the header container) */}
-          {!isFriendView && !searchFamily && (
-            <button
-              id="add-show-button-mobile"
-              onClick={() => setIsAddOpen(true)}
-              className={`flex sm:hidden w-full px-4 py-3 rounded-2xl font-bold text-xs items-center justify-center gap-1.5 transition active:scale-[0.98] cursor-pointer ${
-                onboardingStep === 4
-                  ? 'ring-4 ring-purple-400 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-purple-500/40 relative z-50 animate-pulse border border-purple-400'
-                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-950/20 border border-blue-500/25'
-              }`}
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add Show</span>
-            </button>
+          {/* Mobile-only Action Buttons (Separate Row) */}
+          {!isFriendView && (
+            <div className="flex sm:hidden w-full gap-2 mt-2">
+              <button
+                id="add-show-button-mobile"
+                onClick={() => {
+                  setAddModalInitialTab('search');
+                  setIsAddOpen(true);
+                }}
+                className={`w-full px-4 py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-[0.98] cursor-pointer ${
+                  onboardingStep === 3
+                    ? 'ring-4 ring-purple-400 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-purple-500/40 relative z-50 animate-pulse border border-purple-400'
+                    : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-950/20 border border-blue-500/25'
+                }`}
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add Show</span>
+              </button>
+            </div>
           )}
         </div>
 
         {/* Friend View Banner */}
         {isFriendView && (
           <div className={`sticky top-0 z-40 py-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-colors duration-300 ${
-            theme === 'dark' ? 'bg-[#0F1115]/95 backdrop-blur-md' : 'bg-neutral-50/95 backdrop-blur-md'
+            theme === 'dark' ? 'bg-[#0F1115]' : 'bg-neutral-50'
           }`}>
             <div className={`rounded-3xl border flex flex-col sm:flex-row items-stretch sm:items-center justify-between shadow-lg transition-all duration-300 ${
               isScrolled 
@@ -1593,29 +2147,29 @@ export default function App() {
                 : 'p-4 gap-4 text-xs'
             } ${
               theme === 'dark' 
-                ? 'bg-blue-600/10 border-blue-500/20' 
-                : 'bg-blue-50 border-blue-200/60'
+                ? 'bg-gradient-to-r from-purple-950/90 via-purple-900/75 to-[#14161C]/95 border-purple-500/30 shadow-purple-950/30' 
+                : 'bg-purple-50 border-purple-200/80'
             }`}>
               <div className="flex items-center gap-3 text-left">
                 <div className={`shrink-0 transition-all duration-300 ${
                   isScrolled ? 'p-1.5 rounded-lg' : 'p-2 rounded-xl'
                 } ${
-                  theme === 'dark' ? 'bg-blue-500/20 text-blue-400' : 'bg-blue-100 text-blue-600'
+                  theme === 'dark' ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' : 'bg-purple-100 text-purple-700'
                 }`}>
                   <Users className={isScrolled ? "w-4 h-4" : "w-5 h-5"} />
                 </div>
                 <div>
-                  <p className={`font-bold leading-snug ${theme === 'dark' ? 'text-slate-200' : 'text-blue-900'}`}>
-                    Viewing Watch Buddy's Collection ({board.owner?.name || 'Buddy'})
+                  <p className={`font-bold leading-snug ${theme === 'dark' ? 'text-purple-200' : 'text-purple-950'}`}>
+                    Viewing Binge Buddy's Collection ({board?.owner?.name || allUsers.find(u => u.id === boardId)?.name || 'Buddy'})
                   </p>
-                  <p className={`mt-0.5 transition-all duration-300 ${theme === 'dark' ? 'text-slate-400' : 'text-blue-700/80'} hidden sm:block`}>
+                  <p className={`mt-0.5 transition-all duration-300 ${theme === 'dark' ? 'text-slate-400' : 'text-purple-800/80'} hidden sm:block`}>
                     You can copy any show from this board to your personal Up Next area by clicking "Add to Up Next".
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => handleJoinBoard(currentUser.id)}
-                className={`w-full sm:w-auto bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0 shadow-sm ${
+                className={`w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white font-extrabold rounded-xl flex items-center justify-center gap-1.5 transition cursor-pointer shrink-0 shadow-sm ${
                   isScrolled ? 'px-3 py-1.5 text-[11px]' : 'px-4 py-2'
                 }`}
               >
@@ -1639,7 +2193,11 @@ export default function App() {
             </h3>
             <button
               onClick={() => setIsManageActiveOpen(true)}
-              className="text-[10px] font-bold bg-[#1A1D23] hover:bg-[#262A33] text-slate-400 hover:text-white border border-white/5 rounded px-2.5 py-1 transition flex items-center gap-1 cursor-pointer"
+              className={`text-[10px] font-bold rounded px-2.5 py-1 transition flex items-center gap-1 cursor-pointer border ${
+                theme === 'dark'
+                  ? 'bg-[#1A1D23] hover:bg-[#262A33] text-slate-400 hover:text-white border-white/5'
+                  : 'bg-slate-300 hover:bg-slate-400 text-[#1A1D23] hover:text-black border-slate-400 shadow-2xs'
+              }`}
             >
               <span>
                 {board.shows.filter(s => {
@@ -1683,7 +2241,11 @@ export default function App() {
                   initial={{ opacity: 0, y: -15, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: 'auto' }}
                   exit={{ opacity: 0, y: -15, height: 0 }}
-                  className="relative overflow-hidden p-5 rounded-3xl border border-blue-500/15 bg-[#171B24]/95 backdrop-blur-md shadow-xl transition-all duration-300"
+                  className={`relative overflow-hidden p-5 rounded-3xl border shadow-xl transition-colors duration-200 ${
+                    theme === 'dark'
+                      ? 'border-blue-500/15 bg-[#171B24] text-slate-200'
+                      : 'border-blue-200 bg-white text-neutral-800 shadow-sm'
+                  }`}
                   id="onboarding-workflow-guide-panel"
                 >
                   {/* Accent lights */}
@@ -1710,13 +2272,13 @@ export default function App() {
                           <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded text-[8px] font-black uppercase tracking-wider">Onboarding</span>
                         </h4>
                         <p className="text-[11px] text-slate-400 leading-relaxed mt-1">
-                          Track and route your shows instantly across three streamlined pipelines using the <strong className="text-white">STATUS</strong> controls located on any Show Card:
+                          Track and route your shows instantly across three streamlined pipelines using the <span className="hidden sm:inline"><strong className="text-white">STATUS</strong> </span>controls located on any Show Card:
                         </p>
                         
                         {/* Visual inline representation of the status switch */}
-                        <div className="mt-2.5 flex items-center gap-2 bg-[#0F1115]/40 border border-white/5 rounded-xl px-3 py-1.5 w-fit">
-                          <span className="text-[9px] text-slate-500 font-extrabold uppercase tracking-wider">STATUS:</span>
-                          <div className="inline-flex gap-0.5 bg-[#15171C] p-0.5 rounded-lg border border-white/5 shadow-inner">
+                        <div className="mt-2.5 flex items-center gap-2 bg-[#0F1115]/40 border border-white/5 rounded-xl px-2.5 sm:px-3 py-1.5 w-fit max-w-full">
+                          <span className="hidden sm:inline-block text-[9px] text-slate-500 font-extrabold uppercase tracking-wider">STATUS:</span>
+                          <div className="inline-flex gap-0.5 bg-[#15171C] p-0.5 rounded-lg border border-white/5 shadow-inner shrink-0">
                             <span className="px-2 py-0.5 text-[9px] font-black rounded-md bg-blue-600 text-white shadow-sm">Watching</span>
                             <span className="px-2 py-0.5 text-[9px] font-extrabold rounded-md text-slate-500">Up Next</span>
                             <span className="px-2 py-0.5 text-[9px] font-extrabold rounded-md text-slate-500">Watched</span>
@@ -1769,29 +2331,39 @@ export default function App() {
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-1">
                 <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Streaming Service Coverage</span>
-                <span className="sm:hidden text-[8px] font-black uppercase tracking-widest text-slate-500/80 animate-pulse">Swipe for more →</span>
+                {canScrollServiceRight && (
+                  <span className="sm:hidden text-[8px] font-black uppercase tracking-widest text-slate-500/80 animate-pulse">Swipe for more →</span>
+                )}
               </div>
               
               <div className="relative w-full">
-                {/* Left gradient mask overlay */}
-                <div className={`absolute left-0 top-0 bottom-1.5 w-6 pointer-events-none z-10 bg-gradient-to-r transition-all duration-300 ${
-                  theme === 'dark' ? 'from-[#0F1115] to-transparent' : 'from-neutral-50 to-transparent'
-                }`} />
+                {/* Left gradient mask overlay - visible only when there is content scrolled off to the left */}
+                {canScrollServiceLeft && (
+                  <div className={`absolute left-0 top-0 bottom-1.5 w-6 pointer-events-none z-10 bg-gradient-to-r transition-opacity duration-300 ${
+                    theme === 'dark' ? 'from-[#0F1115] to-transparent' : 'from-neutral-50 to-transparent'
+                  }`} />
+                )}
 
-                {/* Right gradient mask overlay */}
-                <div className={`absolute right-0 top-0 bottom-1.5 w-8 pointer-events-none z-10 bg-gradient-to-l transition-all duration-300 ${
-                  theme === 'dark' ? 'from-[#0F1115] to-transparent' : 'from-neutral-50 to-transparent'
-                }`} />
+                {/* Right gradient mask overlay - visible only when there is content beyond view on the right */}
+                {canScrollServiceRight && (
+                  <div className={`absolute right-0 top-0 bottom-1.5 w-8 pointer-events-none z-10 bg-gradient-to-l transition-opacity duration-300 ${
+                    theme === 'dark' ? 'from-[#0F1115] to-transparent' : 'from-neutral-50 to-transparent'
+                  }`} />
+                )}
 
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 px-1 scrollbar-none snap-x">
+                <div 
+                  ref={serviceRibbonRef}
+                  onScroll={checkServiceScroll}
+                  className="flex items-center gap-1.5 overflow-x-auto pb-1.5 px-1 scrollbar-none snap-x"
+                >
                   <button
                     onClick={() => setSelectedService('All')}
-                    className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wide border shrink-0 snap-start transition-all duration-200 ${
+                    className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wide border shrink-0 snap-start transition-all duration-200 cursor-pointer ${
                       selectedService === 'All'
                         ? 'bg-blue-600 border-blue-500 text-white shadow-sm'
                         : theme === 'dark' 
-                          ? 'bg-[#1A1D23] border-white/5 text-slate-400 hover:text-white hover:bg-[#262A33]' 
-                          : 'bg-white border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+                          ? 'bg-[#1A1D23] border-white/10 text-slate-300 hover:text-white hover:bg-[#262A33]' 
+                          : 'bg-white border-neutral-300 text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 shadow-2xs'
                     }`}
                   >
                     All Services
@@ -1803,17 +2375,23 @@ export default function App() {
                       <button
                         key={service}
                         onClick={() => setSelectedService(service)}
-                        className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wide border shrink-0 snap-start transition-all duration-200 flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wide border shrink-0 snap-start transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                           isActive
                              ? 'bg-blue-600 border-blue-500 text-white shadow-sm'
                             : theme === 'dark'
-                              ? 'bg-[#1A1D23] border-white/5 text-slate-400 hover:text-white hover:bg-[#262A33]'
-                              : 'bg-white border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
+                              ? 'bg-[#1A1D23] border-white/10 text-slate-300 hover:text-white hover:bg-[#262A33]'
+                              : 'bg-white border-neutral-300 text-neutral-700 hover:text-neutral-900 hover:bg-neutral-100 shadow-2xs'
                         }`}
                       >
                         <span>{service}</span>
                         {count > 0 && (
-                          <span className={`text-[8px] font-black rounded px-1 py-0.2 ${isActive ? 'bg-blue-700 text-white' : 'bg-[#0F1115] text-slate-500'}`}>
+                          <span className={`text-[9px] font-black rounded-md px-1.5 py-0.2 transition-colors ${
+                            isActive 
+                              ? 'bg-black/30 text-white border border-white/20' 
+                              : theme === 'dark'
+                                ? 'bg-slate-800 text-slate-100 border border-slate-700'
+                                : 'bg-neutral-200 text-neutral-900 border border-neutral-300'
+                          }`}>
                             {count}
                           </span>
                         )}
@@ -1828,25 +2406,33 @@ export default function App() {
             {/* Elegant Main Workspace Category Tabs */}
             <div 
               id="category-tabs-container"
-              className={`p-1 bg-[#1A1D23]/95 backdrop-blur-md rounded-3xl border shadow-inner transition-all duration-300 flex items-center gap-1 w-full overflow-x-auto sm:overflow-x-visible scrollbar-none snap-x scroll-smooth ${
-              searchFamily ? 'relative' : 'sticky top-3 z-30'
+              className={`p-1 rounded-3xl border transition-colors duration-150 flex items-center gap-1 w-full overflow-x-auto sm:overflow-x-visible scrollbar-none snap-x scroll-smooth ${
+              searchFamily ? 'relative' : (onboardingStep === 1 || onboardingStep === 2 ? 'sticky top-3 z-50' : 'sticky top-3 z-30')
             } ${
-              onboardingStep === 2
-                ? 'border-purple-500 ring-2 ring-purple-500/40 shadow-[0_0_15px_rgba(168,85,247,0.4)] relative z-50 bg-[#1A1D23]'
-                : 'border-white/5'
+              onboardingStep === 1 || onboardingStep === 2
+                ? (activeTab === 'active' 
+                    ? 'border-blue-500 ring-2 ring-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.3)] '
+                    : 'border-amber-500 ring-2 ring-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.3)] ') + (theme === 'dark' ? 'bg-[#1A1D23]' : 'bg-white')
+                : searchFamily || activeTab === 'all'
+                ? theme === 'dark' ? 'bg-[#1A1D23] border-purple-500/30 shadow-[0_4px_20px_-4px_rgba(168,85,247,0.15)]' : 'bg-white border-purple-200 shadow-sm'
+                : activeTab === 'active'
+                ? theme === 'dark' ? 'bg-[#1A1D23] border-blue-500/30 shadow-[0_4px_20px_-4px_rgba(37,99,235,0.15)]' : 'bg-white border-blue-200 shadow-sm'
+                : activeTab === 'queue'
+                ? theme === 'dark' ? 'bg-[#1A1D23] border-amber-500/30 shadow-[0_4px_20px_-4px_rgba(217,119,6,0.15)]' : 'bg-white border-amber-200 shadow-sm'
+                : theme === 'dark' ? 'bg-[#1A1D23] border-emerald-500/30 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.15)]' : 'bg-white border-emerald-200 shadow-sm'
             }`}>
               {(() => {
                 const tabSourceShows = searchFamily ? showsToSearch : board.shows;
                 const mainWorkflowTabs = [
                   { id: 'active', label: 'Watching', icon: <Tv className="w-3.5 h-3.5 shrink-0" />, count: tabSourceShows.filter(s => s.status === 'Watching').length },
                   { id: 'queue', label: 'Up Next', icon: <Clock className="w-3.5 h-3.5 shrink-0" />, count: tabSourceShows.filter(s => s.status === 'Backlog').length },
-                  { id: 'library', label: 'Watched', icon: <Archive className="w-3.5 h-3.5 shrink-0" />, count: tabSourceShows.filter(s => s.status === 'Completed' || s.status === 'Dropped' || (s.isFavorite === true && s.status !== 'Watching' && s.status !== 'Backlog')).length }
+                  { id: 'library', label: 'Watched', icon: <Archive className="w-3.5 h-3.5 shrink-0" />, count: tabSourceShows.filter(s => s.status === 'Completed' || s.status === 'Dropped').length }
                 ] as { id: 'active' | 'queue' | 'library'; label: string; icon: React.ReactNode; count: number }[];
 
                 return (
                   <>
-                    {/* The 3 main workflow tabs (Core Action Pipeline) - Pushed to take up 90% on mobile to keep them extremely prominent and clear */}
-                    <div className="flex-none w-[90%] sm:w-auto sm:flex-1 grid grid-cols-3 gap-1 shrink-0 snap-start">
+                    {/* The 3 main workflow tabs (Core Action Pipeline) - flex-1 min-w-0 to stay perfectly sized within viewport */}
+                    <div className="flex-1 min-w-0 grid grid-cols-3 gap-1 shrink-0">
                       {mainWorkflowTabs.map((tab) => {
                         const isActive = activeTab === tab.id;
                         const isWatchingOnboardingHighlight = onboardingStep === 2 && tab.id === 'active';
@@ -1854,43 +2440,57 @@ export default function App() {
                           <button
                             key={tab.id}
                             onClick={() => {
-                              setActiveTab(tab.id);
-                              if (tab.id === 'active') {
-                                setSortBy('airingNext');
+                              if (activeTab === tab.id) {
+                                const sectionLabel = document.getElementById('backlog-queue-area');
+                                if (sectionLabel) {
+                                  sectionLabel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                } else {
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }
                               } else {
-                                setSortBy('rtScore');
+                                setActiveTab(tab.id);
+                                if (tab.id === 'active') {
+                                  setSortBy('airingNext');
+                                } else {
+                                  setSortBy('rtScore');
+                                }
                               }
                             }}
-                            className={`relative py-2.5 sm:py-3 px-1 rounded-2xl text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1 sm:gap-2 z-10 ${
+                            className={`relative py-2.5 sm:py-3 px-1 rounded-2xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 sm:gap-2 z-10 ${
                               isWatchingOnboardingHighlight 
-                                ? 'ring-2 ring-purple-400 ring-offset-2 ring-offset-[#1A1D23] animate-pulse bg-purple-950/40 text-purple-200' 
+                                ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-[#1A1D23]' 
                                 : ''
+                            } ${
+                              isActive
+                                ? searchFamily
+                                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-950/20'
+                                  : tab.id === 'active' 
+                                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-950/20' 
+                                  : tab.id === 'library'
+                                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950/20'
+                                  : 'bg-amber-600 text-white shadow-lg shadow-amber-950/20'
+                                : theme === 'dark'
+                                  ? 'bg-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                                  : 'bg-transparent text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
                             }`}
                           >
-                            {isActive && (
-                              <motion.div
-                                layoutId="activeWorkspaceTab"
-                                className={`absolute inset-0 rounded-2xl -z-10 shadow-lg ${
-                                  searchFamily
-                                    ? 'bg-purple-600 shadow-purple-950/20'
-                                    : tab.id === 'active' 
-                                    ? 'bg-blue-600 shadow-blue-950/20' 
-                                    : tab.id === 'library'
-                                    ? 'bg-emerald-600 shadow-emerald-950/20'
-                                    : 'bg-amber-600 shadow-amber-950/20'
-                                }`}
-                                transition={{ type: 'spring', stiffness: 350, damping: 30 }}
-                              />
-                            )}
-                            <span className={`flex items-center gap-1 sm:gap-1.5 ${isActive ? 'text-white font-extrabold' : 'text-slate-400 hover:text-slate-200'}`}>
+                            <span className={`flex items-center gap-1 sm:gap-1.5 ${
+                              isActive 
+                                ? 'text-white font-extrabold' 
+                                : theme === 'dark'
+                                  ? 'text-slate-400 hover:text-slate-200'
+                                  : 'text-neutral-600 hover:text-neutral-900'
+                            }`}>
                               <span className="hidden sm:inline-flex">{tab.icon}</span>
                               <span className="hidden sm:inline">{tab.label}</span>
-                              <span className="sm:hidden">{tab.id === 'active' ? 'Watching' : tab.id === 'library' ? 'Watched' : 'Next'}</span>
+                              <span className="sm:hidden">{tab.id === 'active' ? 'Watching' : tab.id === 'library' ? 'Watched' : 'Up Next'}</span>
                             </span>
                             <span className={`px-1.5 py-0.5 text-[9px] rounded-full font-black transition-colors duration-300 ${
                               isActive 
-                                ? (searchFamily ? 'bg-purple-700 text-white' : tab.id === 'active' ? 'bg-blue-700 text-white' : tab.id === 'library' ? 'bg-emerald-700 text-white' : 'bg-amber-700 text-white') 
-                                : (searchFamily ? 'bg-purple-950/30 text-purple-400 border border-purple-500/10' : 'bg-[#0F1115] text-slate-500')
+                                ? 'bg-black/25 text-white border border-white/20 shadow-2xs' 
+                                : searchFamily
+                                  ? (theme === 'dark' ? 'bg-purple-950/60 text-purple-200 border border-purple-500/30' : 'bg-purple-100 text-purple-900 border border-purple-300')
+                                  : (theme === 'dark' ? 'bg-slate-800 text-slate-100 border border-slate-700' : 'bg-neutral-200 text-neutral-900 border border-neutral-300')
                             }`}>
                               {tab.count}
                             </span>
@@ -1900,26 +2500,35 @@ export default function App() {
                     </div>
 
                     {/* Deemphasized separation: elegant vertical divider line */}
-                    <div className="w-px h-5 bg-white/10 shrink-0 self-center mx-1 snap-start" />
+                    <div className="hidden sm:block w-px h-5 bg-white/10 shrink-0 self-center mx-1" />
 
-                    {/* "All" utility tab - styled as a compact, neutral index pill, peeking on mobile */}
+                    {/* "All" utility tab - hidden on tight mobile displays to maximize the main categories */}
                     <button
                       onClick={() => {
-                        setActiveTab('all');
-                        setSortBy('rtScore');
+                        if (activeTab === 'all') {
+                          const sectionLabel = document.getElementById('backlog-queue-area');
+                          if (sectionLabel) {
+                            sectionLabel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                          } else {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                          }
+                        } else {
+                          setActiveTab('all');
+                          setSortBy('rtScore');
+                        }
                       }}
-                      className={`relative py-2 px-3 sm:px-4 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 z-10 border shrink-0 snap-end ${
+                      className={`relative py-2 px-3 sm:px-4 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer hidden sm:flex items-center justify-center gap-1.5 z-10 border shrink-0 ${
                         activeTab === 'all'
-                          ? 'bg-[#1F232D] border-white/10 text-slate-200 shadow-md'
-                          : 'bg-transparent border-transparent text-slate-500 hover:text-slate-300'
+                          ? theme === 'dark' ? 'bg-[#1F232D] border-white/10 text-slate-200 shadow-md' : 'bg-neutral-100 border-neutral-300 text-neutral-900 shadow-sm'
+                          : theme === 'dark' ? 'bg-transparent border-transparent text-slate-500 hover:text-slate-300' : 'bg-transparent border-transparent text-neutral-600 hover:text-neutral-900'
                       }`}
                     >
                       <Compass className={`w-3.5 h-3.5 shrink-0 hidden sm:block ${activeTab === 'all' ? 'text-purple-400 animate-[spin_8s_linear_infinite]' : 'text-slate-600'}`} />
                       <span className={`${activeTab === 'all' ? 'font-black' : 'font-medium'}`}>All</span>
                       <span className={`px-1 py-0.5 text-[8px] rounded-md font-extrabold transition-colors duration-300 ${
                         activeTab === 'all' 
-                          ? 'bg-purple-950/40 text-purple-400 border border-purple-500/15' 
-                          : 'bg-[#0F1115] text-slate-600 border border-white/5'
+                          ? 'bg-black/25 text-white border border-white/20' 
+                          : (theme === 'dark' ? 'bg-slate-800 text-slate-100 border border-slate-700' : 'bg-neutral-200 text-neutral-900 border border-neutral-300')
                       }`}>
                         {tabSourceShows.length}
                       </span>
@@ -1930,7 +2539,7 @@ export default function App() {
             </div>
 
              {/* Filter controls & Search bar */}
-            <div ref={searchBarRef} className={`p-4 rounded-3xl border space-y-4 transition-all duration-500 ${
+            <div ref={searchBarRef} className={`p-4 rounded-3xl border space-y-3 transition-all duration-500 ${
               theme === 'dark' ? 'bg-[#1A1D23] border-white/5' : 'bg-white border-neutral-200 shadow-sm'
             } ${
               activeTab === 'all'
@@ -1941,95 +2550,11 @@ export default function App() {
                 ? 'shadow-[0_0_15px_rgba(16,185,129,0.03)] border-t-emerald-500/20'
                 : 'shadow-[0_0_15px_rgba(245,158,11,0.03)] border-t-amber-500/20'
             }`}>
-              <div className="flex flex-col sm:flex-row gap-3">
-                {/* Search query input */}
-                <div className="relative flex-1">
-                  <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search across all shows (Watching, Up Next, Watched)..."
-                    className={`w-full pl-10 pr-10 py-3 rounded-2xl text-xs border focus:outline-none transition-all duration-300 ${
-                      theme === 'dark' 
-                        ? `bg-[#262A33] border-white/10 placeholder-slate-500 ${
-                            activeTab === 'all'
-                              ? 'focus:border-purple-500'
-                              : activeTab === 'active' 
-                              ? 'focus:border-blue-500' 
-                              : activeTab === 'library' 
-                              ? 'focus:border-emerald-500' 
-                              : 'focus:border-amber-500'
-                          }` 
-                        : 'bg-neutral-100 border-neutral-200 focus:ring-1 focus:ring-neutral-300 placeholder-neutral-400'
-                    }`}
-                  />
-                  {searchQuery && (
-                    <button
-                      id="clear-search-query-button"
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors duration-150"
-                      aria-label="Clear search"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Compact Dropdown selectors */}
-                <div className="flex gap-2 flex-wrap sm:flex-nowrap">
-                  {/* Sort By Dropdown Selector */}
-                  <div className="relative min-w-[140px] flex-1 sm:flex-none">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value as any)}
-                      className={`w-full border text-xs font-semibold rounded-2xl px-3.5 py-3 appearance-none cursor-pointer pr-8 ${
-                        theme === 'dark' 
-                          ? 'bg-[#262A33] border-white/10 text-slate-200' 
-                          : 'bg-neutral-100 border-neutral-200 text-neutral-700'
-                      }`}
-                    >
-                      {activeTab === 'active' && <option value="airingNext">Airing Next</option>}
-                      <option value="recent">Added Date</option>
-                      <option value="rtScore">RT Score</option>
-                      <option value="userScore">Your Score</option>
-                      <option value="title">Title (A-Z)</option>
-                      <option value="category">Category (A-Z)</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-
-                  {/* Category Filter */}
-                  <div className="relative min-w-[140px] flex-1 sm:flex-none">
-                    <select
-                      value={selectedGenre}
-                      onChange={(e) => setSelectedGenre(e.target.value)}
-                      className={`w-full border text-xs font-semibold rounded-2xl px-3.5 py-3 appearance-none cursor-pointer pr-8 ${
-                        theme === 'dark' 
-                          ? 'bg-[#262A33] border-white/10 text-slate-200' 
-                          : 'bg-neutral-100 border-neutral-200 text-neutral-700'
-                      }`}
-                    >
-                      <option value="All">All Categories</option>
-                      {allGenres.filter(g => g !== 'All').map(g => (
-                        <option key={g} value={g}>{g}</option>
-                      ))}
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
-                      <Filter className="w-3.5 h-3.5" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
               {/* Search Scope Toggle (Subtle & Compact) */}
               {!isFriendView && (
                 <div 
                   id="scope-tabs-container"
-                  className="flex items-center gap-2 text-[11px] font-medium text-slate-400 px-1 pt-1 select-none"
+                  className="flex items-center gap-2 text-[11px] font-medium text-slate-400 px-1 pb-1 select-none"
                 >
                   <span className="opacity-75">Scope:</span>
                   <div className="inline-flex items-center gap-1 bg-neutral-950/30 p-0.5 rounded-lg border border-white/5">
@@ -2045,32 +2570,22 @@ export default function App() {
                         !searchFamily 
                           ? 'bg-[#2E333F] text-white font-semibold shadow-sm' 
                           : 'text-slate-400 hover:text-slate-200'
-                      } ${
-                        onboardingStep === 8
-                          ? 'ring-2 ring-purple-400 bg-purple-900/40 text-purple-100 animate-pulse border border-purple-500 relative z-50'
-                          : ''
                       }`}
                     >
-                      My Board
+                      My Shows
                     </button>
                     <button
                       type="button"
                       onClick={() => {
                         setSearchFamily(true);
                         setActiveTab('all');
-                        if (onboardingStep === 6) {
-                          setOnboardingStep(7);
-                        }
-                        setTimeout(() => {
-                          searchBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }, 100);
                       }}
                       className={`px-2 py-0.5 rounded-md transition-all duration-150 cursor-pointer flex items-center gap-1 ${
                         searchFamily 
                           ? 'bg-purple-950/60 text-purple-300 border border-purple-500/20 font-semibold shadow-sm' 
                           : 'text-slate-400 hover:text-slate-200'
                       } ${
-                        onboardingStep === 6
+                        onboardingStep === 3 && !searchFamily
                           ? 'ring-2 ring-purple-400 bg-[#581c87] text-white animate-pulse border border-purple-500 relative z-50'
                           : ''
                       }`}
@@ -2081,6 +2596,136 @@ export default function App() {
                   {searchFamily && isLoadingFamilyBoards && (
                     <span className="text-slate-500 animate-pulse text-[10px] ml-1">Syncing trackers...</span>
                   )}
+                </div>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                {/* Search query input */}
+                <div className="relative flex-1">
+                  <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={`Search across ${
+                      searchFamily
+                        ? 'Buddy Picks'
+                        : isFriendView
+                          ? (boardId === JULIO_USER_ID ? "Julio's Shows" : `${allUsers.find(u => u.id === boardId)?.name || 'Buddy'}'s Shows`)
+                          : 'My Shows'
+                    }...`}
+                    className={`w-full pl-10 pr-10 py-3 rounded-2xl text-xs border focus:outline-none transition-all duration-300 ${
+                      theme === 'dark' 
+                        ? `bg-[#262A33] border-white/10 placeholder-slate-500 ${
+                            activeTab === 'all'
+                              ? 'focus:border-purple-500'
+                              : activeTab === 'active' 
+                              ? 'focus:border-blue-500' 
+                              : activeTab === 'library' 
+                              ? 'focus:border-emerald-500' 
+                              : 'focus:border-amber-500'
+                          }` 
+                        : 'bg-neutral-100 border-neutral-200 focus:ring-1 focus:ring-neutral-300 placeholder-neutral-400'
+                    }`}
+                  />
+                  {!searchQuery && (
+                    <kbd className="hidden md:inline-block absolute right-3.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] text-slate-500 bg-white/5 rounded border border-white/10 font-mono pointer-events-none">
+                      ⌘K
+                    </kbd>
+                  )}
+                  {searchQuery && (
+                    <button
+                      id="clear-search-query-button"
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors duration-150"
+                      aria-label="Clear search"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Compact Dropdown selectors */}
+                <div className="flex gap-2 min-w-[140px] sm:min-w-0">
+                  {/* Sort By Dropdown Selector */}
+                  <div className="relative flex-1 sm:w-auto sm:min-w-[140px]">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as any)}
+                      className={`w-full border text-xs font-semibold rounded-2xl px-3.5 py-3 appearance-none cursor-pointer pr-8 ${
+                        theme === 'dark' 
+                          ? 'bg-[#262A33] border-white/10 text-slate-200 hover:border-white/20' 
+                          : 'bg-neutral-100 border-neutral-200 text-neutral-700'
+                      }`}
+                    >
+                      {activeTab === 'active' && <option value="airingNext">Airing Next</option>}
+                      <option value="recent">Added Date</option>
+                      <option value="rtScore">RT Score</option>
+                      <option value="userScore">Your Score</option>
+                      <option value="title">Title (A-Z)</option>
+                      <option value="category">Category (A-Z)</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
+                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                  {/* Mobile-Only Category Filter Dropdown (shown on small screens for easy tap navigation) */}
+                  <div className="relative flex-1 sm:hidden">
+                    <select
+                      value={selectedGenre}
+                      onChange={(e) => setSelectedGenre(e.target.value)}
+                      className={`w-full border text-xs font-semibold rounded-2xl px-3.5 py-3 appearance-none cursor-pointer pr-8 transition-all ${
+                        selectedGenre !== 'All'
+                          ? 'bg-blue-600/25 border-blue-500 text-blue-200 font-bold ring-1 ring-blue-500/40'
+                          : theme === 'dark' 
+                            ? 'bg-[#262A33] border-white/10 text-slate-200 hover:border-white/20' 
+                            : 'bg-neutral-100 border-neutral-200 text-neutral-700'
+                      }`}
+                    >
+                      <option value="All" className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>
+                        All Categories
+                      </option>
+                      {allGenres.filter(g => g !== 'All').map(g => (
+                        <option key={g} value={g} className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>{g}</option>
+                      ))}
+                    </select>
+                    <div className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${
+                      selectedGenre !== 'All' ? 'text-blue-400 font-bold' : 'text-slate-500'
+                    }`}>
+                      <Filter className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Desktop/Tablet Quick Category Chips Ribbon (shown on sm: screens for 1-click filtering) */}
+              {allGenres.length > 1 && (
+                <div className="pt-1 pb-0.5 hidden sm:block">
+                  <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
+                    <span className="text-[10px] uppercase font-black tracking-wider text-slate-500 shrink-0 mr-1">Categories:</span>
+                    {allGenres.map((genre) => {
+                      const isSelected = selectedGenre === genre;
+                      return (
+                        <button
+                          key={genre}
+                          type="button"
+                          onClick={() => setSelectedGenre(genre)}
+                          className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wide transition-all duration-150 cursor-pointer shrink-0 border ${
+                            isSelected
+                              ? 'bg-blue-600 border-blue-500 text-white shadow-md shadow-blue-950/40 scale-105'
+                              : theme === 'dark'
+                                ? 'bg-[#222630] border-white/5 text-slate-400 hover:text-white hover:bg-[#2C313E] hover:border-white/10'
+                                : 'bg-neutral-100 border-neutral-200 text-neutral-600 hover:bg-neutral-200'
+                          }`}
+                        >
+                          {genre === 'All' ? 'All Categories' : genre}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -2140,9 +2785,9 @@ export default function App() {
             </div>
 
              {/* Category Header Indicator */}
-            <div id="backlog-queue-area" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 py-1 bg-transparent rounded-2xl border border-transparent select-none transition-all duration-500">
-              <div className="flex items-center gap-3">
-                <div className={`w-1 h-6 rounded-full transition-all duration-500 ${
+            <div id="backlog-queue-area" className="scroll-mt-20 sm:scroll-mt-24 flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1 py-1 bg-transparent rounded-2xl border border-transparent select-none transition-all duration-500">
+              <div className="flex items-start sm:items-center gap-3">
+                <div className={`w-1 h-7 rounded-full transition-all duration-500 shrink-0 mt-0.5 sm:mt-0 ${
                   activeTab === 'all'
                     ? 'bg-purple-500 shadow-[0_0_12px_rgba(147,51,234,0.6)]'
                     : activeTab === 'active' 
@@ -2152,33 +2797,70 @@ export default function App() {
                     : 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]'
                 }`} />
                 <div>
-                  <h2 className={`text-sm sm:text-base font-black tracking-wide uppercase transition-colors duration-500 ${
-                    activeTab === 'all'
-                      ? 'text-purple-400'
-                      : activeTab === 'active' 
-                      ? 'text-blue-400' 
-                      : activeTab === 'library'
-                      ? 'text-emerald-400'
-                      : 'text-amber-400'
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className={`text-sm sm:text-base font-black tracking-wide uppercase transition-colors duration-500 ${
+                      activeTab === 'all'
+                        ? 'text-purple-400'
+                        : activeTab === 'active' 
+                        ? 'text-blue-400' 
+                        : activeTab === 'library'
+                        ? 'text-emerald-400'
+                        : 'text-amber-400'
+                    }`}>
+                      {searchQuery.trim() !== '' ? 'Global Search Results' : (
+                        <>
+                          {activeTab === 'all' && 'Full Board Directory'}
+                          {activeTab === 'active' && 'Watching'}
+                          {activeTab === 'library' && 'Watched'}
+                          {activeTab === 'queue' && 'Up Next'}
+                        </>
+                      )}
+                    </h2>
+                  </div>
+
+                  {/* Category Filter Status & Count Line above description */}
+                  <div className={`flex items-center gap-1.5 mt-0.5 text-[11px] font-semibold flex-wrap ${
+                    theme === 'dark' ? 'text-white' : 'text-slate-900'
                   }`}>
-                    {searchQuery.trim() !== '' ? 'Global Search Results' : (
-                      <>
-                        {activeTab === 'all' && 'Full Board Directory'}
-                        {activeTab === 'active' && 'Watching'}
-                        {activeTab === 'library' && 'Watched'}
-                        {activeTab === 'queue' && 'Up Next'}
-                      </>
+                    <span>
+                      {(() => {
+                        const scopeName = searchFamily
+                          ? 'Buddy Picks'
+                          : isFriendView
+                            ? (boardId === JULIO_USER_ID ? "Julio's Shows" : `${allUsers.find(u => u.id === boardId)?.name || 'Buddy'}'s Shows`)
+                            : 'My Shows';
+                        const statusName = searchQuery.trim() !== ''
+                          ? ''
+                          : activeTab === 'all'
+                            ? 'All Shows'
+                            : activeTab === 'active'
+                              ? 'Watching'
+                              : activeTab === 'library'
+                                ? 'Watched'
+                                : 'Up Next';
+                        
+                        const statusAndScope = statusName ? `${statusName} (${scopeName})` : scopeName;
+
+                        return selectedGenre !== 'All' 
+                          ? `${selectedGenre} in ${statusAndScope}`
+                          : `All Categories in ${statusAndScope}`;
+                      })()}
+                    </span>
+                    {selectedService !== 'All' && (
+                      <span className={theme === 'dark' ? 'text-slate-300' : 'text-slate-600'}>({selectedService})</span>
                     )}
-                  </h2>
-                  <p className="text-[10px] text-slate-500">
-                    {searchQuery.trim() !== '' ? 'Searching across all shows (Watching, Up Next, Watched).' : (
-                      <>
-                        {activeTab === 'all' && 'An all-inclusive overview of every single show tracked on this board.'}
-                        {activeTab === 'active' && 'Real-time tracking of current seasons, release timers, and episode recaps.'}
-                        {activeTab === 'library' && 'A curated sanctuary for library series, dropped shows, and top favorites.'}
-                        {activeTab === 'queue' && 'Shows scheduled for later. Switch status to move shows to Watching.'}
-                      </>
-                    )}
+                    <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-400'}>•</span>
+                    <span className={theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}>{filteredShows.length} {filteredShows.length === 1 ? 'show' : 'shows'}</span>
+                  </div>
+
+                  <p className={`text-[10px] mt-2 font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {searchQuery.trim() !== '' 
+                      ? `Searching across all shows for "${searchQuery}".`
+                      : activeTab === 'all' ? 'An all-inclusive overview of every single show tracked on this board.'
+                      : activeTab === 'active' ? 'Real-time tracking of current seasons, release timers, and episode recaps.'
+                      : activeTab === 'library' ? 'A curated sanctuary for library series and completed shows.'
+                      : 'Shows scheduled for later. Switch status to move shows to Watching.'
+                    }
                   </p>
                 </div>
               </div>
@@ -2186,13 +2868,9 @@ export default function App() {
                 {activeTab === 'active' && (
                   <button
                     onClick={() => setIsCalendarOpen(true)}
-                    className={`px-3 py-1.5 text-[10px] font-black rounded-xl transition flex items-center gap-1.5 cursor-pointer ${
-                      theme === 'dark'
-                        ? 'bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/15'
-                        : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 border-neutral-200'
-                    }`}
+                    className="px-3 py-1.5 text-[10px] font-black rounded-xl bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/80 shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                   >
-                    <CalendarIcon className="w-3.5 h-3.5" />
+                    <CalendarIcon className="w-3.5 h-3.5 text-white" />
                     <span>Interactive Calendar View</span>
                   </button>
                 )}
@@ -2220,107 +2898,271 @@ export default function App() {
               </div>
             </div>
 
-            {/* Tater Recommendations Alert */}
+            {/* Tater Recommendations & Direct Messages Alert */}
             <AnimatePresence>
               {activeNotifications.length > 0 && (
                 <div className="space-y-4 mb-6">
-                  {activeNotifications.map((notif) => (
-                    <motion.div
-                      key={notif.id}
-                      initial={{ opacity: 0, height: 0, marginBottom: 0 }}
-                      animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
-                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-                      transition={{ type: 'spring', stiffness: 200, damping: 25 }}
-                      className="overflow-hidden"
-                    >
-                      <div className={`p-4 sm:p-5 border rounded-2xl relative overflow-hidden transition-all shadow-md ${
-                        theme === 'dark'
-                          ? 'bg-[#1A1D23] border-amber-500/25 shadow-amber-950/5'
-                          : 'bg-white border-amber-200 shadow-amber-100/50'
-                      }`}>
-                        {/* Amber Tint Overlay */}
-                        <div className={`absolute inset-0 pointer-events-none z-0 bg-gradient-to-r ${
-                          theme === 'dark'
-                            ? 'from-amber-500/10 via-amber-500/5 to-transparent'
-                            : 'from-amber-50 to-transparent'
-                        }`} />
+                  {activeNotifications.map((notif) => {
+                    const isShowRec = !!notif.show;
+                    return (
+                      <motion.div
+                        key={notif.id}
+                        initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
+                        exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                        transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                        className="overflow-hidden"
+                      >
+                        <div className={`p-4 sm:p-5 border rounded-2xl relative overflow-hidden transition-all shadow-md ${
+                          isShowRec
+                            ? (theme === 'dark'
+                                ? 'bg-[#1A1D23] border-amber-500/25 shadow-amber-950/5'
+                                : 'bg-white border-amber-200 shadow-amber-100/50')
+                            : (theme === 'dark'
+                                ? 'bg-[#181524] border-purple-500/30 shadow-purple-950/10'
+                                : 'bg-purple-50/80 border-purple-200 shadow-purple-100/50')
+                        }`}>
+                          {/* Tint Overlay */}
+                          <div className={`absolute inset-0 pointer-events-none z-0 bg-gradient-to-r ${
+                            isShowRec
+                              ? (theme === 'dark'
+                                  ? 'from-amber-500/10 via-amber-500/5 to-transparent'
+                                  : 'from-amber-50 to-transparent')
+                              : (theme === 'dark'
+                                  ? 'from-purple-500/15 via-purple-500/5 to-transparent'
+                                  : 'from-purple-100/50 to-transparent')
+                          }`} />
 
-                        {/* Show Banner Image Layer fading in from right */}
-                        {notif.show.bannerImage && (
-                          <div className="absolute right-0 top-0 bottom-0 w-2/5 sm:w-1/2 pointer-events-none overflow-hidden z-0">
-                            <img
-                              src={notif.show.bannerImage}
-                              alt={notif.show.title}
-                              className="w-full h-full object-cover opacity-30 md:opacity-40 transition-opacity"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className={`absolute inset-0 bg-gradient-to-r ${
-                              theme === 'dark'
-                                ? 'from-[#1A1D23] via-[#1A1D23]/40 to-transparent'
-                                : 'from-white via-white/40 to-transparent'
-                            }`} />
+                          {/* Show Banner Image Layer fading in from right (only for show recommendations) */}
+                          {notif.show?.bannerImage && (
+                            <div className="absolute right-0 top-0 bottom-0 w-2/5 sm:w-1/2 pointer-events-none overflow-hidden z-0">
+                              <img
+                                src={notif.show.bannerImage}
+                                alt={notif.show.title || 'Show'}
+                                className="w-full h-full object-cover opacity-30 md:opacity-40 transition-opacity"
+                                referrerPolicy="no-referrer"
+                              />
+                              <div className={`absolute inset-0 bg-gradient-to-r ${
+                                theme === 'dark'
+                                  ? 'from-[#1A1D23] via-[#1A1D23]/40 to-transparent'
+                                  : 'from-white via-white/40 to-transparent'
+                              }`} />
+                            </div>
+                          )}
+
+                          <div className="absolute top-0 right-0 p-3 z-10">
+                            <button 
+                              onClick={() => handleDismissNotification(notif.id)}
+                              className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                                theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100'
+                              }`}
+                              title="Dismiss Alert"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
-                        )}
+                          
+                          <div className="flex items-start gap-4 pr-6 relative z-10">
+                            <img
+                              src={notif.senderAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(notif.senderName || 'Buddy')}`}
+                              alt={notif.senderName}
+                              className={`w-10 h-10 rounded-full border shrink-0 mt-0.5 bg-[#0F1115] ${
+                                isShowRec ? 'border-amber-500/30' : 'border-purple-500/40'
+                              }`}
+                            />
+                            <div className="flex-1 space-y-3">
+                              {notif.show ? (
+                                <>
+                                  <div>
+                                    <h3 className={`text-xs font-black uppercase tracking-wider ${
+                                      theme === 'dark' ? 'text-amber-400' : 'text-amber-700'
+                                    }`}>
+                                      New Recommendation from {notif.senderName}!
+                                    </h3>
+                                    <p className={`text-[12px] font-bold leading-relaxed mt-1 ${
+                                      theme === 'dark' ? 'text-slate-200' : 'text-neutral-800'
+                                    }`}>
+                                      "{notif.senderName}" recommended the show <span className="text-amber-400 underline font-extrabold">{notif.show.title}</span> to you.
+                                    </p>
+                                    {notif.message && (
+                                      <p className={`text-[11px] italic mt-1.5 p-2 bg-black/30 rounded-lg ${
+                                        theme === 'dark' ? 'text-slate-300' : 'text-neutral-600'
+                                      }`}>
+                                        "{notif.message}"
+                                      </p>
+                                    )}
+                                  </div>
 
-                        <div className="absolute top-0 right-0 p-3 z-10">
-                          <button 
-                            onClick={() => handleDismissNotification(notif.id)}
-                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
-                              theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-neutral-400 hover:text-neutral-800 hover:bg-neutral-100'
-                            }`}
-                            title="Dismiss Alert"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                        
-                        <div className="flex items-start gap-4 pr-6 relative z-10">
-                          <img
-                            src={notif.senderAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${notif.senderName}`}
-                            alt={notif.senderName}
-                            className="w-10 h-10 rounded-full border border-amber-500/30 shrink-0 mt-0.5 bg-[#0F1115]"
-                          />
-                          <div className="flex-1 space-y-3">
-                            <div>
-                              <h3 className={`text-xs font-black uppercase tracking-wider ${
-                                theme === 'dark' ? 'text-amber-400' : 'text-amber-700'
-                              }`}>
-                                New Recommendation from {notif.senderName}!
-                              </h3>
-                              <p className={`text-[12px] font-bold leading-relaxed mt-1 ${
-                                theme === 'dark' ? 'text-slate-200' : 'text-neutral-800'
-                              }`}>
-                                "{notif.senderName}" recommended the show <span className="text-amber-400 underline font-extrabold">{notif.show.title}</span> to you.
-                              </p>
-                              {notif.message && (
-                                <p className={`text-[11px] italic mt-1.5 p-2 bg-black/30 rounded-lg ${
-                                  theme === 'dark' ? 'text-slate-300' : 'text-neutral-600'
-                                }`}>
-                                  "{notif.message}"
-                                </p>
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleAcceptRecommendation(notif)}
+                                      className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl transition cursor-pointer shadow-sm"
+                                    >
+                                      Add to Up Next
+                                    </button>
+                                    <button
+                                      onClick={() => handleDismissNotification(notif.id)}
+                                      className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                                    >
+                                      Dismiss
+                                    </button>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div>
+                                    <h3 className={`text-xs font-black uppercase tracking-wider ${
+                                      theme === 'dark' ? 'text-purple-300' : 'text-purple-800'
+                                    }`}>
+                                      Direct Message from {notif.senderName}!
+                                    </h3>
+                                    <p className={`text-[12px] font-bold leading-relaxed mt-1 p-2.5 bg-purple-950/40 border border-purple-500/20 rounded-xl ${
+                                      theme === 'dark' ? 'text-purple-100' : 'text-purple-950'
+                                    }`}>
+                                      "{notif.message}"
+                                    </p>
+                                  </div>
+
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={() => handleDismissNotification(notif.id)}
+                                      className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl transition cursor-pointer shadow-sm"
+                                    >
+                                      Mark as Read
+                                    </button>
+                                  </div>
+                                </>
                               )}
                             </div>
-
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => handleAcceptRecommendation(notif)}
-                                className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl transition cursor-pointer"
-                              >
-                                Add to Up Next
-                              </button>
-                              <button
-                                onClick={() => handleDismissNotification(notif.id)}
-                                className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
-                              >
-                                Dismiss
-                              </button>
-                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
                 </div>
+              )}
+            </AnimatePresence>
+
+            {/* Incoming Watch Buddy Request Alert Banner */}
+            <AnimatePresence>
+              {pendingIncomingRequests.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
+                  exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                  transition={{ type: 'spring', stiffness: 200, damping: 25 }}
+                  className="overflow-hidden"
+                >
+                  <div className={`p-4 sm:p-5 border rounded-2xl relative overflow-hidden transition-all shadow-xl ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-r from-purple-950/80 via-purple-900/40 to-[#14161F] border-purple-500/35 shadow-purple-950/30'
+                      : 'bg-gradient-to-r from-purple-50 via-indigo-50/50 to-white border-purple-200 shadow-purple-100/50'
+                  }`}>
+                    <div className="flex items-start gap-3.5 sm:gap-4">
+                      <div className={`p-2.5 border rounded-2xl shrink-0 mt-0.5 shadow-sm ${
+                        theme === 'dark'
+                          ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
+                          : 'bg-purple-100 border-purple-200 text-purple-700'
+                      }`}>
+                        <UserPlus className="w-5 h-5 animate-pulse" />
+                      </div>
+                      <div className="flex-1 space-y-3.5 min-w-0">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className={`text-xs font-black uppercase tracking-wider ${
+                              theme === 'dark' ? 'text-purple-300' : 'text-purple-800'
+                            }`}>
+                              Incoming Binge Buddy Request
+                            </h3>
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30">
+                              {pendingIncomingRequests.length} pending
+                            </span>
+                          </div>
+                          <p className={`text-xs font-medium leading-relaxed mt-1 ${
+                            theme === 'dark' ? 'text-slate-200' : 'text-neutral-700'
+                          }`}>
+                            Accepting allows you to share watchlist picks and see each other's TV shows, reviews and recommendations!
+                          </p>
+                        </div>
+
+                        {/* Requests List */}
+                        <div className="space-y-3">
+                          {pendingIncomingRequests.map(req => (
+                            <div 
+                              key={req.fromUserId}
+                              className={`p-4 sm:p-4.5 rounded-2xl border flex flex-col gap-3.5 transition shadow-md ${
+                                theme === 'dark'
+                                  ? 'bg-[#161822] border-purple-500/30 text-slate-100'
+                                  : 'bg-white border-purple-100 shadow-sm text-neutral-900'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <img
+                                  src={req.fromUserAvatar}
+                                  alt={req.fromUserName}
+                                  className="w-11 h-11 rounded-2xl border-2 border-purple-500/40 bg-purple-500/10 object-cover shrink-0 shadow-sm"
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <h4 className={`text-sm sm:text-base font-black truncate ${theme === 'dark' ? 'text-white' : 'text-neutral-900'}`}>
+                                    {req.fromUserName}
+                                  </h4>
+                                  <p className={`text-xs font-bold leading-snug ${theme === 'dark' ? 'text-purple-300' : 'text-purple-700'}`}>
+                                    Wants to connect as a Binge Buddy
+                                  </p>
+                                </div>
+                              </div>
+
+                              {req.message && (
+                                <div className={`p-3 rounded-xl text-xs font-medium border flex items-start gap-2 shadow-inner ${
+                                  theme === 'dark' 
+                                    ? 'bg-purple-950/60 text-purple-100 border-purple-500/35' 
+                                    : 'bg-purple-50 text-purple-950 border-purple-200'
+                                }`}>
+                                  <MessageSquare className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
+                                  <span className="leading-relaxed">"{req.message}"</span>
+                                </div>
+                              )}
+
+                              {/* Optional Reply Message Input */}
+                              <input
+                                type="text"
+                                value={replyMessages[req.fromUserId] || ''}
+                                onChange={e => setReplyMessages(prev => ({ ...prev, [req.fromUserId]: e.target.value }))}
+                                placeholder={`Type an optional reply message to ${req.fromUserName}...`}
+                                className={`w-full text-xs px-3.5 py-2.5 rounded-xl border focus:outline-none focus:border-purple-400 transition min-h-[42px] ${
+                                  theme === 'dark' 
+                                    ? 'bg-[#0E1017] text-white border-purple-500/30 placeholder-slate-400' 
+                                    : 'bg-neutral-50 text-neutral-900 border-neutral-200 placeholder-neutral-400'
+                                }`}
+                              />
+
+                              {/* Action Buttons: Accept / Deny - Mobile Ergonomic Stack */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                                <button
+                                  onClick={() => handleAcceptBuddyRequest(req.fromUserId, req.fromUserName)}
+                                  className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs transition shadow-md shadow-blue-950/40 flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  <span>Accept Connection</span>
+                                </button>
+                                <button
+                                  onClick={() => handleDeclineBuddyRequest(req.fromUserId, req.fromUserName)}
+                                  className={`w-full min-h-[44px] py-2.5 px-4 rounded-xl font-bold text-xs transition border cursor-pointer flex items-center justify-center gap-1.5 active:scale-[0.98] ${
+                                    theme === 'dark'
+                                      ? 'bg-[#222632] hover:bg-rose-600/80 text-slate-200 hover:text-white border-white/10'
+                                      : 'bg-neutral-100 hover:bg-rose-600 text-neutral-700 hover:text-white border-neutral-200'
+                                  }`}
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
               )}
             </AnimatePresence>
 
@@ -2441,7 +3283,7 @@ export default function App() {
               <motion.div
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="sticky top-3 z-30 mb-6 p-4 rounded-2xl bg-gradient-to-r from-purple-950/95 via-purple-900/80 to-[#14161C]/95 border border-purple-500/30 shadow-2xl shadow-purple-950/40 backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300"
+                className="sticky top-3 z-30 mb-6 p-4 rounded-2xl bg-[#14161C] border border-purple-500/30 shadow-2xl shadow-purple-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors duration-200"
                 id="family-picks-onboarding-banner"
               >
                 <div className="flex items-start gap-3">
@@ -2451,7 +3293,7 @@ export default function App() {
                   <div className="space-y-0.5">
                     <h5 className="text-xs font-black text-purple-300 uppercase tracking-wider">Viewing Buddy Picks</h5>
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      You are viewing shows tracked by your watch buddies. Click <span className="text-orange-400 font-extrabold">+ Add to Up Next</span> on any card to import it directly to your page!
+                      You are viewing shows tracked by your binge buddies. Click <span className="text-orange-400 font-extrabold">+ Add to Up Next</span> on any card to import it directly to your page!
                     </p>
                   </div>
                 </div>
@@ -2490,14 +3332,12 @@ export default function App() {
                       ownerName={searchFamily ? undefined : (isFriendView ? show.ownerName : undefined)}
                       ownerNames={searchFamily ? show.ownerNames : undefined}
                       familyDetails={searchFamily ? show.familyDetails : undefined}
-                      highlightStatusPrompt={activeTab === 'queue' && idx === 0 && (showFirstStatusPrompt || onboardingStep === 1)}
-                      onDismissHighlight={handleDismissFirstStatusPrompt}
                       onboardingStep={onboardingStep}
                       onboardingTargetShowId={onboardingTargetShowId}
                       onboardingHighlight={
                         (onboardingStep === 1 && idx === 0 && activeTab === 'queue') ||
-                        (onboardingStep === 3 && show.id === onboardingTargetShowId) ||
-                        (onboardingStep === 7 && idx === 0 && searchFamily)
+                        (onboardingStep === 2 && show.id === onboardingTargetShowId) ||
+                        (onboardingStep === 3 && searchFamily)
                       }
                     />
                   );
@@ -2536,7 +3376,7 @@ export default function App() {
                         </div>
                         <h5 className="text-xs font-black text-purple-300 uppercase tracking-wider">Buddy Picks</h5>
                         <p className="text-[11px] text-slate-400 leading-relaxed">
-                          Add some from your watch buddies' watchlists. One click imports their picks directly!
+                          Add some from your binge buddies' watchlists. One click imports their picks directly!
                         </p>
                       </div>
                       <div className="pt-4 flex items-center gap-1 text-[10px] font-black uppercase text-purple-400 tracking-widest">
@@ -2581,7 +3421,7 @@ export default function App() {
                       </p>
                     </div>
                     <div className="pt-4 flex items-center gap-1 text-[10px] font-black uppercase text-blue-400 tracking-widest">
-                      <span>+ Add Show</span>
+                      <span>Add Show</span>
                       <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </button>
@@ -2618,7 +3458,7 @@ export default function App() {
           {/* Mobile Sheet Panel drawer */}
           <AnimatePresence>
             {isChatOpen && (
-              <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md md:hidden flex justify-end">
+              <div className="fixed inset-0 z-50 bg-black/85 md:hidden flex justify-end">
                 <motion.div
                   initial={{ x: '100%' }}
                   animate={{ x: 0 }}
@@ -2646,52 +3486,54 @@ export default function App() {
         </section>
       </div>
 
-      {/* Floating Action Buttons for all screens (Mobile & Desktop) */}
-      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3.5 items-end">
-        {/* AI Scout Button */}
-        <div className="relative flex items-center group">
-          <span className="absolute right-14 scale-0 group-hover:scale-100 transition-all duration-150 origin-right whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-emerald-400 border border-emerald-500/10 shadow-2xl">
-            Ask SPUDZ
-          </span>
-          <button
-            onClick={() => {
-              const isCurrentlyOpen = typeof window !== 'undefined' && window.innerWidth < 768 ? isChatOpen : isAiSidebarOpen;
-              const nextVal = !isCurrentlyOpen;
-              setIsAiSidebarOpen(nextVal);
-              setIsChatOpen(nextVal);
-              if (nextVal) {
-                setTimeout(() => {
-                  chatAgentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 150);
-              }
-            }}
-            className={`p-3.5 rounded-full shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center border cursor-pointer ${
-              isAiSidebarOpen || isChatOpen
-                ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-emerald-500/20'
-                : 'bg-emerald-600 text-white border-emerald-500/20 shadow-emerald-950/40'
-            }`}
-            title="Chat with Spudz Agent"
-          >
-            <Bot className={`w-4 h-4 ${(isAiSidebarOpen || isChatOpen) ? '' : 'animate-pulse'}`} />
-          </button>
-        </div>
-
-        {/* Add Show Button */}
-        {!isFriendView && (
+      {/* Floating Action Buttons for all screens (Mobile, Tablet & Desktop) - hidden when any modal is active so they never block modal close buttons or actions */}
+      {!(isAddOpen || isShareOpen || isCalendarOpen || isPreferencesOpen || isManageActiveOpen || isStatsOpen || showQueueOnboarding || isChatOpen) && (
+        <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-3.5 items-end pointer-events-auto">
+          {/* AI Scout Button */}
           <div className="relative flex items-center group">
-            <span className="absolute right-14 scale-0 group-hover:scale-100 transition-all duration-150 origin-right whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-blue-400 border border-blue-500/10 shadow-2xl">
-              Search & Add Show
+            <span className="absolute right-14 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-emerald-400 border border-emerald-500/10 shadow-2xl">
+              Ask SPUDZ
             </span>
             <button
-              onClick={() => setIsAddOpen(true)}
-              className="p-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-2xl shadow-blue-950/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center border border-blue-500/20 cursor-pointer"
-              title="Search & Add a Show"
+              onClick={() => {
+                const isCurrentlyOpen = typeof window !== 'undefined' && window.innerWidth < 768 ? isChatOpen : isAiSidebarOpen;
+                const nextVal = !isCurrentlyOpen;
+                setIsAiSidebarOpen(nextVal);
+                setIsChatOpen(nextVal);
+                if (nextVal) {
+                  setTimeout(() => {
+                    chatAgentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }, 150);
+                }
+              }}
+              className={`p-3.5 rounded-full shadow-2xl transition-colors duration-150 flex items-center justify-center border cursor-pointer ${
+                isAiSidebarOpen || isChatOpen
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-emerald-500/20'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/20 shadow-emerald-950/40'
+              }`}
+              title="Chat with Spudz Agent"
             >
-              <Plus className="w-5 h-5" />
+              <Bot className={`w-4 h-4 ${(isAiSidebarOpen || isChatOpen) ? '' : 'animate-pulse'}`} />
             </button>
           </div>
-        )}
-      </div>
+
+          {/* Add Show Button */}
+          {!isFriendView && (
+            <div className="relative flex items-center group">
+              <span className="absolute right-14 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-blue-400 border border-blue-500/10 shadow-2xl">
+                Search & Add Show
+              </span>
+              <button
+                onClick={() => setIsAddOpen(true)}
+                className="p-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-2xl shadow-blue-950/40 transition-colors duration-150 flex items-center justify-center border border-blue-500/20 cursor-pointer"
+                title="Search & Add a Show"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modals Container */}
       <AnimatePresence>
@@ -2700,18 +3542,30 @@ export default function App() {
             onClose={() => setIsAddOpen(false)}
             onAddShow={handleAddShow}
             onboardingStep={onboardingStep}
+            buddyShows={buddyShowsForModal}
+            initialTab={addModalInitialTab}
+            allUsers={allUsers}
+            currentUser={currentUser}
+            existingShows={board?.shows || []}
+            theme={theme}
           />
         )}
         {isShareOpen && (
           <ShareBoardModal
             currentBoardId={boardId}
+            currentUser={currentUser}
+            allUsers={allUsers}
             onJoinBoard={handleJoinBoard}
             onClose={() => setIsShareOpen(false)}
+            onFriendsUpdated={() => {
+              setFriendsState(getFriendsData(currentUser?.id || JULIO_USER_ID));
+            }}
+            theme={theme}
           />
         )}
         {isManageActiveOpen && (
           <ManageActiveShowsModal
-            shows={board.shows}
+            shows={board?.shows || []}
             onUpdateShow={handleUpdateShow}
             onDeleteShow={handleDeleteShow}
             onClose={() => setIsManageActiveOpen(false)}
@@ -2719,7 +3573,7 @@ export default function App() {
         )}
         {isCalendarOpen && (
           <ShowCalendarModal
-            shows={board.shows}
+            shows={board?.shows || []}
             onUpdateShow={handleUpdateShow}
             onClose={() => setIsCalendarOpen(false)}
           />
@@ -2727,11 +3581,13 @@ export default function App() {
         {isPreferencesOpen && (
           <PreferencesModal
             currentUser={currentUser}
-            preferences={board.preferences || { genres: [], actors: [], directors: [] }}
+            preferences={board?.preferences || currentUserPrefs || { genres: [], actors: [], directors: [] }}
+            existingShows={board?.shows || []}
             onSave={handleUpdateProfileAndPreferences}
             onDelete={handleDeleteProfileAndStartOver}
             onClose={() => setIsPreferencesOpen(false)}
             showWorkflowGuide={showWorkflowGuide}
+            theme={theme}
             onToggleWorkflowGuide={(show) => {
               setShowWorkflowGuide(show);
               if (currentUser) {
@@ -2752,10 +3608,10 @@ export default function App() {
             hasRecommendations={localStorage.getItem(`coughtater_starter_pack_${currentUser?.id}`) !== 'false'}
           />
         )}
-        {onboardingStep !== null && (
+        {onboardingStep !== null && !isAddOpen && (
           <>
             {/* Spotlight Onboarding Dimming Backdrop */}
-            <div className="fixed inset-0 bg-[#06080F]/65 backdrop-blur-[1px] pointer-events-auto z-40 transition-all duration-300" />
+            <div className="fixed inset-0 bg-[#06080F]/80 pointer-events-auto z-40 transition-all duration-300" />
             
             <OnboardingWalkthrough
               step={onboardingStep}
@@ -2775,7 +3631,32 @@ export default function App() {
           </>
         )}
 
-        {/* Celebratory Completion Achievement Toast */}
+        {/* Auto-Connect Toast */}
+        {inviteConnectedToast && (
+          <motion.div
+            key="invite-toast"
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed bottom-6 left-6 right-6 md:left-6 md:right-auto z-50 max-w-sm bg-[#161920]/95 backdrop-blur-xl border border-blue-500/35 rounded-3xl p-4 shadow-[0_20px_50px_rgba(59,130,246,0.22)] select-none flex items-center justify-between gap-3 overflow-hidden"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-blue-600/20 text-blue-400 rounded-2xl border border-blue-500/30">
+                <Users className="w-5 h-5" />
+              </div>
+              <p className="text-xs font-bold text-white leading-snug">
+                {inviteConnectedToast}
+              </p>
+            </div>
+            <button
+              onClick={() => setInviteConnectedToast(null)}
+              className="text-slate-500 hover:text-white p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
         {completedShowToast && (
           <motion.div
             key="completion-toast"
@@ -2783,7 +3664,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-            className="fixed bottom-6 left-6 right-6 md:left-auto md:right-24 z-50 max-w-sm bg-[#161920]/95 backdrop-blur-xl border border-emerald-500/35 rounded-3xl p-4 shadow-[0_20px_50px_rgba(16,185,129,0.22)] select-none flex gap-4 overflow-hidden"
+            className="fixed bottom-6 left-6 right-6 md:left-6 md:right-auto z-50 max-w-sm bg-[#161920]/95 backdrop-blur-xl border border-emerald-500/35 rounded-3xl p-4 shadow-[0_20px_50px_rgba(16,185,129,0.22)] select-none flex gap-4 overflow-hidden"
           >
             {/* Ambient backdrop glows */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -2827,7 +3708,6 @@ export default function App() {
         )}
         {/* Hidden stats functionality for now */}
       </AnimatePresence>
-
     </div>
   );
 }

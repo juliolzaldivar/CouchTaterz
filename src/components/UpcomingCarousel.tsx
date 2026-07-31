@@ -47,13 +47,14 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
   // and whose next episode is airing in no more than 30 days, EXCEPT those hidden by the user.
   // BUT: If a show has been favorited (marked with the star icon), we always include/assign it to the banner 
   // (unless it is explicitly hidden by the user).
-  const nowForSort = new Date();
   const getDiffDays = (show: typeof shows[0]) => {
     if (!show.nextEpisode || !show.nextEpisode.airDate) return null;
     const d = parseAirDate(show.nextEpisode.airDate);
     if (!d) return null;
-    const diffTime = d.getTime() - nowForSort.getTime();
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const diffTime = d.getTime() - today.getTime();
+    return Math.round(diffTime / (1000 * 60 * 60 * 24));
   };
 
   const getGroup = (show: typeof shows[0]) => {
@@ -69,7 +70,7 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
     .filter(s => {
       if (s.isBannerHidden) return false;
 
-      // Only the content in the active buckets (Watching) should create the banners.
+      // Only the content in active status (Watching) should create banners.
       if (s.status === 'Watching') return true;
 
       return false;
@@ -144,10 +145,7 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
           
           <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/25 text-[11px] text-slate-300 flex flex-col gap-2.5 max-w-sm mx-auto shadow-sm text-left">
             <p className="leading-normal">
-              Move your shows into <span className="text-blue-400 font-extrabold">Active (Watching)</span> to automatically create a banner.
-            </p>
-            <p className="leading-normal">
-              Selecting a <span className="text-amber-300 font-extrabold">starter show</span> will keep it in the banner regardless of the bucket.
+              Move a show to <span className="text-blue-400 font-extrabold">Watching</span> or mark it as a <span className="text-amber-300 font-extrabold">Favorite</span> to generate its banner.
             </p>
           </div>
 
@@ -248,11 +246,11 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
         {/* Top bar of slide */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg bg-emerald-950/50 text-emerald-300 border border-emerald-800/30 backdrop-blur-md">
+            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/30">
               <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
               {currentShow.isFavorite ? 'SPOTLIGHT' : 'UP NEXT'}
             </span>
-            <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg border backdrop-blur-md ${colors.bg} ${colors.text} ${colors.border}`}>
+            <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg border ${colors.bg} ${colors.text} ${colors.border}`}>
               {currentShow.streamingService}
             </span>
           </div>
@@ -272,7 +270,7 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
                     setActiveIndex(Math.max(0, upcomingShows.length - 2));
                   }
                 }}
-                className="flex items-center justify-center p-1.5 rounded-lg bg-[#0F1115]/60 hover:bg-rose-950/80 text-slate-400 hover:text-rose-300 border border-white/5 hover:border-rose-800/40 backdrop-blur-md transition-all cursor-pointer"
+                className="flex items-center justify-center p-1.5 rounded-lg bg-[#0F1115] hover:bg-rose-950/80 text-slate-400 hover:text-rose-300 border border-white/5 hover:border-rose-800/40 transition-colors duration-150 cursor-pointer"
                 title="Hide this show's banner"
               >
                 <EyeOff className="w-3 h-3" />
@@ -281,7 +279,7 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
 
             {/* Indicators */}
             {upcomingShows.length > 1 && (
-              <div className="flex items-center gap-1 bg-[#0F1115]/40 backdrop-blur-md rounded-full px-2 py-1 border border-white/5">
+              <div className="flex items-center gap-1 bg-[#0F1115] rounded-full px-2 py-1 border border-white/5">
                 {upcomingShows.map((_, i) => (
                   <button
                     key={i}

@@ -79,12 +79,12 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/85 overflow-y-auto">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-3xl rounded-3xl bg-[#16181D] border border-white/5 text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+        className="relative w-full max-w-3xl rounded-2xl sm:rounded-3xl bg-[#16181D] border border-white/10 text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:max-h-[85vh]"
         id="manage-active-modal"
       >
         {/* Header */}

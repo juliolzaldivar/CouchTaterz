@@ -9,9 +9,60 @@ import fs from "fs";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
+import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
+import { getFirestore as getClientFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, setLogLevel, terminate } from "firebase/firestore";
 import { TvShow, Board, StreamingService } from "./src/types"; // note: using relative import
 
 dotenv.config();
+
+// Suppress Firestore verbose internal logs
+try {
+  setLogLevel("error");
+} catch (e) {}
+
+// Sanitize objects to prevent Firestore setDoc errors on undefined values
+function sanitizeForFirestore(data: any): any {
+  if (data === null || data === undefined) return null;
+  return JSON.parse(JSON.stringify(data));
+}
+
+// Helper to identify Firestore quota exhaustion
+function isQuotaError(err: any): boolean {
+  if (!err) return false;
+  const msg = (typeof err === "string" ? err : err?.message || err?.code || "").toString().toUpperCase();
+  return (
+    err?.code === 8 ||
+    err?.code === "resource-exhausted" ||
+    msg.includes("QUOTA") ||
+    msg.includes("RESOURCE_EXHAUSTED") ||
+    msg.includes("FREE DAILY WRITE") ||
+    msg.includes("FREE DAILY READ")
+  );
+}
+
+// Global handler when Firestore quota limit is reached
+let dbFirestore: any = null;
+let isFirestoreQuotaExhausted = false;
+
+function handleFirestoreQuotaExhausted(err?: any) {
+  if (!isFirestoreQuotaExhausted) {
+    isFirestoreQuotaExhausted = true;
+    console.warn("[Firestore] Daily free quota limit reached. Operating seamlessly in local JSON storage mode.");
+    if (dbFirestore) {
+      const instance = dbFirestore;
+      dbFirestore = null;
+      terminate(instance).catch(() => {});
+    }
+  }
+}
+
+process.on("unhandledRejection", (reason: any) => {
+  if (isQuotaError(reason)) {
+    handleFirestoreQuotaExhausted(reason);
+  } else {
+    console.error("[Unhandled Promise Rejection]", reason);
+  }
+});
 
 // Safe Fetch with robust AbortController timeout to prevent network hang/disconnect errors in sandboxed environments
 async function fetchWithTimeout(url: string, options: any = {}, timeoutMs = 10000): Promise<Response> {
@@ -33,6 +84,24 @@ async function fetchWithTimeout(url: string, options: any = {}, timeoutMs = 1000
 const app = express();
 const PORT = 3000;
 const DB_FILE = path.join(process.cwd(), "data.json");
+
+// Firebase Firestore Cloud Database setup
+try {
+  const firebaseConfigPath = path.join(process.cwd(), "firebase-applet-config.json");
+  if (fs.existsSync(firebaseConfigPath)) {
+    const config = JSON.parse(fs.readFileSync(firebaseConfigPath, "utf8"));
+    const clientApp = getClientApps().length ? getClientApps()[0] : initializeClientApp(config);
+    dbFirestore = getClientFirestore(
+      clientApp,
+      config.firestoreDatabaseId && config.firestoreDatabaseId !== "(default)"
+        ? config.firestoreDatabaseId
+        : undefined
+    );
+    console.log("[Firestore] Cloud Firestore initialized successfully! Project:", config.projectId);
+  }
+} catch (err) {
+  console.error("[Firestore] Initialization error:", err);
+}
 
 // Parse JSON body with higher limits to support full collection syncs
 app.use(express.json({ limit: "50mb" }));
@@ -68,8 +137,8 @@ const DEFAULT_SHOWS: TvShow[] = [
     status: "Watching",
     latestWatched: {
       season: 2,
-      episode: 7,
-      title: "Convergence",
+      episode: 4,
+      title: "Feel Her Love",
     },
     nextEpisode: {
       season: 3,
@@ -87,6 +156,10 @@ const DEFAULT_SHOWS: TvShow[] = [
     concluded: false,
     totalSeasons: 3,
     episodesPerSeason: [9, 7, 8],
+    episodes: {
+      "S1E1": "When You're Lost in the Darkness", "S1E2": "Infected", "S1E3": "Long, Long Time", "S1E4": "Please Hold to My Hand", "S1E5": "Endure and Survive", "S1E6": "Kin", "S1E7": "Left Behind", "S1E8": "When We Are in Need", "S1E9": "Look for the Light",
+      "S2E1": "The Outskirts", "S2E2": "The Seraphites", "S2E3": "Bait", "S2E4": "Feel Her Love", "S2E5": "In the Shadow of the Pines", "S2E6": "Left in the Ashes", "S2E7": "Convergence"
+    },
     createdAt: new Date().toISOString(),
   },
   {
@@ -97,8 +170,8 @@ const DEFAULT_SHOWS: TvShow[] = [
     status: "Watching",
     latestWatched: {
       season: 3,
-      episode: 10,
-      title: "Forever",
+      episode: 5,
+      title: "Children",
     },
     nextEpisode: {
       season: 4,
@@ -116,6 +189,11 @@ const DEFAULT_SHOWS: TvShow[] = [
     concluded: false,
     totalSeasons: 4,
     episodesPerSeason: [8, 10, 10, 10],
+    episodes: {
+      "S1E1": "System", "S1E2": "Hands", "S1E3": "Brigade", "S1E4": "Dogs", "S1E5": "Sheridan", "S1E6": "Ceres", "S1E7": "Review", "S1E8": "Braciole",
+      "S2E1": "Befores", "S2E2": "Pasta", "S2E3": "Sundae", "S2E4": "Honeydew", "S2E5": "Pop", "S2E6": "Fishes", "S2E7": "Forks", "S2E8": "Bolognese", "S2E9": "Omelette", "S2E10": "The Bear",
+      "S3E1": "Tomorrow", "S3E2": "Next", "S3E3": "Doors", "S3E4": "Violet", "S3E5": "Children", "S3E6": "Napkins", "S3E7": "Legacy", "S3E8": "Ice Chips", "S3E9": "Apologies", "S3E10": "Forever"
+    },
     createdAt: new Date().toISOString(),
   },
   {
@@ -123,11 +201,11 @@ const DEFAULT_SHOWS: TvShow[] = [
     title: "Severance",
     streamingService: "Apple TV",
     genres: ["Sci-Fi", "Thriller", "Mystery"],
-    status: "Watching",
+    status: "Backlog",
     latestWatched: {
       season: 1,
-      episode: 9,
-      title: "The We We Are",
+      episode: 5,
+      title: "The Grim Barbarity of Optics and Design",
     },
     nextEpisode: {
       season: 2,
@@ -145,6 +223,10 @@ const DEFAULT_SHOWS: TvShow[] = [
     concluded: false,
     totalSeasons: 2,
     episodesPerSeason: [9, 10],
+    episodes: {
+      "S1E1": "Good News About Hell", "S1E2": "Half Loop", "S1E3": "In Perpetuity", "S1E4": "The You You Are", "S1E5": "The Grim Barbarity of Optics and Design", "S1E6": "Hide and Seek", "S1E7": "Defiant Jazz", "S1E8": "What's for Dinner?", "S1E9": "The We We Are",
+      "S2E1": "Hello Ms. Cobel", "S2E2": "Woe's Hollow", "S2E3": "Sweet Little Lies", "S2E4": "Attitude", "S2E5": "Chiaroscuro", "S2E6": "Break Room", "S2E7": "Testing Floor", "S2E8": "The Board", "S2E9": "Innie/Outie", "S2E10": "Cold Harbor"
+    },
     createdAt: new Date().toISOString(),
   },
   {
@@ -155,8 +237,8 @@ const DEFAULT_SHOWS: TvShow[] = [
     status: "Backlog",
     latestWatched: {
       season: 4,
-      episode: 9,
-      title: "The Piggyback",
+      episode: 4,
+      title: "Chapter Four: Dear Billy",
     },
     nextEpisode: {
       season: 5,
@@ -174,6 +256,10 @@ const DEFAULT_SHOWS: TvShow[] = [
     concluded: false,
     totalSeasons: 5,
     episodesPerSeason: [8, 9, 8, 9, 8],
+    episodes: {
+      "S1E1": "Chapter One: The Vanishing of Will Byers", "S1E2": "Chapter Two: The Weirdo on Maple Street", "S1E3": "Chapter Three: Holly, Jolly", "S1E4": "Chapter Four: The Body", "S1E5": "Chapter Five: The Flea and the Acrobat", "S1E6": "Chapter Six: The Monster", "S1E7": "Chapter Seven: The Bathtub", "S1E8": "Chapter Eight: The Upside Down",
+      "S4E1": "Chapter One: The Hellfire Club", "S4E4": "Chapter Four: Dear Billy", "S4E9": "Chapter Nine: The Piggyback", "S5E1": "The Crawl"
+    },
     createdAt: new Date().toISOString(),
   },
   {
@@ -181,11 +267,11 @@ const DEFAULT_SHOWS: TvShow[] = [
     title: "The Mandalorian",
     streamingService: "Disney+",
     genres: ["Sci-Fi", "Action", "Adventure"],
-    status: "Completed",
+    status: "Watching",
     latestWatched: {
       season: 3,
-      episode: 8,
-      title: "The Return",
+      episode: 4,
+      title: "Chapter 20: The Foundling",
     },
     nextEpisode: null,
     rottenTomatoesScore: 90,
@@ -198,6 +284,10 @@ const DEFAULT_SHOWS: TvShow[] = [
     concluded: true,
     totalSeasons: 3,
     episodesPerSeason: [8, 8, 8],
+    episodes: {
+      "S1E1": "Chapter 1: The Mandalorian", "S1E2": "Chapter 2: The Child", "S1E3": "Chapter 3: The Sin", "S1E4": "Chapter 4: Sanctuary", "S1E5": "Chapter 5: The Gunslinger", "S1E6": "Chapter 6: The Prisoner", "S1E7": "Chapter 7: The Reckoning", "S1E8": "Chapter 8: Redemption",
+      "S2E8": "Chapter 16: The Rescue", "S3E4": "Chapter 20: The Foundling", "S3E8": "Chapter 24: The Return"
+    },
     createdAt: new Date().toISOString(),
   }
 ];
@@ -302,6 +392,81 @@ const POPULAR_SHOWS_METADATA: Record<string, {
   "spiderman noir": { streamingService: "Prime Video" }
 };
 
+// Helper for atomic file writing to avoid partial writes or corrupted files on crash
+function safeWriteFileSync(filePath: string, data: any) {
+  try {
+    const jsonString = JSON.stringify(data, null, 2);
+    const tmpPath = `${filePath}.${Date.now()}.${Math.random().toString(36).substring(2, 7)}.tmp`;
+    const bakPath = `${filePath}.bak`;
+
+    fs.writeFileSync(tmpPath, jsonString, "utf8");
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.copyFileSync(filePath, bakPath);
+      } catch (e) {}
+    }
+    fs.renameSync(tmpPath, filePath);
+  } catch (err) {
+    console.error(`[SafeWrite] Error writing ${filePath}:`, err);
+  }
+}
+
+function safeReadJsonFileSync<T>(filePath: string): T | null {
+  if (!fs.existsSync(filePath)) return null;
+  try {
+    const content = fs.readFileSync(filePath, "utf8");
+    return JSON.parse(content) as T;
+  } catch (err: any) {
+    console.error(`[SafeRead] Read error parsing ${filePath}:`, err?.message);
+    
+    // Attempt 1: Try reading .bak file
+    const bakPath = `${filePath}.bak`;
+    if (fs.existsSync(bakPath)) {
+      try {
+        console.log(`[SafeRead] Attempting fallback to ${bakPath}...`);
+        const bakContent = fs.readFileSync(bakPath, "utf8");
+        const parsedBak = JSON.parse(bakContent) as T;
+        safeWriteFileSync(filePath, parsedBak);
+        return parsedBak;
+      } catch (e) {}
+    }
+
+    // Attempt 2: Smart repair truncated JSON string
+    try {
+      let raw = fs.readFileSync(filePath, "utf8");
+      let lines = raw.split("\n");
+      for (let i = lines.length; i > 0; i--) {
+        let candidate = lines.slice(0, i).join("\n").trimEnd();
+        if (candidate.endsWith(",")) candidate = candidate.slice(0, -1);
+        let openBraces = 0, openBrackets = 0, inString = false;
+        for (let j = 0; j < candidate.length; j++) {
+          const char = candidate[j];
+          if (char === '"' && (j === 0 || candidate[j-1] !== "\\")) inString = !inString;
+          if (!inString) {
+            if (char === "{") openBraces++;
+            if (char === "}") openBraces--;
+            if (char === "[") openBrackets++;
+            if (char === "]") openBrackets--;
+          }
+        }
+        if (inString) continue;
+        let closing = "";
+        while (openBrackets > 0) { closing += "\n]"; openBrackets--; }
+        while (openBraces > 0) { closing += "\n}"; openBraces--; }
+
+        try {
+          const repaired = JSON.parse(candidate + closing) as T;
+          console.log(`[SafeRead] Successfully auto-repaired truncated ${filePath}!`);
+          safeWriteFileSync(filePath, repaired);
+          return repaired;
+        } catch (repairErr) {}
+      }
+    } catch (salvageErr) {}
+
+    return null;
+  }
+}
+
 // Helper to read database
 function readDatabase(): Record<string, Board> {
   try {
@@ -321,28 +486,43 @@ function readDatabase(): Record<string, Board> {
           updatedAt: new Date().toISOString(),
         },
       };
-      fs.writeFileSync(DB_FILE, JSON.stringify(initialDb, null, 2), "utf8");
+      safeWriteFileSync(DB_FILE, initialDb);
       return initialDb;
     }
-    const content = fs.readFileSync(DB_FILE, "utf8");
-    const db: Record<string, Board> = JSON.parse(content);
-    let modified = false;
 
-    // Heal existing shows that might have missing totalSeasons or episodesPerSeason
-    for (const [boardId, board] of Object.entries(db)) {
-      if (board && Array.isArray(board.shows)) {
-        for (const show of board.shows) {
-          let showModified = false;
-          const cleanTitle = (show.title || "").toLowerCase().trim();
+    const db = safeReadJsonFileSync<Record<string, Board>>(DB_FILE);
+    if (!db || typeof db !== 'object') {
+      console.error("[DB] Could not parse DB_FILE or backup. Re-initializing default DB structure.");
+      const fallbackDb: Record<string, Board> = {
+        default: {
+          id: "default",
+          name: "My Tracker",
+          shows: DEFAULT_SHOWS,
+          preferences: { genres: [], actors: [], directors: [], services: ALL_SERVICES },
+          updatedAt: new Date().toISOString(),
+        }
+      };
+      safeWriteFileSync(DB_FILE, fallbackDb);
+      return fallbackDb;
+    }
 
-          // Ensure basic structure of latestWatched is valid
-          if (!show.latestWatched) {
-            show.latestWatched = { season: 1, episode: 1, title: "Episode 1" };
-            showModified = true;
-          }
+  let modified = false;
 
-          // Apply POPULAR_SHOWS_METADATA overrides and corrections
-          const meta = POPULAR_SHOWS_METADATA[cleanTitle];
+  // Heal existing shows that might have missing totalSeasons or episodesPerSeason
+  for (const [boardId, board] of Object.entries(db)) {
+    if (board && Array.isArray(board.shows)) {
+      for (const show of board.shows) {
+        let showModified = false;
+        const cleanTitle = (show.title || "").toLowerCase().trim();
+
+        // Ensure basic structure of latestWatched is valid
+        if (!show.latestWatched) {
+          show.latestWatched = { season: 1, episode: 1, title: "Episode 1" };
+          showModified = true;
+        }
+
+        // Apply POPULAR_SHOWS_METADATA overrides and corrections
+        const meta = POPULAR_SHOWS_METADATA[cleanTitle];
           if (meta) {
             if (meta.totalSeasons !== undefined && show.totalSeasons !== meta.totalSeasons) {
               show.totalSeasons = meta.totalSeasons;
@@ -415,7 +595,7 @@ function readDatabase(): Record<string, Board> {
 
             // Fallback calculation
             if (show.totalSeasons === undefined || show.totalSeasons === null) {
-              show.totalSeasons = Math.max(show.latestWatched?.season || 1, show.nextEpisode?.season || 1, 5);
+              show.totalSeasons = Math.max(show.latestWatched?.season || 1, show.nextEpisode?.season || 1);
               showModified = true;
             }
           }
@@ -470,6 +650,13 @@ function readDatabase(): Record<string, Board> {
             }
           }
 
+          // 5. Clean up expired / past nextEpisode dates if airDate < today
+          const todayStr = new Date().toISOString().split('T')[0];
+          if (show.nextEpisode && show.nextEpisode.airDate && show.nextEpisode.airDate < todayStr) {
+            show.nextEpisode = null;
+            showModified = true;
+          }
+
           if (showModified) {
             modified = true;
           }
@@ -514,7 +701,7 @@ function readDatabase(): Record<string, Board> {
     }
     
     if (modified) {
-      fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf8");
+      safeWriteFileSync(DB_FILE, db);
     }
     
     return db;
@@ -524,12 +711,58 @@ function readDatabase(): Record<string, Board> {
   }
 }
 
-// Helper to write database
-function writeDatabase(data: Record<string, Board>) {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf8");
-  } catch (err) {
-    console.log("[DB] Note: Could not write database file.");
+// Helper to write database safely
+let dbWriteTimer: NodeJS.Timeout | null = null;
+const firestoreWriteTimers: Record<string, NodeJS.Timeout> = {};
+
+function writeDatabase(data: Record<string, Board>, targetBoardId?: string) {
+  if (dbWriteTimer) clearTimeout(dbWriteTimer);
+  dbWriteTimer = setTimeout(() => {
+    safeWriteFileSync(DB_FILE, data);
+  }, 100);
+
+  if (dbFirestore && !isFirestoreQuotaExhausted) {
+    if (targetBoardId) {
+      if (firestoreWriteTimers[targetBoardId]) {
+        clearTimeout(firestoreWriteTimers[targetBoardId]);
+      }
+      firestoreWriteTimers[targetBoardId] = setTimeout(() => {
+        if (!dbFirestore || isFirestoreQuotaExhausted) return;
+        const board = data[targetBoardId];
+        if (board) {
+          const cleanBoard = sanitizeForFirestore(board);
+          setDoc(doc(dbFirestore, "boards", targetBoardId), cleanBoard, { merge: false }).catch((err: any) => {
+            if (isQuotaError(err)) {
+              handleFirestoreQuotaExhausted(err);
+            } else {
+              console.error(`[Firestore] Error writing board ${targetBoardId}:`, err?.message || err);
+            }
+          });
+        } else {
+          deleteDoc(doc(dbFirestore, "boards", targetBoardId)).catch((err: any) => {
+            if (isQuotaError(err)) handleFirestoreQuotaExhausted(err);
+          });
+        }
+      }, 1000);
+    } else {
+      for (const [boardId, board] of Object.entries(data)) {
+        if (board) {
+          if (firestoreWriteTimers[boardId]) {
+            clearTimeout(firestoreWriteTimers[boardId]);
+          }
+          const currentBoardId = boardId;
+          firestoreWriteTimers[boardId] = setTimeout(() => {
+            if (!dbFirestore || isFirestoreQuotaExhausted) return;
+            const cleanBoard = sanitizeForFirestore(board);
+            setDoc(doc(dbFirestore, "boards", currentBoardId), cleanBoard, { merge: false }).catch((err: any) => {
+              if (isQuotaError(err)) {
+                handleFirestoreQuotaExhausted(err);
+              }
+            });
+          }, 1000);
+        }
+      }
+    }
   }
 }
 
@@ -540,12 +773,16 @@ interface AppCache {
   enrich: Record<string, any>;
   recaps: Record<string, string>;
   teasers: Record<string, string>;
+  episodeTitles: Record<string, any>;
+  recommendations: Record<string, { timestamp: number; data: any }>;
 }
 
 let appCache: AppCache = {
   enrich: {},
   recaps: {},
-  teasers: {}
+  teasers: {},
+  episodeTitles: {},
+  recommendations: {}
 };
 
 function loadCache() {
@@ -556,7 +793,9 @@ function loadCache() {
       appCache = {
         enrich: parsed.enrich || {},
         recaps: {}, // Force fresh, highly-accurate regeneration using the new wide-grounding search
-        teasers: {} // Force fresh, highly-accurate regeneration using the new wide-grounding search
+        teasers: {}, // Force fresh, highly-accurate regeneration using the new wide-grounding search
+        episodeTitles: parsed.episodeTitles || {},
+        recommendations: parsed.recommendations || {}
       };
       // Save cache with cleared recaps and teasers to ensure we do not clear on every reload
       try {
@@ -568,109 +807,251 @@ function loadCache() {
   }
 }
 
+let cacheSaveTimer: NodeJS.Timeout | null = null;
 function saveCache() {
-  try {
-    fs.writeFileSync(CACHE_FILE, JSON.stringify(appCache, null, 2), "utf8");
-  } catch (err) {
-    console.log("[Info] Error writing cache file");
-  }
+  if (cacheSaveTimer) clearTimeout(cacheSaveTimer);
+  cacheSaveTimer = setTimeout(() => {
+    fs.promises.writeFile(CACHE_FILE, JSON.stringify(appCache, null, 2), "utf8").catch(() => {});
+  }, 250);
 }
 
 // Initialize cache
 loadCache();
+
+// Helper to ensure board has a valid owner object populated
+function ensureBoardOwner(board: any, boardId: string): any {
+  if (!board) return board;
+  if (!board.owner || !board.owner.name) {
+    const matched = COMMUNITY_USERS.find(u => u.id === boardId || u.id.toLowerCase() === boardId.toLowerCase());
+    if (matched) {
+      board.owner = matched;
+    } else {
+      const cleanName = boardId.replace(/^user-/, '').replace(/-\d+$/, '');
+      const formattedName = cleanName ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1) : 'Watch Buddy';
+      board.owner = {
+        id: boardId,
+        name: formattedName,
+        email: `${boardId}@couchtaterz.com`,
+        avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${boardId}`,
+        createdAt: new Date().toISOString()
+      };
+    }
+  }
+  if (!board.name || board.name.startsWith("Family Board")) {
+    if (board.owner && board.owner.name) {
+      board.name = `${board.owner.name}'s Collection`;
+    }
+  }
+  return board;
+}
 
 // REST API Endpoints
 
 // 1. Get Board (creates custom if not found)
 app.get("/api/boards", async (req, res) => {
   try {
+    if (firestoreSyncPromise) {
+      try {
+        await Promise.race([
+          firestoreSyncPromise,
+          new Promise((resolve) => setTimeout(resolve, 2500))
+        ]);
+      } catch (e) {}
+    }
     const db = readDatabase();
     
     if (req.query.all === "true") {
-      if (db["default"] && (!db["default"].owner || db["default"].owner.name !== "Julio")) {
-        db["default"].owner = {
-          id: "default",
-          name: "Julio",
-          email: "juliozaldivar@gmail.com",
-          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
-          createdAt: "2026-07-14T17:27:16.152Z"
-        };
-        writeDatabase(db);
-      }
+      let dbChanged = false;
+      Object.keys(db).forEach(bKey => {
+        if (db[bKey]) {
+          const prevOwner = db[bKey].owner;
+          ensureBoardOwner(db[bKey], bKey);
+          if (!prevOwner || !prevOwner.name) dbChanged = true;
+        }
+      });
+      if (dbChanged) writeDatabase(db, "default");
       res.json(db);
       return;
     }
 
     const boardId = (req.query.id as string) || "default";
-    
-    // Make sure default board has owner populated
-    if (db["default"] && (!db["default"].owner || db["default"].owner.name !== "Julio")) {
-      db["default"].owner = {
-        id: "default",
-        name: "Julio",
-        email: "juliozaldivar@gmail.com",
-        avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
-        createdAt: "2026-07-14T17:27:16.152Z"
-      };
-      writeDatabase(db);
+
+    // If board is not in local memory, attempt fetching directly from Cloud Firestore first
+    if (!db[boardId] && dbFirestore && !isFirestoreQuotaExhausted && boardId !== "guest-demo" && req.query.reset !== "true") {
+      try {
+        const cloudDoc = await getDoc(doc(dbFirestore, "boards", boardId));
+        if (cloudDoc.exists()) {
+          const cloudBoard = cloudDoc.data() as Board;
+          if (cloudBoard && Array.isArray(cloudBoard.shows) && cloudBoard.shows.length > 0) {
+            db[boardId] = cloudBoard;
+            safeWriteFileSync(DB_FILE, db);
+          }
+        }
+      } catch (fErr) {
+        console.warn(`[Firestore] Direct read fallback for board ${boardId}:`, fErr);
+      }
     }
 
-    if (!db[boardId]) {
-      // Initialize empty or standard user board
+    if (boardId === "guest-demo" || !db[boardId] || req.query.reset === "true") {
+      const matchedCommunityUser = COMMUNITY_USERS.find(u => u.id === boardId);
       db[boardId] = {
         id: boardId,
-        name: boardId === "default" ? "My Tracker" : `Family Board (${boardId})`,
-        shows: boardId === "default" ? DEFAULT_SHOWS : [],
-        preferences: { genres: [], actors: [], directors: [] },
+        name: matchedCommunityUser ? `${matchedCommunityUser.name}'s Collection` : boardId === "default" ? "My Tracker" : boardId === "guest-demo" ? "Guest Demo Queue" : `Watch Buddy (${boardId})`,
+        shows: (boardId === "default" || boardId === "guest-demo" || req.query.reset === "true") ? DEFAULT_SHOWS : [],
+        preferences: db[boardId]?.preferences || { genres: [], actors: [], directors: [] },
+        owner: matchedCommunityUser || (boardId === "guest-demo" ? {
+          id: "guest-demo",
+          name: "Guest Explorer",
+          email: "guest@couchtaterz.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=GuestDemo",
+          createdAt: new Date().toISOString()
+        } : undefined),
         updatedAt: new Date().toISOString(),
       };
-      writeDatabase(db);
-    } else if (!db[boardId].preferences) {
-      db[boardId].preferences = { genres: [], actors: [], directors: [] };
-      writeDatabase(db);
+      ensureBoardOwner(db[boardId], boardId);
+      writeDatabase(db, boardId);
+    } else {
+      let needsSave = false;
+      const prevOwnerStr = JSON.stringify(db[boardId].owner);
+      ensureBoardOwner(db[boardId], boardId);
+      if (prevOwnerStr !== JSON.stringify(db[boardId].owner)) {
+        needsSave = true;
+      }
+      if (!db[boardId].preferences) {
+        db[boardId].preferences = { genres: [], actors: [], directors: [] };
+        needsSave = true;
+      }
+      if (needsSave) {
+        writeDatabase(db, boardId);
+      }
     }
 
-    // Validate and run redundancy check on shows of the board
-    let databaseChanged = false;
+    // Filter out null shows
     if (db[boardId].shows && db[boardId].shows.length > 0) {
-      // Filter out null shows
       db[boardId].shows = db[boardId].shows.filter((s: any) => s !== null);
+    }
 
-      db[boardId].shows = await Promise.all(
-        db[boardId].shows.map(async (show: any) => {
-          if (!show) return show;
-          const showTitle = show.title || "Unknown Show";
-          const isStale = !show.redundancyVerified || !show.redundancyCheckedAt || 
-            (Date.now() - new Date(show.redundancyCheckedAt).getTime()) > 4 * 60 * 60 * 1000;
-          
-          if (isStale) {
-            try {
-              const validated = await runRedundancyCheckAndValidate(show, showTitle);
-              databaseChanged = true;
-              return validated;
-            } catch (e) {
-              console.log(`[Redundancy Engine] Note: Using stored metadata for "${showTitle}" during board fetch.`);
-              // Mark as checked now anyway to prevent spamming the API on every poll
-              show.redundancyCheckedAt = new Date().toISOString();
-              show.redundancyVerified = show.redundancyVerified || false;
-              databaseChanged = true;
-              return show;
+    // Send board JSON immediately for sub-10ms response time
+    res.json(db[boardId]);
+
+    // Asynchronously verify stale shows in the background without blocking or overwriting newly added shows
+    if (db[boardId].shows && db[boardId].shows.length > 0) {
+      setImmediate(async () => {
+        try {
+          const showsToCheck = [...db[boardId].shows];
+          const updatedShowsMap = new Map<string, any>();
+          let changed = false;
+
+          await Promise.all(
+            showsToCheck.map(async (show: any) => {
+              if (!show) return;
+              const showTitle = show.title || "Unknown Show";
+              const isStale = !show.redundancyVerified || !show.redundancyCheckedAt || 
+                (Date.now() - new Date(show.redundancyCheckedAt).getTime()) > 4 * 60 * 60 * 1000;
+              
+              if (isStale) {
+                try {
+                  const validated = await runRedundancyCheckAndValidate(show, showTitle);
+                  updatedShowsMap.set(showTitle.toLowerCase().trim(), validated);
+                  changed = true;
+                } catch (e) {
+                  show.redundancyCheckedAt = new Date().toISOString();
+                  show.redundancyVerified = show.redundancyVerified || false;
+                  updatedShowsMap.set(showTitle.toLowerCase().trim(), show);
+                }
+              }
+            })
+          );
+
+          if (changed && updatedShowsMap.size > 0) {
+            // Re-read latest DB state so we never revert newly added shows
+            const latestDb = readDatabase();
+            if (latestDb[boardId] && Array.isArray(latestDb[boardId].shows)) {
+              latestDb[boardId].shows = latestDb[boardId].shows.map((s: any) => {
+                if (!s || !s.title) return s;
+                const key = s.title.toLowerCase().trim();
+                if (updatedShowsMap.has(key)) {
+                  const updated = updatedShowsMap.get(key);
+                  return { ...s, ...updated };
+                }
+                return s;
+              });
+              safeWriteFileSync(DB_FILE, latestDb);
             }
           }
-          return show;
-        })
-      );
+        } catch (bgErr) {
+          console.error(`[Background Redundancy Engine] Non-fatal background error for board ${boardId}:`, bgErr);
+        }
+      });
     }
-
-    if (databaseChanged) {
-      writeDatabase(db);
-    }
-    
-    res.json(db[boardId]);
   } catch (error: any) {
     console.error("Failed to fetch board data:", error);
     res.status(500).json({ error: error?.message || String(error) });
   }
+});
+
+// OpenGraph Dynamic Card Preview Endpoint (for social sharing & link unfurling)
+app.get("/api/og-card", (req, res) => {
+  const boardName = (req.query.name as string) || "Julio's Household Queue";
+  const activeCount = (req.query.count as string) || "12";
+  
+  const svg = `
+  <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+    <rect width="1200" height="630" fill="#0B0F19"/>
+    
+    <!-- Background Gradient Orbs -->
+    <circle cx="200" cy="150" r="300" fill="#2563EB" opacity="0.18" filter="blur(80px)" />
+    <circle cx="1000" cy="500" r="350" fill="#7C3AED" opacity="0.15" filter="blur(90px)" />
+    <circle cx="600" cy="300" r="250" fill="#3B82F6" opacity="0.1" filter="blur(70px)" />
+    
+    <!-- Card Frame -->
+    <rect x="50" y="50" width="1100" height="530" rx="28" fill="#0F172A" stroke="#1E293B" stroke-width="2"/>
+    
+    <!-- Top Branding Header -->
+    <g transform="translate(100, 110)">
+      <rect x="0" y="0" width="60" height="60" rx="16" fill="#1E293B" stroke="#3B82F6" stroke-width="2"/>
+      <g transform="translate(15, 15) scale(1.25)" fill="none" stroke="#3B82F6" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="20" height="15" x="2" y="7" rx="2" />
+        <polyline points="17 2 12 7 7 2" />
+      </g>
+      
+      <text x="80" y="42" font-family="system-ui, -apple-system, sans-serif" font-weight="900" font-size="38" letter-spacing="-1.5"><tspan fill="#3B82F6">COUCH</tspan><tspan fill="#FFFFFF">TATERZ</tspan></text>
+      <rect x="365" y="18" width="125" height="30" rx="15" fill="#2563EB" opacity="0.2" stroke="#3B82F6" stroke-width="1.5" />
+      <text x="380" y="38" fill="#60A5FA" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="13" letter-spacing="0.5">AI TV TRACKER</text>
+    </g>
+    
+    <!-- Main Board Name / Headline -->
+    <text x="100" y="250" fill="#F8FAFC" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="52" letter-spacing="-1.5">${boardName}</text>
+    <text x="100" y="305" fill="#94A3B8" font-family="system-ui, -apple-system, sans-serif" font-weight="500" font-size="24">Your AI-Powered TV Tracker &amp; Household Episode Queue</text>
+    
+    <!-- Feature Pill Badges -->
+    <g transform="translate(100, 360)">
+      <!-- Pill 1: Active Shows -->
+      <rect x="0" y="0" width="230" height="52" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+      <text x="24" y="32" fill="#38BDF8" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="18">📺 ${activeCount} Shows Tracked</text>
+      
+      <!-- Pill 2: Multi-Platform -->
+      <rect x="250" y="0" width="350" height="52" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+      <text x="274" y="32" fill="#A78BFA" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="18">🍿 Netflix • HBO • Disney+ • Apple</text>
+      
+      <!-- Pill 3: AI Recaps -->
+      <rect x="620" y="0" width="310" height="52" rx="16" fill="#1E293B" stroke="#334155" stroke-width="1.5"/>
+      <text x="644" y="32" fill="#F472B6" font-family="system-ui, -apple-system, sans-serif" font-weight="700" font-size="18">✨ AI Spoiler-Free Recaps</text>
+    </g>
+    
+    <!-- Footer CTA Bar -->
+    <g transform="translate(100, 480)">
+      <rect x="0" y="0" width="1000" height="56" rx="16" fill="#1E293B" opacity="0.6"/>
+      <text x="28" y="34" fill="#E2E8F0" font-family="system-ui, -apple-system, sans-serif" font-weight="600" font-size="18">Join the queue &amp; sync your watch progress at couch-taterz.app</text>
+      <circle cx="950" cy="28" r="14" fill="#2563EB" />
+      <path d="M945 28 L955 28 M951 24 L955 28 L951 32" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+    </g>
+  </svg>
+  `;
+
+  res.setHeader("Content-Type", "image/svg+xml");
+  res.setHeader("Cache-Control", "public, max-age=86400, s-maxage=86400");
+  res.send(svg);
 });
 
 // 2. Save Board
@@ -692,7 +1073,7 @@ app.post("/api/boards", (req, res) => {
     updatedAt: new Date().toISOString(),
   };
   
-  writeDatabase(db);
+  writeDatabase(db, id);
   res.json(db[id]);
 });
 
@@ -717,7 +1098,7 @@ app.post("/api/notify", (req, res) => {
   
   targetBoard.notifications.push(notification);
   targetBoard.updatedAt = new Date().toISOString();
-  writeDatabase(db);
+  writeDatabase(db, targetUserId);
   res.json({ success: true });
 });
 
@@ -739,7 +1120,7 @@ app.post("/api/notifications/dismiss", (req, res) => {
   if (board.notifications) {
     board.notifications = board.notifications.filter((n: any) => n.id !== notificationId);
     board.updatedAt = new Date().toISOString();
-    writeDatabase(db);
+    writeDatabase(db, boardId);
   }
   res.json({ success: true });
 });
@@ -747,7 +1128,16 @@ app.post("/api/notifications/dismiss", (req, res) => {
 // 2.3. Delete Board
 app.delete("/api/boards", (req, res) => {
   const boardId = (req.query.id as string) || "default";
+  const password = (req.query.password as string) || (req.body?.password as string);
   const db = readDatabase();
+
+  const targetBoard = db[boardId];
+  const isJulioBoard = boardId === "default" || boardId === "user-julio" || targetBoard?.owner?.name?.trim().toLowerCase() === "julio" || targetBoard?.owner?.email?.toLowerCase() === "juliozaldivar@gmail.com";
+
+  if (isJulioBoard && password !== "3713") {
+    return res.status(403).json({ error: "Password 3713 required to delete Julio's profile." });
+  }
+
   if (boardId === "default") {
     db["default"] = {
       id: "default",
@@ -766,12 +1156,452 @@ app.delete("/api/boards", (req, res) => {
   } else {
     delete db[boardId];
   }
-  writeDatabase(db);
+  writeDatabase(db, boardId);
   res.json({ success: true });
+});
+
+// Core community Taterz users for login & connections
+const COMMUNITY_USERS = [
+  {
+    id: "default",
+    name: "Julio",
+    email: "juliozaldivar@gmail.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
+    createdAt: "2026-07-14T17:27:16.152Z"
+  },
+  {
+    id: "user-julian-7667",
+    name: "Julian",
+    email: "julian@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Cat",
+    createdAt: "2026-07-19T04:48:22.066Z"
+  },
+  {
+    id: "user-lily-9367",
+    name: "AnnaDee",
+    email: "annadee@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=AnnaDee",
+    createdAt: "2026-07-15T18:50:21.963Z"
+  },
+  {
+    id: "user-rafael-9639",
+    name: "Rafael",
+    email: "rafael.gomez@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=RafaelGomez",
+    createdAt: "2026-07-22T13:25:00.000Z"
+  },
+  {
+    id: "user-kris-5139",
+    name: "Kris",
+    email: "kris@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Kris",
+    createdAt: "2026-07-24T10:00:00.000Z"
+  },
+  {
+    id: "user-lilyann-4290",
+    name: "Lilyann",
+    email: "lilyann@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=BingeWatcher",
+    createdAt: "2026-07-19T06:18:21.385Z"
+  }
+];
+
+// Friends DB File & Helpers
+const FRIENDS_DB_FILE = path.join(process.cwd(), "data", "friends.json");
+
+interface FriendRequestDetail {
+  fromUserId: string;
+  fromUserName?: string;
+  fromUserAvatar?: string;
+  message?: string;
+  sentAt: string;
+}
+
+interface UserFriendsRecord {
+  friends: string[];
+  pendingSent: string[];
+  pendingReceived: FriendRequestDetail[];
+}
+
+function readFriendsDb(): Record<string, UserFriendsRecord> {
+  try {
+    if (!fs.existsSync(FRIENDS_DB_FILE)) {
+      return {};
+    }
+    const raw = fs.readFileSync(FRIENDS_DB_FILE, "utf-8");
+    return JSON.parse(raw);
+  } catch (e) {
+    return {};
+  }
+}
+let friendsWriteTimer: NodeJS.Timeout | null = null;
+function writeFriendsDb(data: Record<string, UserFriendsRecord>, targetUserIds?: string | string[]): void {
+  try {
+    const dir = path.dirname(FRIENDS_DB_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    if (friendsWriteTimer) clearTimeout(friendsWriteTimer);
+    friendsWriteTimer = setTimeout(() => {
+      fs.promises.writeFile(FRIENDS_DB_FILE, JSON.stringify(data, null, 2), "utf-8").catch(() => {});
+    }, 100);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      const targets = targetUserIds ? (Array.isArray(targetUserIds) ? targetUserIds : [targetUserIds]) : Object.keys(data);
+      for (const userId of targets) {
+        const record = data[userId];
+        if (record) {
+          setDoc(doc(dbFirestore, "friends", userId), sanitizeForFirestore(record), { merge: true }).catch((err: any) => {
+            if (isQuotaError(err)) {
+              handleFirestoreQuotaExhausted(err);
+            } else {
+              console.error(`[Firestore] Error writing friend record ${userId}:`, err?.message || err);
+            }
+          });
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Error writing friends db:", e);
+  }
+}
+
+// Smart show and board merger to guarantee Cloud Firestore data (shows & reviews) is never overwritten or lost during deployments/updates
+function mergeSingleShow(cloudShow: any, localShow: any): any {
+  if (!cloudShow && !localShow) return null;
+  if (!cloudShow) return localShow;
+  if (!localShow) return cloudShow;
+
+  const cloudHasReview = Boolean(cloudShow.userNotes || cloudShow.userScore != null || cloudShow.myReview || cloudShow.myRating);
+  const localHasReview = Boolean(localShow.userNotes || localShow.userScore != null || localShow.myReview || localShow.myRating);
+
+  const cloudProgress = ((cloudShow.latestWatched?.season || 0) * 1000) + (cloudShow.latestWatched?.episode || 0);
+  const localProgress = ((localShow.latestWatched?.season || 0) * 1000) + (localShow.latestWatched?.episode || 0);
+
+  let base = cloudShow;
+  let secondary = localShow;
+
+  if (localProgress > cloudProgress) {
+    base = localShow;
+    secondary = cloudShow;
+  } else if (!cloudHasReview && localHasReview) {
+    base = localShow;
+    secondary = cloudShow;
+  }
+
+  return {
+    ...secondary,
+    ...base,
+    userNotes: base.userNotes || secondary.userNotes || "",
+    userScore: base.userScore ?? secondary.userScore ?? null,
+    episodes: { ...(secondary.episodes || {}), ...(base.episodes || {}) },
+    isFavorite: Boolean(base.isFavorite || secondary.isFavorite),
+    genres: (base.genres && base.genres.length > 0) ? base.genres : (secondary.genres || []),
+    directors: (base.directors && base.directors.length > 0) ? base.directors : (secondary.directors || []),
+    actors: (base.actors && base.actors.length > 0) ? base.actors : (secondary.actors || []),
+    overview: base.overview || secondary.overview || "",
+    bannerImage: base.bannerImage || secondary.bannerImage || "",
+    totalSeasons: base.totalSeasons || secondary.totalSeasons,
+    episodesPerSeason: base.episodesPerSeason || secondary.episodesPerSeason,
+  };
+}
+
+function mergeBoards(cloudBoard: Board, localBoard: Board): { mergedBoard: Board; changed: boolean } {
+  const cloudTime = new Date(cloudBoard?.updatedAt || 0).getTime();
+  const localTime = new Date(localBoard?.updatedAt || 0).getTime();
+  const cloudShows = Array.isArray(cloudBoard?.shows) ? cloudBoard.shows.filter(Boolean) : [];
+  const localShows = Array.isArray(localBoard?.shows) ? localBoard.shows.filter(Boolean) : [];
+
+  const getShowKey = (s: any) => {
+    if (!s) return null;
+    if (s.title && typeof s.title === 'string' && s.title.trim().length > 0) {
+      return s.title.toLowerCase().trim();
+    }
+    if (s.id && typeof s.id === 'string' && s.id.trim().length > 0) {
+      return s.id.trim();
+    }
+    return null;
+  };
+
+  const showMap = new Map<string, any>();
+
+  // Start with all cloud shows
+  cloudShows.forEach((cs: any) => {
+    const key = getShowKey(cs);
+    if (key) showMap.set(key, cs);
+  });
+
+  // Merge in local shows
+  localShows.forEach((ls: any) => {
+    const key = getShowKey(ls);
+    if (!key) return;
+
+    if (!showMap.has(key)) {
+      showMap.set(key, ls);
+    } else {
+      const cs = showMap.get(key);
+      const mergedShow = mergeSingleShow(cs, ls);
+      showMap.set(key, mergedShow);
+    }
+  });
+
+  const mergedShows = Array.from(showMap.values());
+
+  const mergedPreferences = {
+    genres: Array.from(new Set([...(cloudBoard.preferences?.genres || []), ...(localBoard.preferences?.genres || [])])),
+    actors: Array.from(new Set([...(cloudBoard.preferences?.actors || []), ...(localBoard.preferences?.actors || [])])),
+    directors: Array.from(new Set([...(cloudBoard.preferences?.directors || []), ...(localBoard.preferences?.directors || [])])),
+    services: Array.from(new Set([...(cloudBoard.preferences?.services || []), ...(localBoard.preferences?.services || [])])),
+  };
+
+  const notifMap = new Map<string, any>();
+  [...(cloudBoard.notifications || []), ...(localBoard.notifications || [])].forEach((n: any) => {
+    if (n && n.id) notifMap.set(n.id, n);
+  });
+
+  const newestUpdatedAt = cloudTime >= localTime
+    ? (cloudBoard.updatedAt || new Date().toISOString())
+    : (localBoard.updatedAt || new Date().toISOString());
+
+  const mergedBoard: Board = {
+    ...localBoard,
+    ...cloudBoard,
+    id: cloudBoard.id || localBoard.id,
+    name: cloudBoard.name || localBoard.name || "Watchlist",
+    shows: mergedShows,
+    preferences: mergedPreferences,
+    notifications: Array.from(notifMap.values()),
+    owner: cloudBoard.owner || localBoard.owner,
+    updatedAt: newestUpdatedAt
+  };
+
+  const changed = (mergedShows.length !== cloudShows.length) || (mergedShows.length !== localShows.length) || (JSON.stringify(mergedBoard) !== JSON.stringify(cloudBoard));
+
+  return { mergedBoard, changed };
+}
+
+// Sync Firestore with local data on server startup
+let firestoreSyncPromise: Promise<void> | null = null;
+
+async function initFirestoreSync() {
+  if (!dbFirestore || isFirestoreQuotaExhausted) return;
+  try {
+    // 1. Sync Boards
+    const boardsSnapshot = await getDocs(collection(dbFirestore, "boards"));
+    let localDb: Record<string, Board> = {};
+    if (fs.existsSync(DB_FILE)) {
+      try {
+        localDb = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+      } catch (e) {}
+    }
+
+    if (boardsSnapshot.empty) {
+      console.log("[Firestore] Firestore boards collection empty. Seeding from data.json...");
+      const batch = writeBatch(dbFirestore);
+      for (const [boardId, board] of Object.entries(localDb)) {
+        if (board) {
+          batch.set(doc(dbFirestore, "boards", boardId), sanitizeForFirestore(board));
+        }
+      }
+      await batch.commit();
+      console.log("[Firestore] Successfully seeded Firestore with initial boards!");
+    } else {
+      console.log(`[Firestore] Syncing ${boardsSnapshot.size} board documents from Cloud Firestore...`);
+      let localModified = false;
+
+      boardsSnapshot.forEach((docSnap) => {
+        const cloudBoard = docSnap.data() as Board;
+        const localBoard = localDb[docSnap.id];
+        if (!localBoard) {
+          localDb[docSnap.id] = cloudBoard;
+          localModified = true;
+        } else {
+          const { mergedBoard, changed } = mergeBoards(cloudBoard, localBoard);
+          localDb[docSnap.id] = mergedBoard;
+          if (changed) {
+            localModified = true;
+            // Save enriched merged board back to Cloud Firestore
+            setDoc(doc(dbFirestore, "boards", docSnap.id), sanitizeForFirestore(mergedBoard), { merge: false }).catch((e) => {
+              if (isQuotaError(e)) {
+                handleFirestoreQuotaExhausted(e);
+              } else {
+                console.error(`[Firestore Sync] Failed to update board ${docSnap.id}:`, e?.message || e);
+              }
+            });
+          }
+        }
+      });
+
+      // Preserve any local boards not yet present in Firestore
+      for (const [localId, localBoard] of Object.entries(localDb)) {
+        if (localBoard && !boardsSnapshot.docs.some(d => d.id === localId)) {
+          setDoc(doc(dbFirestore, "boards", localId), sanitizeForFirestore(localBoard), { merge: false }).catch((e) => {
+            if (isQuotaError(e)) {
+              handleFirestoreQuotaExhausted(e);
+            } else {
+              console.error(`[Firestore Sync] Failed to write local board ${localId}:`, e?.message || e);
+            }
+          });
+        }
+      }
+
+      if (localModified) {
+        safeWriteFileSync(DB_FILE, localDb);
+      }
+    }
+
+    // 2. Sync Friends DB
+    const friendsSnapshot = await getDocs(collection(dbFirestore, "friends"));
+    let localFriendsDb: Record<string, any> = {};
+    if (fs.existsSync(FRIENDS_DB_FILE)) {
+      try {
+        localFriendsDb = JSON.parse(fs.readFileSync(FRIENDS_DB_FILE, "utf8"));
+      } catch (e) {}
+    }
+
+    if (friendsSnapshot.empty) {
+      console.log("[Firestore] Firestore friends collection empty. Seeding from friends.json...");
+      const batch = writeBatch(dbFirestore);
+      for (const [userId, record] of Object.entries(localFriendsDb)) {
+        if (record) {
+          batch.set(doc(dbFirestore, "friends", userId), record);
+        }
+      }
+      await batch.commit();
+    } else {
+      friendsSnapshot.forEach((docSnap) => {
+        localFriendsDb[docSnap.id] = docSnap.data();
+      });
+      const dir = path.dirname(FRIENDS_DB_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(FRIENDS_DB_FILE, JSON.stringify(localFriendsDb, null, 2), "utf8");
+    }
+  } catch (err: any) {
+    if (isQuotaError(err)) {
+      handleFirestoreQuotaExhausted(err);
+    } else {
+      console.warn("[Firestore] Sync notice:", err?.message || err);
+    }
+  }
+}
+
+if (dbFirestore) {
+  firestoreSyncPromise = initFirestoreSync();
+} else {
+  firestoreSyncPromise = initFirestoreSync().catch((err) => {
+    console.error("[Firestore] Async startup sync failed gracefully:", err);
+  });
+}
+
+const CORE_BUDDY_IDS = [
+  "user-kris-5139",
+  "user-kris-vance",
+  "user-rafael-9639",
+  "user-rafael-gomez",
+  "user-lily-9367",
+  "user-lilyann-4290",
+  "user-julian-7667"
+];
+
+function getUserFriendsRecord(db: Record<string, UserFriendsRecord>, userId: string): UserFriendsRecord {
+  const defaultJulio = "default";
+  const isJulio = userId === defaultJulio || userId === "user-julio";
+  if (!db[userId]) {
+    db[userId] = {
+      friends: isJulio ? [...CORE_BUDDY_IDS] : [defaultJulio],
+      pendingSent: [],
+      pendingReceived: []
+    };
+  }
+  if (!Array.isArray(db[userId].friends)) db[userId].friends = [];
+  if (!Array.isArray(db[userId].pendingSent)) db[userId].pendingSent = [];
+  if (!Array.isArray(db[userId].pendingReceived)) db[userId].pendingReceived = [];
+
+  if (isJulio) {
+    CORE_BUDDY_IDS.forEach(id => {
+      if (!db[userId].friends.includes(id) && id !== userId) {
+        db[userId].friends.push(id);
+      }
+    });
+  } else if (!db[userId].friends.includes(defaultJulio)) {
+    db[userId].friends.push(defaultJulio);
+  }
+
+  return db[userId];
+}
+
+// Store online/active timestamps for users in memory
+const activePresenceMap = new Map<string, number>();
+
+function recordPresence(userId?: string, email?: string, name?: string) {
+  const now = Date.now();
+  if (userId) {
+    activePresenceMap.set(userId, now);
+    activePresenceMap.set(userId.toLowerCase().trim(), now);
+  }
+  if (email) {
+    activePresenceMap.set(email.toLowerCase().trim(), now);
+  }
+  if (name) {
+    activePresenceMap.set(name.toLowerCase().trim(), now);
+  }
+  if (userId === 'default' || userId === 'user-julio' || name?.toLowerCase().trim() === 'julio' || email?.toLowerCase().trim() === 'juliozaldivar@gmail.com') {
+    activePresenceMap.set('default', now);
+    activePresenceMap.set('user-julio', now);
+    activePresenceMap.set('julio', now);
+    activePresenceMap.set('juliozaldivar@gmail.com', now);
+  }
+}
+
+function isUserPresenceOnline(userId?: string, email?: string, name?: string): boolean {
+  const now = Date.now();
+  const cutoff = 15000; // 15 seconds cutoff
+
+  const keys = [
+    userId,
+    userId?.toLowerCase().trim(),
+    email?.toLowerCase().trim(),
+    name?.toLowerCase().trim()
+  ].filter(Boolean) as string[];
+
+  if (userId === 'default' || userId === 'user-julio' || name?.toLowerCase().trim() === 'julio' || email?.toLowerCase().trim() === 'juliozaldivar@gmail.com') {
+    keys.push('default', 'user-julio', 'julio', 'juliozaldivar@gmail.com');
+  }
+
+  for (const k of keys) {
+    const ts = activePresenceMap.get(k);
+    if (ts && now - ts < cutoff) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// Heartbeat endpoint
+app.post("/api/presence", (req, res) => {
+  const { userId, email, name } = req.body || {};
+  if (userId || email || name) {
+    recordPresence(userId, email, name);
+  }
+
+  const now = Date.now();
+  const activeKeys: string[] = [];
+  activePresenceMap.forEach((ts, key) => {
+    if (now - ts < 15000) {
+      activeKeys.push(key);
+    }
+  });
+
+  res.json({ success: true, activeKeys });
 });
 
 // 2.5. Get all users
 app.get("/api/users", (req, res) => {
+  const { currentUserId, email, name } = req.query as { currentUserId?: string; email?: string; name?: string };
+  if (currentUserId || email || name) {
+    recordPresence(currentUserId, email, name);
+  }
+
   const db = readDatabase();
   
   // Ensure default board has owner populated
@@ -783,18 +1613,147 @@ app.get("/api/users", (req, res) => {
       avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
       createdAt: "2026-07-14T17:27:16.152Z"
     };
-    writeDatabase(db);
+    writeDatabase(db, "default");
   }
 
   const uniqueOwnersMap = new Map();
+  // First seed community users so search always feels rich
+  COMMUNITY_USERS.forEach(u => uniqueOwnersMap.set(u.id, u));
+
+  // Overlay actual owners in DB
   Object.values(db).forEach((b: any) => {
     if (b && b.owner && b.owner.id) {
       uniqueOwnersMap.set(b.owner.id, b.owner);
     }
   });
 
+  const coreOrder = ["default", "user-julian-7667", "user-lily-9367", "user-rafael-9639", "user-kris-5139", "user-lilyann-4290"];
   const users = Array.from(uniqueOwnersMap.values());
-  res.json(users);
+  users.sort((a: any, b: any) => {
+    const idxA = coreOrder.indexOf(a.id);
+    const idxB = coreOrder.indexOf(b.id);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return (a.name || "").localeCompare(b.name || "");
+  });
+
+  const usersWithOnlineStatus = users.map((u: any) => ({
+    ...u,
+    isOnline: isUserPresenceOnline(u.id, u.email, u.name)
+  }));
+
+  res.json(usersWithOnlineStatus);
+});
+
+// Friends API endpoints
+app.get("/api/friends/:userId", (req, res) => {
+  const { userId } = req.params;
+  const db = readFriendsDb();
+  const record = getUserFriendsRecord(db, userId);
+  res.json(record);
+});
+
+app.post("/api/friends/request", (req, res) => {
+  const { fromUserId, toUserId, fromUserName, fromUserAvatar, message } = req.body || {};
+  if (!fromUserId || !toUserId || fromUserId === toUserId) {
+    res.status(400).json({ error: "Invalid parameters" });
+    return;
+  }
+
+  const db = readFriendsDb();
+  const sender = getUserFriendsRecord(db, fromUserId);
+  const recipient = getUserFriendsRecord(db, toUserId);
+
+  if (!sender.pendingSent.includes(toUserId) && !sender.friends.includes(toUserId)) {
+    sender.pendingSent.push(toUserId);
+  }
+
+  const existingIdx = recipient.pendingReceived.findIndex(item => 
+    typeof item === 'string' ? item === fromUserId : item.fromUserId === fromUserId
+  );
+
+  if (existingIdx === -1 && !recipient.friends.includes(fromUserId)) {
+    recipient.pendingReceived.push({
+      fromUserId,
+      fromUserName,
+      fromUserAvatar,
+      message,
+      sentAt: new Date().toISOString()
+    });
+  }
+
+  writeFriendsDb(db, [fromUserId, toUserId]);
+  res.json({ success: true, message: `Friend request sent to ${toUserId}` });
+});
+
+app.post("/api/friends/respond", (req, res) => {
+  const { userId, targetUserId, action, replyMessage } = req.body || {};
+  if (!userId || !targetUserId) {
+    res.status(400).json({ error: "Invalid parameters" });
+    return;
+  }
+
+  const db = readFriendsDb();
+  const userRecord = getUserFriendsRecord(db, userId);
+  const targetRecord = getUserFriendsRecord(db, targetUserId);
+
+  if (action === "accept") {
+    if (!userRecord.friends.includes(targetUserId)) userRecord.friends.push(targetUserId);
+    if (!targetRecord.friends.includes(userId)) targetRecord.friends.push(userId);
+
+    userRecord.pendingReceived = userRecord.pendingReceived.filter(item => 
+      (typeof item === 'string' ? item : item.fromUserId) !== targetUserId
+    );
+    userRecord.pendingSent = userRecord.pendingSent.filter(id => id !== targetUserId);
+
+    targetRecord.pendingReceived = targetRecord.pendingReceived.filter(item => 
+      (typeof item === 'string' ? item : item.fromUserId) !== userId
+    );
+    targetRecord.pendingSent = targetRecord.pendingSent.filter(id => id !== userId);
+  } else if (action === "reject") {
+    userRecord.pendingReceived = userRecord.pendingReceived.filter(item => 
+      (typeof item === 'string' ? item : item.fromUserId) !== targetUserId
+    );
+    targetRecord.pendingSent = targetRecord.pendingSent.filter(id => id !== userId);
+  } else if (action === "cancel") {
+    userRecord.pendingSent = userRecord.pendingSent.filter(id => id !== targetUserId);
+    targetRecord.pendingReceived = targetRecord.pendingReceived.filter(item => 
+      (typeof item === 'string' ? item : item.fromUserId) !== userId
+    );
+  } else if (action === "unfriend") {
+    if (targetUserId !== "default") {
+      userRecord.friends = userRecord.friends.filter(id => id !== targetUserId);
+      targetRecord.friends = targetRecord.friends.filter(id => id !== userId);
+    }
+  }
+
+  writeFriendsDb(db, [userId, targetUserId]);
+  res.json({ success: true, message: `Action ${action} executed for ${targetUserId}` });
+});
+
+app.post("/api/friends/connect", (req, res) => {
+  const { user1Id, user2Id } = req.body || {};
+  if (!user1Id || !user2Id || user1Id === user2Id) {
+    res.status(400).json({ error: "Invalid parameters" });
+    return;
+  }
+
+  const db = readFriendsDb();
+  const u1 = getUserFriendsRecord(db, user1Id);
+  const u2 = getUserFriendsRecord(db, user2Id);
+
+  if (!u1.friends.includes(user2Id)) u1.friends.push(user2Id);
+  if (!u2.friends.includes(user1Id)) u2.friends.push(user1Id);
+
+  u1.pendingSent = u1.pendingSent.filter(id => id !== user2Id);
+  u1.pendingReceived = u1.pendingReceived.filter(item => (typeof item === 'string' ? item : item.fromUserId) !== user2Id);
+
+  u2.pendingSent = u2.pendingSent.filter(id => id !== user1Id);
+  u2.pendingReceived = u2.pendingReceived.filter(item => (typeof item === 'string' ? item : item.fromUserId) !== user1Id);
+
+  writeFriendsDb(db, [user1Id, user2Id]);
+  res.json({ success: true, message: `Connected ${user1Id} and ${user2Id}` });
 });
 
 // 2.5a. Export entire database
@@ -810,25 +1769,139 @@ app.get("/api/admin/backup", (req, res) => {
 });
 
 // 2.5b. Import/restore entire database
-app.post("/api/admin/restore", (req, res) => {
+app.post("/api/admin/restore", async (req, res) => {
   try {
-    const backupData = req.body;
-    if (!backupData || typeof backupData !== "object") {
-      res.status(400).json({ error: "Invalid backup data format" });
-      return;
-    }
-    
-    const keys = Object.keys(backupData);
-    if (keys.length === 0) {
-      res.status(400).json({ error: "Backup file is empty or invalid" });
+    let backupData = req.body;
+    if (!backupData) {
+      res.status(400).json({ error: "Invalid or empty backup payload." });
       return;
     }
 
-    // Write database
-    writeDatabase(backupData);
-    res.json({ success: true, message: "Database restored successfully", boardsCount: keys.length });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to restore backup" });
+    // Parse stringified JSON if needed
+    if (typeof backupData === "string") {
+      try {
+        backupData = JSON.parse(backupData);
+      } catch (e) {
+        res.status(400).json({ error: "Could not parse backup JSON string." });
+        return;
+      }
+    }
+
+    const currentBoardId = (req.query.boardId as string) || "default";
+    const targetDb: Record<string, Board> = readDatabase();
+    const nowIso = new Date().toISOString();
+
+    // Deeply unwrap common root wrappers: data, db, board, boards, backup
+    let depth = 0;
+    while (depth < 5 && backupData && typeof backupData === "object" && !Array.isArray(backupData)) {
+      if (backupData.boards && typeof backupData.boards === "object") {
+        backupData = backupData.boards;
+      } else if (backupData.db && typeof backupData.db === "object") {
+        backupData = backupData.db;
+      } else if (backupData.data && typeof backupData.data === "object") {
+        backupData = backupData.data;
+      } else if (backupData.backup && typeof backupData.backup === "object") {
+        backupData = backupData.backup;
+      } else if (backupData.board && typeof backupData.board === "object") {
+        backupData = backupData.board;
+      } else {
+        break;
+      }
+      depth++;
+    }
+
+    let showsToRestore: TvShow[] | null = null;
+    let preferencesToRestore: any = null;
+
+    if (Array.isArray(backupData)) {
+      showsToRestore = backupData;
+    } else if (typeof backupData === "object" && backupData !== null) {
+      if (Array.isArray(backupData.shows)) {
+        showsToRestore = backupData.shows;
+      } else if (Array.isArray(backupData.results)) {
+        showsToRestore = backupData.results;
+      } else if (Array.isArray(backupData.items)) {
+        showsToRestore = backupData.items;
+      }
+      if (backupData.preferences) {
+        preferencesToRestore = backupData.preferences;
+      }
+    }
+
+    // Option 1: Direct list or object of shows
+    if (showsToRestore && Array.isArray(showsToRestore)) {
+      const boardKey = currentBoardId || "default";
+      const existingName = targetDb[boardKey]?.name || (boardKey === "default" ? "My Tracker" : "My Watchlist");
+      targetDb[boardKey] = {
+        id: boardKey,
+        name: existingName,
+        shows: showsToRestore,
+        preferences: preferencesToRestore || targetDb[boardKey]?.preferences || { genres: [], actors: [], directors: [], services: [] },
+        owner: targetDb[boardKey]?.owner,
+        notifications: targetDb[boardKey]?.notifications || [],
+        updatedAt: nowIso
+      };
+
+      if (boardKey !== "default" && (!targetDb["default"] || !targetDb["default"].shows || targetDb["default"].shows.length === 0)) {
+        targetDb["default"] = { ...targetDb[boardKey], id: "default", name: "My Tracker", updatedAt: nowIso };
+      }
+    } 
+    // Option 2: Map of board objects e.g. { "default": { shows: [...] }, "user-julio": { shows: [...] } }
+    else if (typeof backupData === "object" && backupData !== null && Object.keys(backupData).length > 0) {
+      let restoredCount = 0;
+      for (const [k, v] of Object.entries(backupData)) {
+        if (v && typeof v === "object") {
+          const boardVal = v as any;
+          const boardShows = Array.isArray(boardVal.shows) ? boardVal.shows : (Array.isArray(boardVal) ? boardVal : []);
+          const boardId = boardVal.id || k;
+          targetDb[boardId] = {
+            id: boardId,
+            name: boardVal.name || targetDb[boardId]?.name || "Watchlist",
+            shows: boardShows,
+            preferences: boardVal.preferences || targetDb[boardId]?.preferences || { genres: [], actors: [], directors: [] },
+            owner: boardVal.owner || targetDb[boardId]?.owner,
+            notifications: boardVal.notifications || targetDb[boardId]?.notifications || [],
+            updatedAt: nowIso
+          };
+          restoredCount++;
+        }
+      }
+      if (restoredCount === 0) {
+        res.status(400).json({ error: "Unrecognized JSON structure. Could not find valid shows or watchlists in file." });
+        return;
+      }
+    } else {
+      res.status(400).json({ error: "Invalid backup data format." });
+      return;
+    }
+
+    // Write database safely to DB_FILE so immediate page reload reads fresh data
+    safeWriteFileSync(DB_FILE, targetDb);
+
+    // Sync directly to Cloud Firestore asynchronously in background (non-blocking)
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      const fsDb = dbFirestore;
+      Promise.allSettled(
+        Object.entries(targetDb).map(([boardId, board]) => {
+          if (!board) return Promise.resolve();
+          return setDoc(doc(fsDb, "boards", boardId), sanitizeForFirestore(board), { merge: false });
+        })
+      ).then((results) => {
+        results.forEach((r) => {
+          if (r.status === "rejected" && isQuotaError(r.reason)) {
+            handleFirestoreQuotaExhausted(r.reason);
+          }
+        });
+      }).catch((err: any) => {
+        if (isQuotaError(err)) handleFirestoreQuotaExhausted(err);
+      });
+    }
+
+    const totalBoards = Object.keys(targetDb).length;
+    res.json({ success: true, message: "Database restored successfully", boardsCount: totalBoards });
+  } catch (err: any) {
+    console.error("[Restore Error]", err);
+    res.status(500).json({ error: err?.message || "Failed to restore backup" });
   }
 });
 
@@ -1167,15 +2240,22 @@ async function runRedundancyCheckAndValidate(show: any, titleQuery: string): Pro
       show.concluded = false;
     }
 
-    // CROSS-VERIFICATION STEP 2: Exact Episodes per Season count (absolute source of truth)
+    // CROSS-VERIFICATION STEP 2: Exact Episodes per Season count & Episode Titles (absolute source of truth)
     const episodesList = tvmazeData._embedded?.episodes;
     const seasonsList = tvmazeData._embedded?.seasons;
 
     if (Array.isArray(episodesList) && episodesList.length > 0) {
       const epsPerSeason: { [key: number]: number } = {};
       let maxSeasonNum = 1;
+      const episodesMap: Record<string, string> = { ...(show.episodes || {}) };
+
       episodesList.forEach((ep: any) => {
         const sNum = ep.season;
+        const eNum = ep.number;
+        if (sNum && sNum > 0 && eNum && ep.name) {
+          episodesMap[`S${sNum}E${eNum}`] = ep.name;
+          episodesMap[`${sNum}-${eNum}`] = ep.name;
+        }
         if (sNum && sNum > 0) {
           epsPerSeason[sNum] = (epsPerSeason[sNum] || 0) + 1;
           if (sNum > maxSeasonNum) maxSeasonNum = sNum;
@@ -1188,6 +2268,17 @@ async function runRedundancyCheckAndValidate(show: any, titleQuery: string): Pro
       }
       show.totalSeasons = maxSeasonNum;
       show.episodesPerSeason = episodesPerSeasonArray;
+      show.episodes = episodesMap;
+
+      if (show.latestWatched) {
+        const k1 = `S${show.latestWatched.season}E${show.latestWatched.episode}`;
+        const k2 = `${show.latestWatched.season}-${show.latestWatched.episode}`;
+        if (episodesMap[k1]) {
+          show.latestWatched.title = episodesMap[k1];
+        } else if (episodesMap[k2]) {
+          show.latestWatched.title = episodesMap[k2];
+        }
+      }
     } else if (Array.isArray(seasonsList) && seasonsList.length > 0) {
       const activeSeasons = seasonsList.filter((s: any) => s.number > 0);
       if (activeSeasons.length > 0) {
@@ -1864,6 +2955,87 @@ app.post("/api/episode-recap", async (req, res) => {
   }
 });
 
+// Endpoint to fetch real episode title and full episode list for any show
+app.post("/api/episode-title", async (req, res) => {
+  const { title, season, episode } = req.body;
+  if (!title || season === undefined || episode === undefined) {
+    res.status(400).json({ error: "title, season, and episode are required" });
+    return;
+  }
+
+  const sNum = Number(season);
+  const eNum = Number(episode);
+  const cleanTitle = title.toLowerCase().trim();
+  const cacheKey = `${cleanTitle}-${sNum}-${eNum}`;
+
+  // Check persistent cache first
+  if (appCache.episodeTitles && appCache.episodeTitles[cacheKey]) {
+    res.json(appCache.episodeTitles[cacheKey]);
+    return;
+  }
+
+  try {
+    // 1. Try single search with embed=episodes
+    const searchUrl = `https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(title)}&embed=episodes`;
+    let searchRes = await fetchWithTimeout(searchUrl, {
+      headers: { "User-Agent": "CouchTaterApp/1.0" }
+    });
+
+    let episodesList: any[] = [];
+
+    if (searchRes.ok) {
+      const showData = await searchRes.json();
+      episodesList = showData._embedded?.episodes || [];
+    } else {
+      // 2. Fallback to general search if singlesearch returns 404
+      const fallbackSearchUrl = `https://api.tvmaze.com/search/shows?q=${encodeURIComponent(title)}`;
+      const searchListRes = await fetchWithTimeout(fallbackSearchUrl, {
+        headers: { "User-Agent": "CouchTaterApp/1.0" }
+      });
+      if (searchListRes.ok) {
+        const searchResults = await searchListRes.json();
+        if (Array.isArray(searchResults) && searchResults.length > 0 && searchResults[0].show?.id) {
+          const showId = searchResults[0].show.id;
+          const epRes = await fetchWithTimeout(`https://api.tvmaze.com/shows/${showId}/episodes`, {
+            headers: { "User-Agent": "CouchTaterApp/1.0" }
+          });
+          if (epRes.ok) {
+            episodesList = await epRes.json();
+          }
+        }
+      }
+    }
+
+    if (Array.isArray(episodesList) && episodesList.length > 0) {
+      const episodesMap: Record<string, string> = {};
+      let matchedTitle = "";
+      episodesList.forEach((ep: any) => {
+        if (ep.season && ep.number && ep.name) {
+          episodesMap[`S${ep.season}E${ep.number}`] = ep.name;
+          episodesMap[`${ep.season}-${ep.number}`] = ep.name;
+          if (ep.season === sNum && ep.number === eNum) {
+            matchedTitle = ep.name;
+          }
+        }
+      });
+      const resultData = {
+        title: matchedTitle || `Episode ${eNum}`,
+        episodes: episodesMap
+      };
+      if (!appCache.episodeTitles) appCache.episodeTitles = {};
+      appCache.episodeTitles[cacheKey] = resultData;
+      saveCache();
+
+      res.json(resultData);
+      return;
+    }
+  } catch (err) {
+    // Graceful fallback without noisy error log
+  }
+
+  res.json({ title: `Episode ${eNum}` });
+});
+
 // 3.7. Preset Next Episode Teasers from next-episode.net
 const PRESET_NEXT_EPISODE_TEASERS: Record<string, Record<string, string>> = {
   "the last of us": {
@@ -2029,10 +3201,15 @@ ${JSON.stringify(shows || [], null, 2)}
 
     if (preferences) {
       systemInstruction += `
-Here is the user's saved Taste Preferences profile. Highly prioritize these preferences (favorite genres, actors, directors/showrunners) when giving recommendations, analyzing taste, or making suggestions:
-- Favorite Genres: ${Array.isArray(preferences.genres) ? preferences.genres.join(", ") : "None specified"}
-- Favorite Actors: ${Array.isArray(preferences.actors) ? preferences.actors.join(", ") : "None specified"}
-- Favorite Directors/Writers/Showrunners: ${Array.isArray(preferences.directors) ? preferences.directors.join(", ") : "None specified"}
+Here is the user's saved Taste Preferences & Demographic Profile. Highly prioritize these preferences when giving recommendations, analyzing taste, or making suggestions:
+- Demographics: Age Range (${preferences.ageRange || "Not specified"}), Gender (${preferences.gender || "Not specified"})
+- Precise Geography & Market: Country (${preferences.country || "Not specified"}), State/Region (${preferences.stateRegion || "Not specified"}), City (${preferences.city || "Not specified"}), Timezone (${preferences.timezone || "Not specified"}), Full Location String (${preferences.geography || "Not specified"})
+- Favorite All-Time Shows: ${Array.isArray(preferences.favoriteShows) && preferences.favoriteShows.length > 0 ? preferences.favoriteShows.join(", ") : "None specified"}
+- Preferred Eras / Decades: ${Array.isArray(preferences.eras) && preferences.eras.length > 0 ? preferences.eras.join(", ") : "None specified"}
+- Show Vibes & Tone: ${Array.isArray(preferences.vibes) && preferences.vibes.length > 0 ? preferences.vibes.join(", ") : "None specified"}
+- Favorite Genres: ${Array.isArray(preferences.genres) && preferences.genres.length > 0 ? preferences.genres.join(", ") : "None specified"}
+- Favorite Actors: ${Array.isArray(preferences.actors) && preferences.actors.length > 0 ? preferences.actors.join(", ") : "None specified"}
+- Favorite Directors/Writers/Showrunners: ${Array.isArray(preferences.directors) && preferences.directors.length > 0 ? preferences.directors.join(", ") : "None specified"}
 `;
     }
 
@@ -2171,6 +3348,21 @@ const FALLBACK_RECOMMENDATIONS = [
 app.post("/api/recommendations", async (req, res) => {
   const { shows, preferences } = req.body;
 
+  // Build cache key based on tracked show titles & key preferences
+  const showTitles = Array.isArray(shows) ? shows.map((s: any) => s.title || '').sort().join(',') : '';
+  const prefKey = JSON.stringify(preferences || {});
+  const recCacheKey = `${showTitles}::${prefKey}`;
+
+  // Return cached recommendations if created within the last 6 hours
+  if (appCache.recommendations && appCache.recommendations[recCacheKey]) {
+    const cached = appCache.recommendations[recCacheKey];
+    if (Date.now() - cached.timestamp < 6 * 60 * 60 * 1000) {
+      console.log(`[Recommendations API] Returning cached AI recommendations.`);
+      res.json(cached.data);
+      return;
+    }
+  }
+
   try {
     const prompt = `You are a TV recommendation engine. Analyze the user's current tracked TV shows:
 ${JSON.stringify(shows || [], null, 2)}
@@ -2252,6 +3444,14 @@ For 'bannerImage', use a valid, high-quality TMDB backdrop image path starting w
         }
       })
     );
+
+    if (!appCache.recommendations) appCache.recommendations = {};
+    appCache.recommendations[recCacheKey] = {
+      timestamp: Date.now(),
+      data: verifiedRecommendations
+    };
+    saveCache();
+
     res.json(verifiedRecommendations);
   } catch (error: any) {
     console.log("[Info] Gemini recommendations query hit an issue, using fallback recommendations:", error?.message || error);
@@ -2273,7 +3473,7 @@ For 'bannerImage', use a valid, high-quality TMDB backdrop image path starting w
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: "spa",
     });
     app.use(vite.middlewares);

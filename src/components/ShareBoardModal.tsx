@@ -3,185 +3,1042 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { Users, Copy, Check, X, Shuffle, ArrowRight } from 'lucide-react';
-import { motion } from 'motion/react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { 
+  Users, 
+  Copy, 
+  Check, 
+  X, 
+  UserPlus, 
+  Search, 
+  Mail, 
+  Sparkles, 
+  Link as LinkIcon, 
+  Clock, 
+  UserCheck, 
+  ArrowRight, 
+  Tv, 
+  CheckCircle2, 
+  XCircle,
+  ExternalLink,
+  ShieldCheck,
+  Heart,
+  MessageSquare,
+  MoreVertical,
+  UserX,
+  Send
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { User } from '../types';
+import { 
+  getFriendsData, 
+  fetchFriendsDataAsync,
+  sendFriendRequest, 
+  respondToFriendRequest, 
+  JULIO_USER_ID,
+  FriendsData,
+  FriendRequestDetail
+} from '../utils/friendsStorage';
 
 interface ShareBoardModalProps {
   currentBoardId: string;
+  currentUser: User | null;
+  allUsers: User[];
   onJoinBoard: (boardId: string) => void;
   onClose: () => void;
+  onFriendsUpdated?: () => void;
+  theme?: 'dark' | 'light';
 }
 
-export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({ currentBoardId, onJoinBoard, onClose }) => {
-  const [copied, setCopied] = useState(false);
-  const [inputCode, setInputCode] = useState('');
-  const [error, setError] = useState<string | null>(null);
+export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
+  currentBoardId,
+  currentUser,
+  allUsers,
+  onJoinBoard,
+  onClose,
+  onFriendsUpdated,
+  theme = 'dark'
+}) => {
+  const [activeTab, setActiveTab] = useState<'invite' | 'search' | 'buddies'>('invite');
+  
+  // Feature 1: Invite Link State
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [emailNote, setEmailNote] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
 
-  const shareUrl = `${window.location.origin}${window.location.pathname}?board=${currentBoardId}`;
+  // Feature 2: Search & Friend Request State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchFilter, setSearchFilter] = useState<'all' | 'pending' | 'connected'>('all');
+  const [menuOpenUserId, setMenuOpenUserId] = useState<string | null>(null);
+  
+  // Messaging state for Watch Buddies
+  const [messagingUserId, setMessagingUserId] = useState<string | null>(null);
+  const [messageInput, setMessageInput] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  // Friends data from storage & async server sync
+  const [friendsData, setFriendsData] = useState<FriendsData>(() => 
+    getFriendsData(currentUser?.id || JULIO_USER_ID)
+  );
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(currentBoardId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const [requestMessages, setRequestMessages] = useState<Record<string, string>>({});
+  const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
 
-  const handleJoin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanCode = inputCode.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    if (!cleanCode) {
-      setError("Please enter a valid, non-empty code.");
-      return;
+  useEffect(() => {
+    if (currentUser) {
+      fetchFriendsDataAsync(currentUser.id).then(updated => {
+        setFriendsData(updated);
+      });
     }
-    onJoinBoard(cleanCode);
-    onClose();
+  }, [currentUser]);
+
+  // Notification Toast
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3500);
   };
 
-  const handleGenerateRandom = () => {
-    const randomAdjectives = ["family", "cosmic", "weekly", "fandom", "cinema", "stream", "showtime"];
-    const randomNouns = ["watchers", "critics", "buddies", "scouts", "hub", "squad", "lounge"];
-    const adj = randomAdjectives[Math.floor(Math.random() * randomAdjectives.length)];
-    const noun = randomNouns[Math.floor(Math.random() * randomNouns.length)];
-    const num = Math.floor(100 + Math.random() * 900);
-    const code = `${adj}-${noun}-${num}`;
-    setInputCode(code);
+  const refreshFriends = async () => {
+    if (!currentUser) return;
+    const local = getFriendsData(currentUser.id);
+    setFriendsData(local);
+    const updated = await fetchFriendsDataAsync(currentUser.id);
+    setFriendsData(updated);
+    if (onFriendsUpdated) onFriendsUpdated();
   };
+
+  // Generate Invite URL
+  const inviteUrl = useMemo(() => {
+    const origin = window.location.origin;
+    const pathname = window.location.pathname;
+    const inviterId = currentUser?.id || 'default';
+    const inviterName = encodeURIComponent(currentUser?.name || 'Friend');
+    return `${origin}${pathname}?inviteFrom=${inviterId}&inviterName=${inviterName}`;
+  }, [currentUser]);
+
+  const handleCopyInviteLink = () => {
+    navigator.clipboard.writeText(inviteUrl);
+    setLinkCopied(true);
+    showToast('Invite link copied to clipboard!');
+    setTimeout(() => setLinkCopied(false), 2500);
+  };
+
+  const handleSendEmailInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inviteEmail.trim()) return;
+
+    const subject = encodeURIComponent(`${currentUser?.name || 'A friend'} invited you to connect on CouchTaterz!`);
+    const noteText = emailNote.trim() ? `Note from ${currentUser?.name || 'your friend'}:\n"${emailNote.trim()}"\n\n` : '';
+    const body = encodeURIComponent(
+      `Hey!\n\n${noteText}I'm using CouchTaterz to track TV shows and share watchlist picks. Join me as a Binge Buddy so we can swap show recommendations!\n\nClick here to create your account and automatically connect:\n${inviteUrl}\n\nSee you on CouchTaterz!`
+    );
+
+    window.open(`mailto:${inviteEmail}?subject=${subject}&body=${body}`, '_blank');
+    setEmailSent(true);
+    showToast(`Email invitation opened for ${inviteEmail}!`);
+    setTimeout(() => setEmailSent(false), 4000);
+  };
+
+  const handleSendRequest = (targetUser: User) => {
+    if (!currentUser) return;
+    const customMsg = requestMessages[targetUser.id];
+    sendFriendRequest(
+      { id: currentUser.id, name: currentUser.name, avatarUrl: currentUser.avatarUrl },
+      { id: targetUser.id, name: targetUser.name, avatarUrl: targetUser.avatarUrl },
+      customMsg
+    );
+    refreshFriends();
+    showToast(`Friend request sent to ${targetUser.name}!`);
+  };
+
+  const handleRespond = (targetUser: User, action: 'accept' | 'reject' | 'cancel' | 'unfriend') => {
+    if (!currentUser) return;
+    const replyMsg = replyMessages[targetUser.id];
+    respondToFriendRequest(currentUser.id, targetUser.id, action, replyMsg);
+    refreshFriends();
+    if (action === 'accept') {
+      showToast(`🎉 Connected with ${targetUser.name}! You are now Binge Buddies.`);
+    } else if (action === 'reject') {
+      showToast(`Declined request from ${targetUser.name}.`);
+    } else if (action === 'cancel') {
+      showToast(`Cancelled request to ${targetUser.name}.`);
+    } else if (action === 'unfriend') {
+      showToast(`Removed ${targetUser.name} from Binge Buddies.`);
+    }
+  };
+
+  const handleSendMessage = async (targetUser: User) => {
+    if (!currentUser || !messageInput.trim()) return;
+    setSendingMessage(true);
+    try {
+      const customMsg = messageInput.trim();
+      await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUserId: targetUser.id,
+          notification: {
+            id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            senderName: currentUser.name || 'Binge Buddy',
+            senderAvatarUrl: currentUser.avatarUrl,
+            message: customMsg,
+            timestamp: new Date().toISOString(),
+            type: 'message'
+          }
+        })
+      });
+
+      showToast(`Message sent to ${targetUser.name}!`);
+      setMessageInput('');
+      setMessagingUserId(null);
+    } catch (err) {
+      console.error("Failed to send message:", err);
+      showToast(`Failed to send message. Please try again.`);
+    } finally {
+      setSendingMessage(false);
+    }
+  };
+
+  // Processed Users List for Search Tab
+  const processedUsers = useMemo(() => {
+    if (!currentUser) return [];
+
+    const isCurrentUserJulio = currentUser.id === JULIO_USER_ID || currentUser.id === 'default' || currentUser.id === 'user-julio' || currentUser.email?.toLowerCase() === 'juliozaldivar@gmail.com';
+
+    return allUsers.map(user => {
+      const isJulioUser = user.id === JULIO_USER_ID || user.id === 'default' || user.id === 'user-julio' || user.email?.toLowerCase() === 'juliozaldivar@gmail.com';
+      const isSelf = user.id === currentUser.id || (isCurrentUserJulio && isJulioUser);
+      const isConnected = (!isCurrentUserJulio && isJulioUser) || friendsData.friends.includes(user.id);
+      
+      // Exclude users who are already connected from pending
+      const isPendingSent = !isConnected && friendsData.pendingSent.includes(user.id);
+      const isPendingReceived = !isConnected && friendsData.pendingReceived.some(item => 
+        (typeof item === 'string' ? item : item.fromUserId) === user.id
+      );
+
+      return {
+        user,
+        isSelf,
+        isJulio: isJulioUser,
+        isConnected,
+        isPendingSent,
+        isPendingReceived
+      };
+    });
+  }, [allUsers, currentUser, friendsData]);
+
+  // Filtered Users for Search Tab
+  const filteredUsers = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+
+    return processedUsers.filter(({ user, isSelf, isConnected, isPendingSent, isPendingReceived }) => {
+      if (isSelf) return false; // Don't list self in search results
+
+      // Search query filter (matches First Name, Last Name, or Email)
+      if (q) {
+        const nameMatch = user.name.toLowerCase().includes(q);
+        const emailMatch = user.email.toLowerCase().includes(q);
+        if (!nameMatch && !emailMatch) return false;
+      }
+
+      // Tab category filter
+      if (searchFilter === 'connected') {
+        return isConnected;
+      }
+      if (searchFilter === 'pending') {
+        return isPendingSent || isPendingReceived;
+      }
+
+      return true;
+    });
+  }, [processedUsers, searchQuery, searchFilter]);
+
+  // Counts for Badges
+  const pendingCount = useMemo(() => {
+    return processedUsers.filter(u => !u.isSelf && (u.isPendingSent || u.isPendingReceived)).length;
+  }, [processedUsers]);
+
+  const connectedCount = useMemo(() => {
+    return processedUsers.filter(u => !u.isSelf && u.isConnected).length;
+  }, [processedUsers]);
+
+  const pendingReceivedUsers = useMemo(() => {
+    return friendsData.pendingReceived.filter(item => {
+      const reqId = typeof item === 'string' ? item : item.fromUserId;
+      return reqId !== currentUser?.id && reqId !== JULIO_USER_ID && !friendsData.friends.includes(reqId);
+    });
+  }, [friendsData, currentUser]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/85 overflow-y-auto">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
-        className="relative w-full max-w-md overflow-hidden rounded-3xl bg-[#1A1D23] border border-white/5 shadow-2xl flex flex-col p-6 space-y-6"
+        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className={`relative w-full max-w-xl overflow-hidden rounded-2xl sm:rounded-3xl border shadow-2xl flex flex-col max-h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:max-h-[90vh] ${
+          theme === 'dark' ? 'bg-[#161920] border-white/10' : 'bg-white border-neutral-200'
+        }`}
       >
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-[#262A33] rounded-2xl text-slate-200 border border-white/5">
-              <Users className="w-5 h-5" />
+        {/* Header Banner */}
+        <div className={`p-5 sm:p-6 pb-4 border-b ${
+          theme === 'dark'
+            ? 'border-white/10 bg-gradient-to-r from-purple-950/60 via-[#1A1D25] to-indigo-950/40'
+            : 'border-neutral-200 bg-gradient-to-r from-purple-100/80 via-neutral-50 to-indigo-50/60'
+        }`}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className={`p-3 rounded-2xl border shadow-inner ${
+                theme === 'dark' ? 'bg-purple-600/20 text-purple-400 border-purple-500/30' : 'bg-purple-100 text-purple-700 border-purple-300'
+              }`}>
+                <UserPlus className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className={`text-lg sm:text-xl font-black tracking-tight flex items-center gap-2 ${
+                  theme === 'dark' ? 'text-white' : 'text-slate-900'
+                }`}>
+                  <span>+ Add & Manage Buddies</span>
+                </h3>
+                <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Invite friends to CouchTaterz or search existing members to swap show picks
+                </p>
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-bold text-white tracking-tight">Share Watchlist</h3>
-              <p className="text-xs text-slate-500">Collaborate with watch buddies on the same tracker</p>
-            </div>
+            <button 
+              onClick={onClose}
+              className={`p-2 rounded-xl transition cursor-pointer shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95 ${
+                theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-neutral-200/60'
+              }`}
+              title="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-[#262A33] transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+
+          {/* Modal Tabs Header */}
+          <div className={`flex items-center gap-1 sm:gap-1.5 mt-5 p-1 rounded-2xl border ${
+            theme === 'dark' ? 'bg-[#0A0C10] border-white/10' : 'bg-neutral-100 border-neutral-200'
+          }`}>
+            <button
+              onClick={() => setActiveTab('invite')}
+              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                activeTab === 'invite'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
+                  : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
+              }`}
+            >
+              <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Invite Friend</span>
+              <span className="sm:hidden">Invite</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer relative ${
+                activeTab === 'search'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
+                  : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
+              }`}
+            >
+              <Search className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Find CouchTaterz</span>
+              <span className="sm:hidden">Find</span>
+              {pendingCount > 0 && (
+                <span className="ml-0.5 sm:ml-1 px-1.5 py-0.2 rounded-full bg-amber-400 text-black text-[9px] font-black animate-pulse">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('buddies')}
+              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+                activeTab === 'buddies'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
+                  : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Binge Buddies</span>
+              <span className="sm:hidden">Buddies</span>
+              <span className={`text-[10px] opacity-80 font-semibold px-1.5 py-0.5 rounded-md ${
+                theme === 'dark' ? 'bg-white/10' : 'bg-neutral-200 text-slate-800'
+              }`}>
+                {connectedCount}
+              </span>
+            </button>
+          </div>
         </div>
 
-        {/* Current share details */}
-        <div className="space-y-3.5">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Current Share Options</h4>
-          
-          <div className="space-y-2">
-            {/* Share link */}
-            <div className="space-y-1">
-              <span className="text-[11px] text-slate-500 font-medium">Unique Collaborative Link</span>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={shareUrl}
-                  className="flex-1 bg-[#0F1115] text-slate-400 text-xs px-3 py-2 rounded-xl border border-white/10 select-all outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  className="px-3 py-2 bg-[#262A33] hover:bg-[#2c313c] text-slate-200 rounded-xl border border-white/5 transition text-xs flex items-center gap-1.5 font-semibold"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>Copy Link</span>
-                </button>
-              </div>
-            </div>
+        {/* Modal Scrollable Body */}
+        <div className={`p-4 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6 flex-1 custom-scrollbar ${
+          theme === 'dark' ? 'bg-[#12151E]' : 'bg-neutral-50'
+        }`}>
+          {/* TAB 1: INVITE A FRIEND */}
+          {activeTab === 'invite' && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4 sm:space-y-6">
+              
+              {/* SECTION 1: HERO SHARE LINK CARD */}
+              <div className="relative p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-[#211A34] to-[#151322] border border-purple-500/30 shadow-xl overflow-hidden group">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2 mb-2.5 sm:mb-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h4 className="text-xs sm:text-sm font-black text-white">Your Personal Invite Link</h4>
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shrink-0">
+                      <Sparkles className="w-3 h-3 text-purple-400" />
+                      Fastest
+                    </span>
+                  </div>
+                  {currentUser && (
+                    <span className="text-[11px] text-slate-400">
+                      Inviting as <strong className="text-purple-300 font-bold">{currentUser.name}</strong>
+                    </span>
+                  )}
+                </div>
 
-            {/* Board code */}
-            <div className="space-y-1 pt-1">
-              <span className="text-[11px] text-slate-500 font-medium">Board Code (for watch buddies' profiles)</span>
-              <div className="flex gap-2">
+                <p className="text-xs text-slate-300 mb-3 leading-relaxed">
+                  Anyone who joins CouchTaterz using this unique link will <strong className="text-white font-bold">automatically connect with you</strong> as a Binge Buddy!
+                </p>
+
+                {/* Link Box & Copy Button */}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      readOnly
+                      value={inviteUrl}
+                      className="w-full bg-[#0A0C10] text-slate-200 text-xs px-3.5 py-2.5 sm:py-3 rounded-xl border border-white/10 select-all font-mono outline-none pr-8 focus:border-purple-500 transition"
+                    />
+                    <LinkIcon className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-3 sm:top-3.5 pointer-events-none" />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyInviteLink}
+                    className={`w-full sm:w-auto px-5 py-2.5 sm:py-3 rounded-xl font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer shrink-0 ${
+                      linkCopied
+                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950/50 scale-102'
+                        : 'bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-950/40 active:scale-95'
+                    }`}
+                  >
+                    {linkCopied ? (
+                      <>
+                        <Check className="w-4 h-4 text-white" />
+                        <span>Link Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy Invite Link</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* SECTION 2: DIRECT EMAIL INVITATION */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-[#171A24] border border-white/10 space-y-3 sm:space-y-3.5 shadow-md">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20 shrink-0">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                        Send Email Invitation
+                      </h4>
+                      <p className="text-[11px] text-slate-400 leading-snug">
+                        Send a direct email with an optional personal message
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSendEmailInvite} className="space-y-2.5">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Friend's Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="e.g. friend@example.com"
+                      className="w-full bg-[#0D0F15] text-slate-100 px-3.5 py-2.5 rounded-xl border border-white/10 placeholder-slate-600 text-xs focus:outline-none focus:border-blue-500 transition"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                      <span>Personal Note or Recommendation</span>
+                      <span className="text-[10px] text-slate-500 font-normal normal-case">Optional</span>
+                    </label>
+                    <div className="relative">
+                      <MessageSquare className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3 pointer-events-none" />
+                      <input
+                        type="text"
+                        value={emailNote}
+                        onChange={(e) => setEmailNote(e.target.value)}
+                        placeholder="e.g. You have to check out Severance! Join CouchTaterz so we can track shows together."
+                        className="w-full bg-[#0D0F15] text-slate-100 pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 placeholder-slate-600 text-xs focus:outline-none focus:border-blue-500 transition"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-1 flex items-center justify-end">
+                    <button
+                      type="submit"
+                      disabled={!inviteEmail.trim()}
+                      className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-2 transition cursor-pointer ${
+                        inviteEmail.trim()
+                          ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-md shadow-purple-950/40 active:scale-95'
+                          : 'bg-white/5 text-slate-500 border border-white/5 cursor-not-allowed'
+                      }`}
+                    >
+                      <Mail className="w-3.5 h-3.5" />
+                      <span>Send Email Invite</span>
+                    </button>
+                  </div>
+                </form>
+
+                {emailSent && (
+                  <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-[11px] text-emerald-300 font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                    <span>Email invitation ready in your mail client! They will connect automatically upon signing up.</span>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION 3: VISUAL HOW IT WORKS STEPS */}
+              <div className="p-4 rounded-2xl bg-[#141720] border border-white/5 space-y-3">
+                <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-wider text-center">
+                  How Binge Buddy Invitations Work
+                </h5>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
+                  <div className="p-3 rounded-xl bg-[#0D0F15] border border-white/5 space-y-1">
+                    <div className="w-7 h-7 mx-auto rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-black">
+                      1
+                    </div>
+                    <p className="text-xs font-bold text-white">Share Your Link</p>
+                    <p className="text-[10px] text-slate-400">Copy link or email direct invitation</p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#0D0F15] border border-white/5 space-y-1">
+                    <div className="w-7 h-7 mx-auto rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black">
+                      2
+                    </div>
+                    <p className="text-xs font-bold text-white">Friend Joins CouchTaterz</p>
+                    <p className="text-[10px] text-slate-400">They log in or create an account</p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-[#0D0F15] border border-white/5 space-y-1">
+                    <div className="w-7 h-7 mx-auto rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-black">
+                      3
+                    </div>
+                    <p className="text-xs font-bold text-white">Swap Recommendations</p>
+                    <p className="text-[10px] text-slate-400">Instantly share watchlist picks & ratings</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 2: FIND EXISTING COUCHTATERZ */}
+          {activeTab === 'search' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              {/* Search Bar */}
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 <input
                   type="text"
-                  readOnly
-                  value={currentBoardId}
-                  className="flex-1 bg-[#0F1115] text-slate-400 text-xs px-3 py-2 rounded-xl border border-white/10 text-center font-bold tracking-wider select-all outline-none"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search CouchTaterz by first name, last name, or email address..."
+                  className="w-full bg-[#0A0C10] text-slate-100 text-xs pl-10 pr-9 py-3 rounded-2xl border border-white/10 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition"
                 />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-3 text-slate-500 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Sensible Search Filters */}
+              <div className="flex items-center gap-1.5 p-1 bg-[#0A0C10] rounded-2xl border border-white/10 overflow-x-auto scrollbar-none">
                 <button
-                  type="button"
-                  onClick={handleCopyCode}
-                  className="px-3 py-2 bg-[#262A33] hover:bg-[#2c313c] text-slate-200 rounded-xl border border-white/5 transition text-xs flex items-center gap-1.5 font-semibold"
+                  onClick={() => setSearchFilter('all')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                    searchFilter === 'all'
+                      ? 'bg-white/10 text-white font-black border border-white/10 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                  <span>Copy Code</span>
+                  <span className="hidden sm:inline">All Members</span>
+                  <span className="sm:hidden">All</span>
+                  <span className="text-[10px] opacity-70 px-1.5 py-0.5 rounded-md bg-white/5">
+                    {allUsers.filter(u => u.id !== currentUser?.id).length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => setSearchFilter('pending')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                    searchFilter === 'pending'
+                      ? 'bg-amber-500/20 text-amber-300 font-black border border-amber-500/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>Pending</span>
+                  {pendingCount > 0 ? (
+                    <span className="px-1.5 py-0.5 rounded-md bg-amber-500/30 text-amber-300 text-[10px] font-black">
+                      {pendingCount}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] opacity-70 px-1.5 py-0.5 rounded-md bg-white/5">0</span>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => setSearchFilter('connected')}
+                  className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
+                    searchFilter === 'connected'
+                      ? 'bg-emerald-500/20 text-emerald-300 font-black border border-emerald-500/30'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span>Connected</span>
+                  <span className="text-[10px] opacity-70 px-1.5 py-0.5 rounded-md bg-white/5">
+                    {connectedCount}
+                  </span>
                 </button>
               </div>
-            </div>
-          </div>
-          
-          <p className="text-[10px] text-slate-500 italic leading-relaxed text-center">
-            Sharing this code/link lets anyone view, rate, and increment episode progress on this watchlist simultaneously!
-          </p>
+
+              {/* User Results List */}
+              <div className="space-y-2.5 pt-1">
+                {filteredUsers.length === 0 ? (
+                  <div className="p-8 text-center bg-[#0F1117] rounded-3xl border border-white/5 space-y-2">
+                    <Users className="w-8 h-8 text-slate-600 mx-auto" />
+                    <p className="text-xs text-slate-400 font-medium">
+                      No CouchTaterz members matched your search "{searchQuery}".
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      Try searching for a different first name, last name, or send an email invite!
+                    </p>
+                  </div>
+                ) : (
+                  filteredUsers.map(({ user, isJulio, isConnected, isPendingSent, isPendingReceived }) => (
+                    <div
+                      key={user.id}
+                      className="p-2.5 sm:p-3 rounded-2xl bg-[#161922] border border-white/10 hover:border-white/20 transition flex flex-col gap-2.5 shadow-sm"
+                    >
+                      {/* Top Row: User Details & Primary Action */}
+                      <div className="flex items-center justify-between gap-2.5">
+                        {/* Avatar & User Meta */}
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="relative shrink-0">
+                            <img
+                              src={user.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.name}`}
+                              alt={user.name}
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-white/10 bg-[#0F1117] object-cover"
+                            />
+                            {isConnected && !isJulio && (
+                              <span
+                                className={`w-2.5 h-2.5 rounded-full border-2 border-[#161922] absolute -bottom-0.5 -right-0.5 shadow-sm ${
+                                  user.id === currentUser.id || (user as any).isOnline
+                                    ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)]'
+                                    : 'bg-slate-500'
+                                }`}
+                                title={user.id === currentUser.id || (user as any).isOnline ? "Active now" : "Offline"}
+                              />
+                            )}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <h4 className="text-xs sm:text-sm font-bold text-white truncate">{user.name}</h4>
+                              {isJulio && (
+                                <span title="Community Host">
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right Action Control */}
+                        <div className="shrink-0 flex items-center gap-1.5">
+                          {isJulio ? (
+                            <button
+                              onClick={() => {
+                                onJoinBoard(JULIO_USER_ID);
+                                onClose();
+                              }}
+                              className="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition cursor-pointer shadow-sm active:scale-95 whitespace-nowrap"
+                            >
+                              View Board
+                            </button>
+                          ) : isConnected ? (
+                            <button
+                              onClick={() => setActiveTab('buddies')}
+                              className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 font-bold text-xs transition flex items-center gap-1 cursor-pointer"
+                              title="Click to view in Binge Buddies tab"
+                            >
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                              <span>Connected</span>
+                            </button>
+                          ) : isPendingSent ? (
+                            <div className="flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-xl">
+                              <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                Pending
+                              </span>
+                              <button
+                                onClick={() => handleRespond(user, 'cancel')}
+                                className="text-[10px] text-slate-400 hover:text-rose-400 font-semibold underline cursor-pointer ml-1"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : isPendingReceived ? (
+                            <span className="px-2.5 py-1 rounded-xl bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[10px] font-extrabold flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-purple-400" /> Wants to Connect
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleSendRequest(user)}
+                              className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap min-h-[38px]"
+                            >
+                              <UserPlus className="w-3.5 h-3.5" />
+                              <span>Connect</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Bottom Row: Optional Message Note for non-connected users */}
+                      {!isJulio && !isConnected && !isPendingSent && !isPendingReceived && (
+                        <div className="pt-2 border-t border-white/5 flex items-center gap-2">
+                          <MessageSquare className="w-3.5 h-3.5 text-slate-500 shrink-0 ml-1 pointer-events-none" />
+                          <input
+                            type="text"
+                            value={requestMessages[user.id] || ''}
+                            onChange={e => setRequestMessages(prev => ({ ...prev, [user.id]: e.target.value }))}
+                            placeholder={`Add an optional note or message for ${user.name}...`}
+                            className="w-full text-xs px-3.5 py-2 rounded-xl bg-[#0F1117] text-slate-100 border border-white/10 focus:border-purple-500/60 focus:outline-none placeholder-slate-500 transition min-h-[38px]"
+                          />
+                        </div>
+                      )}
+
+                      {/* Bottom Row: Incoming Connection Request Handler */}
+                      {isPendingReceived && (
+                        <div className="pt-2.5 border-t border-purple-500/30 bg-purple-950/40 p-3 rounded-2xl flex flex-col gap-2.5 shadow-sm">
+                          <div className="text-xs text-purple-300 font-black uppercase tracking-wider flex items-center gap-1.5">
+                            <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Incoming Binge Buddy Request
+                          </div>
+                          <input
+                            type="text"
+                            value={replyMessages[user.id] || ''}
+                            onChange={e => setReplyMessages(prev => ({ ...prev, [user.id]: e.target.value }))}
+                            placeholder="Optional reply message..."
+                            className="w-full bg-[#0D0F17] text-white text-xs px-3.5 py-2.5 rounded-xl border border-purple-500/30 focus:border-purple-400 focus:outline-none placeholder-slate-400 min-h-[42px]"
+                          />
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <button
+                              onClick={() => handleRespond(user, 'accept')}
+                              className="flex-1 min-h-[44px] px-3.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-blue-950/30 active:scale-[0.98]"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Accept Request</span>
+                            </button>
+                            <button
+                              onClick={() => handleRespond(user, 'reject')}
+                              className="min-h-[44px] px-4 py-2.5 rounded-xl bg-[#222632] hover:bg-rose-600 text-slate-200 hover:text-white font-bold text-xs transition cursor-pointer border border-white/10 flex items-center justify-center active:scale-[0.98]"
+                            >
+                              Decline
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 3: MY BINGE BUDDIES */}
+          {activeTab === 'buddies' && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-300">
+                  Your Connected Binge Buddies
+                </h4>
+                <span className="text-xs font-bold text-purple-400">
+                  {connectedCount} Connected
+                </span>
+              </div>
+
+              {/* Incoming Pending Requests Attention Banner */}
+              {pendingReceivedUsers.length > 0 && (
+                <div className="p-4 rounded-2xl bg-purple-950/50 border border-purple-500/35 space-y-3 shadow-md">
+                  <h5 className="text-xs font-black text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-purple-400 animate-pulse" />
+                    Pending Incoming Connection Requests ({pendingReceivedUsers.length})
+                  </h5>
+                  <div className="space-y-2.5">
+                    {pendingReceivedUsers.map((item, idx) => {
+                      const reqId = typeof item === 'string' ? item : item.fromUserId;
+                      const foundUser = allUsers.find(u => u.id === reqId);
+                      const name = typeof item === 'object' && item.fromUserName ? item.fromUserName : (foundUser?.name || 'CouchTaterz Member');
+                      const avatarUrl = typeof item === 'object' && item.fromUserAvatar ? item.fromUserAvatar : (foundUser?.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${name}`);
+                      const email = foundUser?.email || 'member@couchtaterz.com';
+                      const msg = typeof item === 'object' ? item.message : undefined;
+
+                      const targetUser: User = foundUser || {
+                        id: reqId,
+                        name,
+                        email,
+                        avatarUrl,
+                        createdAt: ''
+                      };
+
+                      return (
+                        <div key={`${reqId}-${idx}`} className="flex flex-col gap-2.5 bg-[#161822] p-3 sm:p-3.5 rounded-xl border border-purple-500/30 text-slate-100">
+                          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+                            <div className="flex items-center gap-2.5">
+                              <img
+                                src={avatarUrl}
+                                alt={name}
+                                className="w-9 h-9 rounded-xl border border-purple-500/30 bg-[#1A1D25] object-cover shrink-0"
+                              />
+                              <div>
+                                <div className="text-xs font-extrabold text-white">{name}</div>
+                                <div className="text-[10px] font-bold text-purple-300">Wants to connect</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                              <button
+                                onClick={() => handleRespond(targetUser, 'accept')}
+                                className="flex-1 sm:flex-initial px-3.5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-extrabold transition cursor-pointer min-h-[38px] flex items-center justify-center gap-1 shadow-sm active:scale-[0.98]"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleRespond(targetUser, 'reject')}
+                                className="px-3.5 py-2 bg-slate-800 hover:bg-rose-600 text-slate-200 hover:text-white rounded-xl text-xs font-bold transition cursor-pointer border border-white/10 min-h-[38px] flex items-center justify-center active:scale-[0.98]"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          </div>
+                          {msg && (
+                            <p className="text-xs text-purple-100 italic bg-purple-950/60 p-2.5 rounded-xl border border-purple-500/30 leading-relaxed">
+                              "{msg}"
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Connected Buddies List */}
+              <div className="space-y-2.5">
+                {processedUsers
+                  .filter(u => u.isConnected && !u.isSelf)
+                  .map(({ user, isJulio }) => (
+                    <div
+                      key={user.id}
+                      className={`rounded-2xl bg-[#1A1E27] border border-white/5 hover:border-white/10 transition relative ${
+                        menuOpenUserId === user.id ? 'z-40' : 'z-10'
+                      }`}
+                    >
+                      <div className="p-2.5 sm:p-3 flex items-center justify-between gap-2.5 relative">
+                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                          <div className="relative shrink-0">
+                            <img
+                              src={user.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.name}`}
+                              alt={user.name}
+                              className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl border border-white/10 bg-[#0F1117] object-cover shrink-0"
+                            />
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full border-2 border-[#1A1E27] absolute -bottom-0.5 -right-0.5 shadow-sm ${
+                                user.id === currentUser.id || (user as any).isOnline
+                                  ? 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)]'
+                                  : 'bg-slate-500'
+                              }`}
+                              title={user.id === currentUser.id || (user as any).isOnline ? "Active now" : "Offline"}
+                            />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <h4 className="text-xs sm:text-sm font-bold text-white truncate">{user.name}</h4>
+                              {isJulio && (
+                                <span className="px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-extrabold uppercase shrink-0">
+                                  Host
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            onClick={() => {
+                              onJoinBoard(user.id);
+                              onClose();
+                            }}
+                            className="px-3 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition cursor-pointer shadow-sm active:scale-95 whitespace-nowrap min-h-[38px]"
+                          >
+                            View Board
+                          </button>
+                          
+                          <div className="relative">
+                            <button
+                              onClick={() => setMenuOpenUserId(menuOpenUserId === user.id ? null : user.id)}
+                              className="p-2 text-slate-400 hover:text-white hover:bg-white/10 rounded-xl transition cursor-pointer min-w-[38px] min-h-[38px] flex items-center justify-center"
+                              title="Options"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                            {menuOpenUserId === user.id && (
+                              <>
+                                {/* Backdrop to close menu on click away */}
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setMenuOpenUserId(null);
+                                  }}
+                                />
+                                <div className="absolute right-0 top-full mt-1.5 z-50 w-48 bg-[#1A1E29] border border-white/20 rounded-xl shadow-2xl p-1.5 text-xs">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setMessagingUserId(messagingUserId === user.id ? null : user.id);
+                                      setMessageInput('');
+                                      setMenuOpenUserId(null);
+                                    }}
+                                    className="w-full text-left px-2.5 py-2 rounded-lg text-purple-300 hover:bg-purple-500/15 font-semibold flex items-center gap-2 transition cursor-pointer"
+                                  >
+                                    <MessageSquare className="w-3.5 h-3.5 text-purple-400" />
+                                    <span>Message Buddy</span>
+                                  </button>
+                                  {!isJulio && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRespond(user, 'unfriend');
+                                        setMenuOpenUserId(null);
+                                      }}
+                                      className="w-full text-left px-2.5 py-2 rounded-lg text-rose-400 hover:bg-rose-500/15 font-semibold flex items-center gap-2 transition cursor-pointer"
+                                    >
+                                      <UserX className="w-3.5 h-3.5" />
+                                      <span>Remove Buddy</span>
+                                    </button>
+                                  )}
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Animated Slide-Down Message Text Field */}
+                      <AnimatePresence>
+                        {messagingUserId === user.id && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.22, ease: 'easeInOut' }}
+                            className="border-t border-white/10 bg-[#12151D] p-3 rounded-b-2xl overflow-hidden"
+                          >
+                            <form
+                              onSubmit={(e) => {
+                                e.preventDefault();
+                                handleSendMessage(user);
+                              }}
+                              className="space-y-2"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
+                                  <MessageSquare className="w-3.5 h-3.5 text-purple-400" />
+                                  <span>Send a message to <strong className="text-white">{user.name}</strong></span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setMessagingUserId(null);
+                                    setMessageInput('');
+                                  }}
+                                  className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition cursor-pointer"
+                                  title="Cancel"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={messageInput}
+                                  onChange={(e) => setMessageInput(e.target.value)}
+                                  placeholder={`Type a message for ${user.name}...`}
+                                  autoFocus
+                                  className="flex-1 bg-[#1A1E27] border border-white/10 focus:border-purple-500 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 outline-none transition"
+                                />
+                                <button
+                                  type="submit"
+                                  disabled={!messageInput.trim() || sendingMessage}
+                                  className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-bold text-xs transition flex items-center gap-1.5 cursor-pointer shrink-0 shadow-md active:scale-95"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                  <span className="hidden xs:inline">{sendingMessage ? 'Sending...' : 'Send'}</span>
+                                </button>
+                              </div>
+                            </form>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+              </div>
+            </motion.div>
+          )}
         </div>
 
-        {/* Join another board */}
-        <div className="border-t border-white/5 pt-5 space-y-3">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Join a Buddy Board</h4>
-          
-          <form onSubmit={handleJoin} className="space-y-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={inputCode}
-                  onChange={(e) => {
-                    setInputCode(e.target.value);
-                    setError(null);
-                  }}
-                  placeholder="Enter buddy-board-code..."
-                  className="w-full bg-[#0F1115] text-slate-100 px-3 py-2 rounded-xl border border-white/10 placeholder-slate-600 text-xs text-center font-bold tracking-wide focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleGenerateRandom}
-                  className="absolute right-2 top-1.5 p-1 text-slate-500 hover:text-white transition"
-                  title="Generate random code name"
-                >
-                  <Shuffle className="w-3.5 h-3.5" />
-                </button>
+        {/* Interactive Toast Banner */}
+        <AnimatePresence>
+          {toastMessage && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="absolute bottom-16 left-6 right-6 z-50 p-3 bg-purple-600 text-white rounded-2xl font-bold text-xs shadow-xl flex items-center gap-2 justify-between border border-purple-400/30"
+            >
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-purple-200 animate-pulse shrink-0" />
+                <span>{toastMessage}</span>
               </div>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs flex items-center gap-1 transition"
-              >
-                <span>Join</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+              <button onClick={() => setToastMessage(null)} className="p-1 hover:text-slate-200">
+                <X className="w-3.5 h-3.5" />
               </button>
-            </div>
-            
-            {error && (
-              <p className="text-[10px] text-rose-400 font-medium text-center">{error}</p>
-            )}
-          </form>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Footer */}
-        <div className="flex justify-end pt-2 border-t border-white/5">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#262A33] hover:bg-[#2c313c] text-slate-300 font-bold text-xs transition border border-white/5"
-          >
-            Close
-          </button>
+        <div className="p-3.5 px-5 bg-[#12141A] border-t border-white/10 flex items-center justify-center">
+          <span className="text-[11px] text-slate-400 font-medium text-center">Julio is Everybody's Binge Buddy on CouchTaterz!</span>
         </div>
       </motion.div>
     </div>

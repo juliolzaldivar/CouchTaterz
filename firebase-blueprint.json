@@ -1,0 +1,74 @@
+{
+  "entities": {
+    "boards": {
+      "title": "Boards",
+      "description": "User boards containing watched shows, preferences, and notifications",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "shows": {
+          "type": "array"
+        },
+        "preferences": {
+          "type": "object"
+        },
+        "owner": {
+          "type": "object"
+        },
+        "notifications": {
+          "type": "array"
+        },
+        "updatedAt": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "friends": {
+      "title": "Friends",
+      "description": "Friend connections and request statuses",
+      "type": "object",
+      "properties": {
+        "friends": {
+          "type": "array"
+        },
+        "pendingSent": {
+          "type": "array"
+        },
+        "pendingReceived": {
+          "type": "array"
+        }
+      },
+      "required": []
+    },
+    "users": {
+      "title": "Users",
+      "description": "Registered app user accounts",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "avatar": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    }
+  }
+}

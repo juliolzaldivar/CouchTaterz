@@ -1,0 +1,44 @@
+{
+  "name": "CouchTaterz — AI TV Tracker & Household Queue",
+  "short_name": "CouchTaterz",
+  "description": "Track TV shows across major streaming services, log episode progress, get release notifications, and ask AI for spoiler-free recaps.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0b0f19",
+  "theme_color": "#0f172a",
+  "categories": ["entertainment", "utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Up Next Queue",
+      "short_name": "Up Next",
+      "description": "View TV shows in your queue",
+      "url": "/?tab=queue"
+    },
+    {
+      "name": "Active Watching",
+      "short_name": "Watching",
+      "description": "View active watching shows",
+      "url": "/?tab=active"
+    }
+  ]
+}

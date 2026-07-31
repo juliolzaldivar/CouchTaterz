@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Board, User, StreamingService, TvShow } from '../types';
+import { LandingPage } from './LandingPage';
 import { 
   Tv, 
   User as UserIcon, 
@@ -18,7 +19,8 @@ import {
   Loader2, 
   Chrome, 
   ShieldAlert,
-  Users
+  Users,
+  ArrowLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -65,8 +67,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
   
-  // Auth view mode: 'login' | 'signup' | 'google-sim'
-  const [viewMode, setViewMode] = useState<'login' | 'signup' | 'google-sim'>('login');
+  // Auth view mode: 'landing' | 'login' | 'signup' | 'google-sim'
+  const [viewMode, setViewMode] = useState<'landing' | 'login' | 'signup' | 'google-sim'>('landing');
   
   // Login input
   const [loginEmail, setLoginEmail] = useState('');
@@ -90,22 +92,30 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [wizardError, setWizardError] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
 
-  // Fetch registered users (family members) on load
+  // Fetch registered users (family members) on load & poll for active presence status
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const res = await fetch('/api/users');
-        if (res.ok) {
+        const contentType = res.headers.get('content-type');
+        if (res.ok && contentType && contentType.includes('application/json')) {
           const data = await res.json();
-          setUsers(data || []);
+          if (Array.isArray(data)) {
+            setUsers(data);
+          }
         }
-      } catch (err) {
-        console.error("Failed to load users list:", err);
+      } catch {
+        // Safe catch for network or proxy throttling
       } finally {
         setLoadingUsers(false);
       }
     };
+
     fetchUsers();
+
+    // Poll users presence every 12 seconds to update online status dots in real-time
+    const interval = setInterval(fetchUsers, 12000);
+    return () => clearInterval(interval);
   }, []);
 
   const [collectionBanners, setCollectionBanners] = useState<string[]>([]);
@@ -129,14 +139,27 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   }, []);
 
   // Handle logging in with an existing user
-  const handleSelectUser = async (userId: string) => {
+  const handleSelectUser = async (userId: string, options?: { startTour?: boolean }) => {
     setIsLoggingIn(true);
     setLoginError(null);
     try {
-      const res = await fetch(`/api/boards?id=${userId}`);
+      const url = (userId === 'guest-demo' && options?.startTour) 
+        ? `/api/boards?id=${userId}&reset=true` 
+        : `/api/boards?id=${userId}`;
+      const res = await fetch(url);
       if (res.ok) {
         const boardData = await res.json();
-        onLogin(boardData);
+        if (userId === 'guest-demo') {
+          if (options?.startTour) {
+            localStorage.removeItem(`seen_queue_onboarding_${userId}`);
+            onLogin(boardData, { isNewAccount: true });
+          } else {
+            localStorage.setItem(`seen_queue_onboarding_${userId}`, 'true');
+            onLogin(boardData, { isNewAccount: false });
+          }
+        } else {
+          onLogin(boardData);
+        }
       } else {
         setLoginError("Could not retrieve profile board data. Please try again.");
       }
@@ -278,7 +301,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 ...s,
                 id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}-${idx}`,
                 status: 'Backlog', // Start fresh in backlog
-                latestWatched: { season: 1, episode: 1, title: 'Episode 1' },
+                latestWatched: { season: 1, episode: 0, title: 'Not Started' },
                 userScore: null,
                 userNotes: '',
                 isStarter: true,
@@ -289,7 +312,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 ...s,
                 id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}-${idx}`,
                 status: 'Backlog',
-                latestWatched: { season: 1, episode: 1, title: 'Episode 1' },
+                latestWatched: { season: 1, episode: 0, title: 'Not Started' },
                 userScore: null,
                 userNotes: '',
                 isStarter: true,
@@ -362,13 +385,39 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     ? [...collectionBanners, ...BACKGROUND_IMAGES]
     : BACKGROUND_IMAGES;
 
+  if (viewMode === 'landing') {
+    return (
+      <LandingPage
+        onGuestLogin={(options) => handleSelectUser('guest-demo', options)}
+        onOpenLogin={() => setViewMode('login')}
+        onOpenSignup={() => {
+          setViewMode('signup');
+          setWizardStep(1);
+        }}
+        onSelectUser={(u) => handleSelectUser(u.id)}
+        registeredUsers={users}
+      />
+    );
+  }
+
   return (
-    <div id="login-screen-root" className="min-h-screen bg-[#0B0D11] text-slate-100 flex flex-col justify-center items-center p-4 relative overflow-hidden select-none">
+    <div id="login-screen-root" className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-4 relative overflow-hidden select-none font-sans selection:bg-blue-600 selection:text-white">
+      {/* Back to Showcase Header */}
+      <div className="absolute top-4 left-4 z-20">
+        <button
+          onClick={() => setViewMode('landing')}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/30 text-xs text-slate-300 hover:text-white transition-all shadow-lg shadow-blue-950/20 cursor-pointer"
+        >
+          <ArrowLeft className="w-3.5 h-3.5 text-blue-400" />
+          <span>Back to Landing Page</span>
+        </button>
+      </div>
+
       {/* Tiled TV Show Backdrop Grid */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         {/* Animated, tilted, high-density bento poster wall with subtle drifting and zoom animation */}
         <motion.div 
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-6 origin-center h-[130%] w-[130%] opacity-[0.42]"
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 p-6 origin-center h-[130%] w-[130%] opacity-[0.35]"
           animate={{
             x: ["-10%", "-6%", "-12%", "-10%"],
             y: ["-10%", "-14%", "-8%", "-10%"],
@@ -386,7 +435,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             return (
               <div 
                 key={idx}
-                className="aspect-[2/3] w-full rounded-2xl overflow-hidden border border-slate-800 bg-[#131720] shadow-2xl relative"
+                className="aspect-[2/3] w-full rounded-2xl overflow-hidden border border-slate-800/80 bg-slate-900 shadow-2xl relative"
               >
                 <img 
                   src={img} 
@@ -394,38 +443,40 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                   className="w-full h-full object-cover filter brightness-75 contrast-125"
                   referrerPolicy="no-referrer"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 to-transparent" />
               </div>
             );
           })}
         </motion.div>
 
-        {/* Robust, overlapping cinematic vignetting overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0B0D11] via-transparent to-[#0B0D11] opacity-90" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#0B0D11] via-transparent to-[#0B0D11] opacity-90" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0B0D11]/85 via-transparent to-[#0B0D11]/85 opacity-90" />
-        <div className="absolute inset-0 bg-[#0B0D11]/40 mix-blend-multiply" />
+        {/* Robust, overlapping cinematic vignetting overlays blending into slate-950 */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-slate-950 opacity-95" />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950 via-transparent to-slate-950 opacity-95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/90 via-transparent to-slate-950/90 opacity-90" />
+        <div className="absolute inset-0 bg-slate-950/40 mix-blend-multiply" />
       </div>
 
-      {/* Dynamic atmospheric background glow */}
-      <div className="absolute top-[-20%] left-[-20%] w-[60%] h-[60%] rounded-full bg-indigo-900/10 blur-[120px]" />
-      <div className="absolute bottom-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full bg-blue-900/5 blur-[120px]" />
+      {/* Ambient Blue Background Gradient Blobs from Landing Page */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[550px] bg-gradient-to-tr from-blue-600/25 via-indigo-600/20 to-violet-600/20 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-sky-500/15 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-700/10 blur-3xl pointer-events-none rounded-full" />
 
       <motion.div 
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-[#131720]/80 border border-slate-800/80 backdrop-blur-xl rounded-3xl p-8 shadow-2xl relative z-10"
+        className="w-full max-w-md bg-slate-900/85 border border-slate-800/90 hover:border-blue-500/30 backdrop-blur-2xl rounded-3xl p-8 shadow-2xl shadow-blue-950/60 relative z-10 transition-colors"
       >
         {/* Brand Header */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center p-3.5 bg-gradient-to-tr from-blue-600 to-blue-400 rounded-2xl shadow-lg shadow-blue-500/10 mb-4 ring-1 ring-blue-400/20">
-            <Tv className="w-8 h-8 text-white stroke-[2.2]" />
+        <div className="flex flex-col items-center text-center mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-xl shadow-blue-600/25 text-white mb-3">
+            <Tv className="w-6 h-6 stroke-[2.2]" />
           </div>
-          <h1 className="text-3xl font-black tracking-tighter uppercase text-blue-500">
-            COUCH<span className="text-slate-100">TATERZ</span>
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase leading-none">
+            <span className="text-blue-500">COUCH</span>
+            <span className="text-white">TATERZ</span>
           </h1>
-          <p className="text-slate-400 text-sm mt-1.5 font-medium">
-            Stop Scrolling. Start Watching.
+          <p className="text-[12px] sm:text-[13px] font-extrabold tracking-[0.2em] text-slate-400 uppercase mt-1.5 leading-none whitespace-nowrap">
+            YOUR BINGE BUDDY
           </p>
         </div>
 
@@ -444,31 +495,46 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {/* Existing Family / Friends profiles */}
               {!loadingUsers && users.length > 0 && (
                 <div className="space-y-3">
-                  <label className="text-xs font-semibold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5 text-blue-400" />
-                    Who's Watching?
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-blue-400" />
+                      Who's Watching?
+                    </label>
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                      Core Connections
+                    </span>
+                  </div>
                   <div className="grid grid-cols-3 gap-3">
                     {users.map((user, idx) => (
                       <button
                         key={`${user.id}-${idx}`}
                         onClick={() => handleSelectUser(user.id)}
                         disabled={isLoggingIn}
-                        className="flex flex-col items-center p-3 bg-slate-900/40 hover:bg-slate-900 border border-slate-800/50 hover:border-blue-500/40 rounded-2xl transition-all duration-300 group"
+                        className="flex flex-col items-center p-3.5 bg-slate-900/50 hover:bg-slate-900 border border-slate-800/60 hover:border-blue-500/50 rounded-2xl transition-all duration-300 group relative cursor-pointer shadow-sm hover:shadow-blue-500/10 active:scale-95"
                       >
-                        <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-800 border-2 border-slate-700 group-hover:border-blue-400 transition-colors relative mb-2 flex items-center justify-center">
-                          {user.avatarUrl ? (
-                            <img 
-                              src={user.avatarUrl} 
-                              alt={user.name} 
-                              className="w-full h-full object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                          ) : (
-                            <UserIcon className="w-5 h-5 text-slate-500" />
-                          )}
+                        <div className="relative mb-2">
+                          <div className="w-13 h-13 rounded-full overflow-hidden bg-slate-800 border-2 border-slate-700/80 group-hover:border-blue-400 transition-colors flex items-center justify-center shadow-md">
+                            {user.avatarUrl ? (
+                              <img 
+                                src={user.avatarUrl} 
+                                alt={user.name} 
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                              />
+                            ) : (
+                              <UserIcon className="w-5 h-5 text-slate-500" />
+                            )}
+                          </div>
+                          <span
+                            className={`w-3.5 h-3.5 rounded-full border-2 border-slate-900 absolute bottom-0 right-0 ${
+                              user.isOnline
+                                ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
+                                : 'bg-slate-500/80'
+                            }`}
+                            title={user.isOnline ? "Active now" : "Offline"}
+                          />
                         </div>
-                        <span className="text-xs font-medium text-slate-300 group-hover:text-blue-400 transition-colors truncate max-w-full">
+                        <span className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors truncate max-w-full">
                           {user.name}
                         </span>
                       </button>
@@ -477,61 +543,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 </div>
               )}
 
-              {/* Login/Signup separator */}
-              {!loadingUsers && users.length > 0 && (
-                <div className="flex items-center gap-3 my-2">
-                  <div className="h-[1px] flex-1 bg-slate-800" />
-                  <span className="text-[10px] font-bold tracking-wider uppercase text-slate-500">Or Get Started</span>
-                  <div className="h-[1px] flex-1 bg-slate-800" />
+              {/* Login Error Alert */}
+              {loginError && (
+                <div className="flex items-start gap-2 text-xs text-rose-400 bg-rose-500/5 border border-rose-500/15 p-3 rounded-xl mt-3">
+                  <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-rose-400" />
+                  <span>{loginError}</span>
                 </div>
               )}
-
-              {/* Login Actions */}
-              <div className="space-y-4">
-                {loginError && (
-                  <div className="flex items-start gap-2 text-xs text-rose-400 bg-rose-500/5 border border-rose-500/15 p-3 rounded-xl">
-                    <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-rose-400" />
-                    <span>{loginError}</span>
-                  </div>
-                )}
-
-                <div className="flex flex-col gap-3">
-                  {/* Join as a New Member button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWizardStep(1);
-                      setFormData({
-                        name: '',
-                        email: '',
-                        genres: [],
-                        services: [],
-                        starterPack: true
-                      });
-                      setViewMode('signup');
-                    }}
-                    className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl text-sm flex items-center justify-center gap-2 shadow-lg hover:shadow-blue-500/10 active:scale-[0.99] transition-all cursor-pointer border border-blue-500/25"
-                  >
-                    <Plus className="w-4.5 h-4.5 stroke-[2.5]" />
-                    <span>Join as a New Member</span>
-                  </button>
-
-                  {/* Google Sign-In button */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setLoginError(null);
-                      setGoogleEmail('');
-                      setGoogleStep(1);
-                      setViewMode('google-sim');
-                    }}
-                    className="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-100 border border-slate-800 hover:border-slate-700 font-bold rounded-xl text-sm flex items-center justify-center gap-2.5 shadow-lg active:scale-[0.99] transition-all cursor-pointer"
-                  >
-                    <Chrome className="w-4.5 h-4.5 text-blue-500 fill-blue-500/10" />
-                    <span>Sign in with Google</span>
-                  </button>
-                </div>
-              </div>
             </motion.div>
           )}
 
@@ -569,14 +587,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {wizardStep === 1 && (
                 <div className="space-y-4">
                   <div className="space-y-0.5">
-                    <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Set Up Your Member Profile</h2>
-                    <p className="text-[11px] text-slate-400">Join the TV fandom board! All you need is a display name.</p>
+                    <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Claim Your Couch Handle</h2>
+                    <p className="text-[11px] text-slate-400">Give us your display name so friends know whose recommendations they're borrowing.</p>
                   </div>
 
                   <div className="space-y-3.5 pt-2">
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
-                        Your Name <span className="text-rose-500 font-bold">*</span>
+                        Your Display Name <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <div className="relative">
                         <UserIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -584,7 +602,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                           type="text"
                           required
                           autoFocus
-                          placeholder="e.g. Sarah"
+                          placeholder="e.g. Sarah the Binge Master"
                           value={formData.name}
                           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                           className="w-full pl-11 pr-4 py-3 bg-slate-900/50 hover:bg-slate-900 focus:bg-slate-950 border border-slate-800 focus:border-blue-500/50 rounded-xl text-sm placeholder-slate-600 focus:outline-none transition-all duration-200"
@@ -594,13 +612,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
                     <div className="space-y-1.5">
                       <label className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
-                        Email Address <span className="text-slate-600">(Optional)</span>
+                        Email Address <span className="text-slate-600">(Optional for recovery)</span>
                       </label>
                       <div className="relative">
                         <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
                         <input
                           type="email"
-                          placeholder="e.g. sarah@gmail.com"
+                          placeholder="e.g. sarah@couchtaterz.com"
                           value={formData.email}
                           onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                           className="w-full pl-11 pr-4 py-3 bg-slate-900/50 hover:bg-slate-900 focus:bg-slate-950 border border-slate-800 focus:border-blue-500/50 rounded-xl text-sm placeholder-slate-600 focus:outline-none transition-all duration-200"
@@ -615,8 +633,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-0.5">
-                      <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Curate Your Vibe</h2>
-                      <p className="text-[11px] text-slate-400">Select at least one genre you enjoy watching. We use this to curate your starter pack!</p>
+                      <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Pick Your Dopamine Fix</h2>
+                      <p className="text-[11px] text-slate-400">Select the genres you actually watch when you should be sleeping.</p>
                     </div>
                     <button
                       type="button"
@@ -666,8 +684,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 <div className="space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="space-y-0.5">
-                      <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Your Streaming Channels</h2>
-                      <p className="text-[11px] text-slate-400">Select the streaming platforms you actively use (optional).</p>
+                      <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Subscriptions You're Paying For</h2>
+                      <p className="text-[11px] text-slate-400">Select the streaming platforms currently draining your bank account.</p>
                     </div>
                     <button
                       type="button"
@@ -716,8 +734,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {wizardStep === 4 && (
                 <div className="space-y-4">
                   <div className="space-y-0.5">
-                    <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Configure Dashboard</h2>
-                    <p className="text-[11px] text-slate-400">How would you like to initialize your collection board?</p>
+                    <h2 className="text-base font-extrabold text-slate-200 uppercase tracking-tight">Queue Setup Strategy</h2>
+                    <p className="text-[11px] text-slate-400">Do you want a pre-loaded feed or do you want to build from absolute scratch?</p>
                   </div>
 
                   <div className="space-y-3 pt-2">
@@ -735,10 +753,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                       </div>
                       <div>
                         <h4 className="text-sm font-bold text-slate-200 flex items-center gap-1.5">
-                          Instant Starter Pack
+                          Instant Binge Starter Pack
                           {formData.starterPack && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded-md font-semibold uppercase tracking-wider">Active</span>}
                         </h4>
-                        <p className="text-xs text-slate-400 mt-1">Pre-populates your feed with 3 popular shows matching your genre tastes to start tracking immediately.</p>
+                        <p className="text-xs text-slate-400 mt-1">Pre-loads your queue with 3 top-tier shows tailored to your genre tastes so your dashboard isn't lonely.</p>
                       </div>
                     </button>
 

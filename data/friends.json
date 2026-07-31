@@ -1,0 +1,50 @@
+{
+  "default": {
+    "friends": [
+      "user-kris-5139",
+      "user-kris-vance",
+      "user-rafael-9639",
+      "user-rafael-gomez",
+      "user-lily-9367",
+      "user-lilyann-4290",
+      "user-julian-7667"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-lilyann-4290": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-lily-9367": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-kris-5139": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-julian-7667": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-rafael-9639": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  }
+}

@@ -208,14 +208,14 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2.5 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] overflow-y-auto">
         {/* Backdrop overlay */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/80 backdrop-blur-md"
+          className="absolute inset-0 bg-black/85"
         />
 
         {/* Modal Window */}
@@ -224,7 +224,7 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.25, ease: 'easeOut' }}
-          className={`relative w-full max-w-5xl h-[85vh] max-h-[850px] overflow-hidden rounded-3xl border flex flex-col ${
+          className={`relative w-full max-w-5xl h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:h-[85vh] max-h-[850px] overflow-hidden rounded-2xl sm:rounded-3xl border flex flex-col ${
             theme === 'dark' 
               ? 'bg-[#12141A] border-white/5 text-slate-100 shadow-[0_0_50px_rgba(0,0,0,0.8)]' 
               : 'bg-white border-neutral-200 text-neutral-800 shadow-[0_15px_40px_rgba(0,0,0,0.15)]'

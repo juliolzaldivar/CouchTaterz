@@ -13,7 +13,8 @@ import {
   Edit2, 
   Trash2, 
   Tv, 
-  Calendar, 
+  Calendar,
+  Bell, 
   CheckCircle, 
   BookOpen, 
   Award,
@@ -47,6 +48,7 @@ interface ShowCardProps {
   onboardingStep?: number | null;
   onboardingTargetShowId?: string | null;
   onboardingHighlight?: boolean;
+  theme?: 'dark' | 'light';
 }
 
 export const SERVICE_COLORS: Record<StreamingService, { bg: string; text: string; border: string; accent: string }> = {
@@ -184,7 +186,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   onDismissHighlight,
   onboardingStep = null,
   onboardingTargetShowId = null,
-  onboardingHighlight = false
+  onboardingHighlight = false,
+  theme = 'dark'
 }) => {
   const [showSubscribeTooltip, setShowSubscribeTooltip] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -208,6 +211,9 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   const isOnboardingHighlightActive = onboardingHighlight;
 
   const handleInteractionClick = () => {
+    if (onboardingStep === 2 || onboardingStep === 3) {
+      return;
+    }
     setTimeout(() => {
       const element = document.getElementById(`show-card-${show.id}`);
       if (element) {
@@ -287,6 +293,58 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     }
   }, [isExpanded, show.status, show.title, show.latestWatched.season, show.latestWatched.episode, fetchedRecapKey]);
 
+  // Sync episode title when season/episode changes or if missing/generic
+  useEffect(() => {
+    const s = show.latestWatched.season;
+    const e = show.latestWatched.episode;
+    const k1 = `S${s}E${e}`;
+    const k2 = `${s}-${e}`;
+    const mappedTitle = show.episodes?.[k1] || show.episodes?.[k2];
+
+    if (mappedTitle && show.latestWatched.title !== mappedTitle) {
+      onUpdateShow({
+        ...show,
+        latestWatched: {
+          ...show.latestWatched,
+          title: mappedTitle
+        }
+      });
+      return;
+    }
+
+    const currentTitle = show.latestWatched.title;
+    const isGeneric = !currentTitle || currentTitle === "Episode 1" || currentTitle === `Episode ${e}`;
+
+    if (isGeneric && !mappedTitle) {
+      fetch('/api/episode-title', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: show.title, season: s, episode: e })
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.title) {
+            const newEpisodesMap = data.episodes ? { ...(show.episodes || {}), ...data.episodes } : show.episodes;
+            const newTitle = data.title || mappedTitle || currentTitle || `Episode ${e}`;
+            const titleChanged = newTitle !== currentTitle;
+            const episodesAdded = data.episodes && Object.keys(newEpisodesMap).length > Object.keys(show.episodes || {}).length;
+
+            if (titleChanged || episodesAdded) {
+              onUpdateShow({
+                ...show,
+                episodes: newEpisodesMap,
+                latestWatched: {
+                  ...show.latestWatched,
+                  title: newTitle
+                }
+              });
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [show.id, show.title, show.latestWatched.season, show.latestWatched.episode]);
+
   const colors = SERVICE_COLORS[show.streamingService] || SERVICE_COLORS['Other'];
 
   const formatAirDate = (dateStr: string) => {
@@ -307,24 +365,86 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     return `${shortMonth} ${d.getDate()} ${twoDigitYear}`;
   };
 
-  const maxSeasons = Math.max(
-    show.totalSeasons || 1,
-    show.latestWatched.season,
-    show.nextEpisode?.season || 1,
-    5
+  // Determine if nextEpisode is defined and represents an un-aired/upcoming episode
+  const isNextEpFuture = Boolean(
+    show.nextEpisode && (
+      !show.nextEpisode.airDate ||
+      new Date(show.nextEpisode.airDate).getTime() > Date.now() ||
+      show.nextEpisode.airDate >= new Date().toISOString().split('T')[0]
+    )
   );
-  const maxEpisodesInSeason = (show.episodesPerSeason && show.episodesPerSeason[show.latestWatched.season - 1]) || Math.max(show.latestWatched.episode, show.nextEpisode?.season === show.latestWatched.season ? (show.nextEpisode?.episode || 1) : 1, 10);
+
+  // Maximum season that has actually aired episodes or is tracked
+  const maxSeasons = Math.max(1, show.totalSeasons || 1, show.latestWatched.season);
+
+  // Maximum episode count in the current selected season (guaranteed >= 1 and accommodates current user progress)
+  const seasonEpisodeCount = (show.episodesPerSeason && show.episodesPerSeason[show.latestWatched.season - 1]) || 10;
+  const maxEpisodesInSeason = Math.max(1, seasonEpisodeCount, show.latestWatched.episode);
+
+  const getTitleForEpisode = (season: number, episode: number): string => {
+    if (episode <= 0) return "Not Started";
+    const k1 = `S${season}E${episode}`;
+    const k2 = `${season}-${episode}`;
+    return show.episodes?.[k1] || show.episodes?.[k2] || `Episode ${episode}`;
+  };
+
+  // Series is only fully completed if the show has officially concluded AND has no upcoming episodes planned AND user is on the final season & episode
+  const isSeriesFullyCompleted = Boolean(
+    show.concluded && 
+    !show.nextEpisode && 
+    show.latestWatched.season >= maxSeasons &&
+    show.latestWatched.episode >= maxEpisodesInSeason
+  );
+
+  // Show is "Caught Up" if user watched all aired episodes of the current season, but the show is ongoing or has upcoming episodes/seasons
+  const isCaughtUp = show.latestWatched.episode > 0 && show.latestWatched.episode >= maxEpisodesInSeason && (
+    !show.concluded || Boolean(show.nextEpisode) || show.latestWatched.season < maxSeasons
+  );
+
+  const isDarkTheme = theme === 'dark';
+
+  const caughtUpStyles = (() => {
+    if (show.status === 'Completed') {
+      return {
+        pillBg: isDarkTheme ? 'bg-emerald-950/30 text-emerald-400 border-emerald-500/25' : 'bg-emerald-50 text-emerald-800 border-emerald-300',
+        icon: 'text-emerald-400',
+        dot: 'text-emerald-500/40',
+        text: isDarkTheme ? 'text-emerald-400' : 'text-emerald-700',
+        bar: 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]'
+      };
+    } else if (show.status === 'Backlog') {
+      return {
+        pillBg: isDarkTheme ? 'bg-amber-950/30 text-amber-300 border-amber-500/25' : 'bg-amber-50 text-amber-800 border-amber-300',
+        icon: 'text-amber-400',
+        dot: 'text-amber-500/40',
+        text: isDarkTheme ? 'text-amber-400' : 'text-amber-700',
+        bar: 'bg-gradient-to-r from-amber-500 to-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.5)]'
+      };
+    } else {
+      // Watching section (Blue)
+      return {
+        pillBg: isDarkTheme ? 'bg-blue-950/30 text-blue-300 border-blue-500/25' : 'bg-blue-50 text-blue-800 border-blue-300',
+        icon: 'text-blue-400',
+        dot: 'text-blue-500/40',
+        text: isDarkTheme ? 'text-blue-400' : 'text-blue-700',
+        bar: 'bg-gradient-to-r from-blue-500 to-cyan-400 shadow-[0_0_10px_rgba(56,189,248,0.5)]'
+      };
+    }
+  })();
 
   const handleIncrementEpisode = () => {
     if (show.latestWatched.episode >= maxEpisodesInSeason) return;
-    const nextEpisode = show.latestWatched.episode + 1;
+    const nextEp = show.latestWatched.episode + 1;
+    const s = show.latestWatched.season;
+    const isCompletedNow = Boolean(nextEp === maxEpisodesInSeason && s >= maxSeasons && show.concluded && !show.nextEpisode);
     const updated = {
       ...show,
       latestWatched: {
         ...show.latestWatched,
-        episode: nextEpisode
+        episode: nextEp,
+        title: getTitleForEpisode(s, nextEp)
       },
-      status: nextEpisode === maxEpisodesInSeason ? ('Completed' as ShowStatus) : show.status
+      status: isCompletedNow ? ('Completed' as ShowStatus) : show.status
     };
     onUpdateShow(updated);
   };
@@ -334,26 +454,32 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const percentage = clickX / rect.width;
-    const targetEpisode = Math.max(1, Math.min(maxEpisodesInSeason, Math.round(percentage * maxEpisodesInSeason)));
+    const targetEpisode = Math.max(0, Math.min(maxEpisodesInSeason, Math.round(percentage * maxEpisodesInSeason)));
+    const s = show.latestWatched.season;
+    const isCompletedNow = Boolean(targetEpisode === maxEpisodesInSeason && s >= maxSeasons && show.concluded && !show.nextEpisode);
     
     const updated = {
       ...show,
       latestWatched: {
         ...show.latestWatched,
-        episode: targetEpisode
+        episode: targetEpisode,
+        title: getTitleForEpisode(s, targetEpisode)
       },
-      status: targetEpisode === maxEpisodesInSeason ? ('Completed' as ShowStatus) : show.status
+      status: isCompletedNow ? ('Completed' as ShowStatus) : show.status
     };
     onUpdateShow(updated);
   };
 
   const handleDecrementEpisode = () => {
-    if (show.latestWatched.episode <= 1) return;
+    if (show.latestWatched.episode <= 0) return;
+    const nextEp = show.latestWatched.episode - 1;
+    const s = show.latestWatched.season;
     const updated = {
       ...show,
       latestWatched: {
         ...show.latestWatched,
-        episode: show.latestWatched.episode - 1
+        episode: nextEp,
+        title: getTitleForEpisode(s, nextEp)
       }
     };
     onUpdateShow(updated);
@@ -361,12 +487,13 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
   const handleIncrementSeason = () => {
     if (show.latestWatched.season >= maxSeasons) return;
+    const nextSeason = show.latestWatched.season + 1;
     const updated = {
       ...show,
       latestWatched: {
-        season: show.latestWatched.season + 1,
+        season: nextSeason,
         episode: 1,
-        title: `Episode 1`
+        title: getTitleForEpisode(nextSeason, 1)
       }
     };
     onUpdateShow(updated);
@@ -374,12 +501,13 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
   const handleDecrementSeason = () => {
     if (show.latestWatched.season <= 1) return;
+    const prevSeason = show.latestWatched.season - 1;
     const updated = {
       ...show,
       latestWatched: {
-        season: show.latestWatched.season - 1,
+        season: prevSeason,
         episode: 1,
-        title: `Episode 1`
+        title: getTitleForEpisode(prevSeason, 1)
       }
     };
     onUpdateShow(updated);
@@ -395,9 +523,23 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   };
 
   const handleStatusChange = (status: ShowStatus) => {
+    let updatedWatched = show.latestWatched;
+    if (status === 'Completed') {
+      const finalS = maxSeasons;
+      let finalE = (show.episodesPerSeason && show.episodesPerSeason[finalS - 1]) || 10;
+      if (isNextEpFuture && show.nextEpisode && show.nextEpisode.season === finalS) {
+        finalE = Math.max(1, show.nextEpisode.episode - 1);
+      }
+      updatedWatched = {
+        season: finalS,
+        episode: finalE,
+        title: getTitleForEpisode(finalS, finalE)
+      };
+    }
     onUpdateShow({
       ...show,
-      status
+      status,
+      latestWatched: updatedWatched
     });
   };
 
@@ -420,25 +562,32 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   };
 
   return (
-    <motion.div 
+    <div 
       id={`show-card-${show.id}`}
-      layout
-      className={`group flex flex-col rounded-3xl bg-[#1A1D23] border overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 ${
+      className={`group flex flex-col rounded-3xl border overflow-hidden transition-colors duration-200 ${
+        theme === 'dark'
+          ? 'bg-[#1A1D23] text-slate-100 shadow-xl hover:shadow-2xl'
+          : 'bg-white text-slate-900 shadow-sm hover:shadow-md'
+      } ${
         isOnboardingHighlightActive
-          ? 'relative z-50 ring-4 ring-purple-500/80 border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.6)]'
+          ? 'relative z-50 ring-2 sm:ring-4 ring-purple-500/80 border-purple-500 shadow-[0_0_30px_rgba(168,85,247,0.6)]'
           : highlightStatusPrompt
             ? 'relative z-50 ring-2 ring-purple-500 border-purple-500 shadow-2xl shadow-purple-500/20'
-            : 'relative border-white/5 hover:border-white/10'
+            : theme === 'dark'
+              ? 'relative border-white/5 hover:border-white/10'
+              : 'relative border-neutral-200/90 hover:border-neutral-300'
       }`}
     >
       {/* Visual Header / Banner */}
       <div id={`show-card-${show.id}-banner`} className="relative h-44 w-full overflow-hidden">
         {isEditingImage ? (
           <div 
-            className="absolute inset-0 z-20 bg-[#0F1115]/95 backdrop-blur-md p-4 flex flex-col justify-center space-y-2"
+            className={`absolute inset-0 z-20 p-4 flex flex-col justify-center space-y-2 ${
+              theme === 'dark' ? 'bg-[#0F1115]/95 text-slate-100' : 'bg-white/95 text-slate-900 border-b border-neutral-200'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <label className={`text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
               <Link className="w-3 h-3 text-blue-500" />
               Change Cover Image URL
             </label>
@@ -447,7 +596,11 @@ export const ShowCard: React.FC<ShowCardProps> = ({
               value={imageUrlInput}
               onChange={(e) => setImageUrlInput(e.target.value)}
               placeholder="Paste custom image URL here..."
-              className="w-full bg-[#1A1D23] text-slate-100 text-xs px-2.5 py-1.5 rounded-lg border border-white/10 focus:outline-none focus:border-blue-500 placeholder-slate-500"
+              className={`w-full text-xs px-2.5 py-1.5 rounded-lg border focus:outline-none focus:border-blue-500 ${
+                theme === 'dark'
+                  ? 'bg-[#1A1D23] text-slate-100 border-white/10 placeholder-slate-500'
+                  : 'bg-neutral-50 text-slate-900 border-neutral-200 placeholder-slate-400'
+              }`}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSaveImage();
@@ -458,10 +611,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
             {/* Vertical position adjuster */}
             <div className="flex flex-col space-y-0.5 pt-1">
               <div className="flex justify-between items-center">
-                <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                <label className={`text-[9px] font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                   Face Focus Vertical position
                 </label>
-                <span className="text-[10px] font-black text-blue-400">
+                <span className="text-[10px] font-black text-blue-500">
                   {(() => {
                     const match = bannerPositionInput.match(/center\s+(\d+)%/);
                     return match ? `${match[1]}%` : '25%';
@@ -481,7 +634,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                   onChange={(e) => {
                     setBannerPositionInput(`center ${e.target.value}%`);
                   }}
-                  className="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg appearance-none cursor-pointer"
+                  className="w-full accent-blue-500 h-1 bg-slate-400 dark:bg-slate-800 rounded-lg appearance-none cursor-pointer"
                 />
               </div>
               <div className="flex gap-1 justify-between text-[8px] text-slate-500 font-bold uppercase tracking-wider">
@@ -494,7 +647,9 @@ export const ShowCard: React.FC<ShowCardProps> = ({
             <div className="flex justify-end gap-1.5 pt-1">
               <button
                 onClick={() => setIsEditingImage(false)}
-                className="px-2 py-1 text-[10px] text-slate-400 hover:bg-[#262A33] rounded font-bold cursor-pointer transition"
+                className={`px-2 py-1 text-[10px] rounded font-bold cursor-pointer transition ${
+                  theme === 'dark' ? 'text-slate-400 hover:bg-[#262A33]' : 'text-slate-600 hover:bg-neutral-200'
+                }`}
               >
                 Cancel
               </button>
@@ -529,18 +684,11 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         <div className="absolute inset-0 bg-gradient-to-r from-[#0F1115]/70 to-transparent" />
 
         {/* Streaming Badge */}
-        <div 
-          className="absolute top-4 left-4 z-20"
-          onMouseEnter={() => {
-            const hasService = subscribedServices?.includes(show.streamingService) ?? false;
-            if (!hasService) setShowSubscribeTooltip(true);
-          }}
-          onMouseLeave={() => setShowSubscribeTooltip(false)}
-        >
+        <div className="absolute top-4 left-4 z-20 group/badge">
           <div className="relative">
-            <span className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border backdrop-blur-md transition-colors flex items-center gap-1.5 ${colors.bg} ${colors.text} ${colors.border}`}>
+            <span className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1.5 ${colors.bg} ${colors.text} ${colors.border}`}>
               <span 
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                className={`w-2 h-2 rounded-full transition-colors duration-300 ${
                   (subscribedServices?.includes(show.streamingService) ?? false)
                     ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)] animate-pulse' 
                     : 'bg-slate-500'
@@ -549,12 +697,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
               <span>{show.streamingService}</span>
             </span>
 
-            {/* Subscribe Tooltip Popover */}
-            {!(subscribedServices?.includes(show.streamingService) ?? false) && showSubscribeTooltip && (
+            {/* Subscribe Tooltip Popover - purely CSS-driven to prevent React re-render flickering */}
+            {!(subscribedServices?.includes(show.streamingService) ?? false) && (
               <div 
-                className="absolute left-0 top-full mt-2 w-56 p-3 bg-[#1A1D23] border border-white/10 rounded-2xl shadow-xl z-50 text-left"
-                onMouseEnter={() => setShowSubscribeTooltip(true)}
-                onMouseLeave={() => setShowSubscribeTooltip(false)}
+                className="absolute left-0 top-full mt-2 w-56 p-3 bg-[#1A1D23] border border-white/10 rounded-2xl shadow-xl z-50 text-left opacity-0 pointer-events-none group-hover/badge:opacity-100 group-hover/badge:pointer-events-auto transition-opacity duration-150"
               >
                 <p className="text-[11px] text-slate-300 font-medium mb-2 leading-normal">
                   You aren't subscribed to <span className="text-white font-extrabold">{show.streamingService}</span>. Would you like to subscribe?
@@ -564,14 +710,13 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                     href={REGISTRATION_LINKS[show.streamingService] || 'https://www.google.com'}
                     target="_blank"
                     rel="noopener noreferrer"
-                    onClick={() => setShowSubscribeTooltip(false)}
-                    className="flex-1 py-1 px-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold rounded-lg text-center transition cursor-pointer"
+                    className="flex-1 py-1 px-2 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-bold rounded-lg text-center transition-colors cursor-pointer"
                   >
                     Yes
                   </a>
                   <button
-                    onClick={() => setShowSubscribeTooltip(false)}
-                    className="flex-1 py-1 px-2 bg-[#252932] hover:bg-[#313642] text-slate-400 hover:text-white text-[10px] font-bold rounded-lg transition cursor-pointer"
+                    type="button"
+                    className="flex-1 py-1 px-2 bg-[#252932] hover:bg-[#313642] text-slate-400 hover:text-white text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
                   >
                     No
                   </button>
@@ -620,7 +765,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                   onClick={(e) => {
                     e.stopPropagation();
                   }}
-                  className="p-2 md:p-1 rounded-lg border border-white/5 bg-[#0F1115]/90 text-slate-400 hover:text-white backdrop-blur-md transition-all cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0"
+                  className="p-2 md:p-1 rounded-lg border border-white/5 bg-[#0F1115] text-slate-400 hover:text-white transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0"
                   title={`Open ${show.title} in ${show.streamingService}`}
                 >
                   <Play className="w-4.5 h-4.5 md:w-3 md:h-3 fill-current" />
@@ -629,8 +774,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
               {!isFriendView && (
                 <>
-                  {/* Edit Image URL Button - Only show for Julian/Julio */}
-                  {(currentUser?.name?.trim().toLowerCase() === 'julio' || currentUser?.name?.trim().toLowerCase() === 'julian' || currentUser?.email?.toLowerCase() === 'juliozaldivar@gmail.com') && (
+                  {/* Edit Image URL Button - Only show for Julio/admin */}
+                  {(currentUser?.name?.trim().toLowerCase() === 'julio' || currentUser?.email?.toLowerCase() === 'juliozaldivar@gmail.com' || currentUser?.id === 'default' || currentUser?.id === 'user-julio') && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -639,7 +784,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         setIsEditingImage(true);
                         handleInteractionClick();
                       }}
-                      className="p-2 md:p-1 rounded-lg border border-white/5 bg-[#0F1115]/90 text-slate-400 hover:text-white backdrop-blur-md transition-all cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0"
+                      className="p-2 md:p-1 rounded-lg border border-white/5 bg-[#0F1115] text-slate-400 hover:text-white transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0"
                       title="Change Show Cover Image"
                     >
                       <Image className="w-4.5 h-4.5 md:w-3 md:h-3" />
@@ -655,8 +800,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                       setIsSharing(true);
                       handleInteractionClick();
                     }}
-                    className="p-2 md:p-1 rounded-lg border border-white/5 bg-[#0F1115]/90 text-slate-400 hover:text-white backdrop-blur-md transition-all cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0"
-                    title="Share show with other Taterz"
+                    className="p-2 md:p-1 rounded-lg border border-white/5 bg-[#0F1115] text-slate-400 hover:text-white transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0"
+                    title="Share show with other CouchTaterz"
                   >
                     <Share2 className="w-4.5 h-4.5 md:w-3 md:h-3" />
                   </button>
@@ -672,10 +817,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         isBannerHidden: !show.isFavorite ? false : show.isBannerHidden
                       });
                     }}
-                    className={`p-2 md:p-1 rounded-lg border backdrop-blur-md transition-all cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 ${
+                    className={`p-2 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 ${
                       show.isFavorite 
                         ? 'text-amber-400 border-amber-500/30 bg-amber-500/15' 
-                        : 'text-slate-400 hover:text-white border-white/5 bg-[#0F1115]/90'
+                        : 'text-slate-400 hover:text-white border-white/5 bg-[#0F1115]'
                     }`}
                     title={show.isFavorite ? "Remove from favorites" : "Add to favorites"}
                   >
@@ -688,7 +833,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                       e.stopPropagation();
                       setShowDeleteConfirm(true);
                     }}
-                    className="p-2 md:p-1.5 rounded-lg bg-[#0F1115]/90 hover:bg-rose-600/35 text-slate-400 hover:text-rose-400 border border-white/5 backdrop-blur-md transition cursor-pointer min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 flex items-center justify-center"
+                    className="p-2 md:p-1.5 rounded-lg bg-[#0F1115] hover:bg-rose-600/35 text-slate-400 hover:text-rose-400 border border-white/5 transition-colors duration-150 cursor-pointer min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 flex items-center justify-center"
                     title="Delete Show"
                   >
                     <Trash2 className="w-4.5 h-4.5 md:w-3 md:h-3" />
@@ -744,7 +889,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                     <Share2 className="w-4 h-4 text-amber-400" />
                   </div>
                   <span className="text-xs font-black text-slate-200 uppercase tracking-wider">
-                    Share with other Taterz
+                    Share with other CouchTaterz
                   </span>
                 </div>
                 <button
@@ -764,7 +909,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                   rows={3}
                   value={shareMessage}
                   onChange={(e) => setShareMessage(e.target.value)}
-                  placeholder="Why should other Taterz watch this? Recommend your favorite episodes or write an encouraging note..."
+                  placeholder="Why should other CouchTaterz watch this? Recommend your favorite episodes or write an encouraging note..."
                   className="w-full bg-[#181B22] text-slate-100 text-xs px-3 py-2.5 rounded-xl border border-white/10 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500/30 placeholder-slate-500 resize-none leading-relaxed transition-all"
                 />
               </div>
@@ -772,7 +917,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
               {/* Select User list */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                  Select Taterz to Notify
+                  Select CouchTaterz to Notify
                 </label>
                 <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1.5 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
                   {allUsers && allUsers.filter(u => u.id !== currentUser?.id).length > 0 ? (
@@ -816,7 +961,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                       ))
                   ) : (
                     <p className="text-xs text-slate-500 text-center py-6 bg-[#181B22]/50 rounded-xl border border-dashed border-white/5">
-                      No other Taterz registered yet.
+                      No other CouchTaterz registered yet.
                     </p>
                   )}
                 </div>
@@ -842,46 +987,52 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         {/* Status Tracker & Quick Bump Episodes / Friend Add to Queue Button */}
         {isFriendView ? (
           <div className={`p-4 rounded-2xl border transition-all duration-300 flex flex-col justify-center items-center text-center space-y-3 ${
-            onboardingStep === 7 && onboardingHighlight
+            onboardingStep === 3 && onboardingHighlight
               ? 'bg-purple-950/25 border-purple-500/45 ring-2 ring-purple-500/45 shadow-lg shadow-purple-950/30'
-              : 'bg-[#0F1115]/85 border-amber-500/20 shadow-lg shadow-amber-500/[0.02]'
+              : theme === 'dark' 
+                ? 'bg-[#0F1115]/85 border-amber-500/20 shadow-lg shadow-amber-500/[0.02]'
+                : 'bg-amber-50/60 border-amber-500/30 shadow-sm text-slate-900'
           }`}>
-            {onboardingStep === 7 && onboardingHighlight && (
+            {onboardingStep === 3 && onboardingHighlight && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="w-full p-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg border border-purple-500 text-left flex items-start gap-2 text-white mb-1"
+                className={`w-full p-3 backdrop-blur-md rounded-xl shadow-xl border border-purple-500/40 text-left flex items-start gap-2 mb-1 ${
+                  theme === 'dark' ? 'bg-[#151821]/95 text-slate-200' : 'bg-white text-slate-900'
+                }`}
               >
-                <div className="p-1 bg-purple-500/20 rounded-lg text-amber-300 shrink-0">
+                <div className="p-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-400 shrink-0">
                   <Sparkles className="w-3.5 h-3.5 animate-pulse" />
                 </div>
                 <div className="space-y-1">
-                  <h6 className="text-[10px] font-black uppercase tracking-wider text-purple-100">Step 7 of 9</h6>
-                  <p className="text-[11px] text-purple-100/95 leading-relaxed font-semibold">
-                    Tap <span className="text-amber-300 font-extrabold">Add to Up Next</span> to copy this show into your queue!
+                  <h6 className="text-[10px] font-black uppercase tracking-wider text-purple-400">Step 3 of 4</h6>
+                  <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
+                    Tap <span className="text-amber-400 font-extrabold">Add to Up Next</span> to copy this show into your queue!
                   </p>
                 </div>
               </motion.div>
             )}
-            <div className="text-[11px] font-bold text-slate-400 tracking-wide uppercase flex items-center gap-1.5">
+            <div className={`text-[11px] font-bold tracking-wide uppercase flex items-center gap-1.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>
               <CheckCircle className="w-3.5 h-3.5 text-amber-500" />
               Status: Friend's Library
             </div>
             {isAlreadyInCollection ? (
-              <div className="w-full py-2.5 px-4 bg-[#101F1C] border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 shadow-inner">
-                <Check className="w-4 h-4 text-emerald-400 stroke-[2.5]" />
+              <div className={`w-full py-2.5 px-4 border rounded-xl text-emerald-500 text-xs font-bold flex items-center justify-center gap-1.5 shadow-inner ${
+                theme === 'dark' ? 'bg-[#101F1C] border-emerald-500/20' : 'bg-emerald-50 border-emerald-300'
+              }`}>
+                <Check className="w-4 h-4 text-emerald-500 stroke-[2.5]" />
                 In your collection
               </div>
             ) : (
               <button
                 onClick={() => onAddToMyQueue && onAddToMyQueue(show)}
                 className={`w-full py-2.5 px-4 font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-lg active:scale-[0.98] transition-all cursor-pointer bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 ${
-                  onboardingStep === 7 && onboardingHighlight
+                  onboardingStep === 3 && onboardingHighlight
                     ? 'ring-4 ring-purple-500/80 animate-pulse relative z-20'
                     : ''
                 }`}
               >
-                {onboardingStep === 7 && onboardingHighlight && (
+                {onboardingStep === 3 && onboardingHighlight && (
                   <motion.span
                     animate={{ x: [-2, 2, -2] }}
                     transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
@@ -896,78 +1047,132 @@ export const ShowCard: React.FC<ShowCardProps> = ({
             )}
           </div>
         ) : (
-          <div className={`space-y-3 p-4 rounded-2xl border transition-all duration-300 ${
-            highlightStatusPrompt || isOnboardingHighlightActive
-              ? 'bg-purple-950/25 border-purple-500/40 ring-2 ring-purple-500/45 shadow-lg shadow-purple-950/30 relative z-10' 
-              : 'bg-[#0F1115]/50 border-white/5'
-          }`}>
-              {/* Onboarding and Prompts inside card body */}
-              {onboardingStep === 3 && isTargetShow && (
+          <div className="space-y-2">
+            {isNextEpFuture && show.nextEpisode ? (
+              <div className={`flex items-center gap-1.5 text-[11px] font-semibold min-w-0 w-full overflow-hidden px-2.5 py-1.5 rounded-xl border shadow-sm ${
+                theme === 'dark' 
+                  ? 'bg-emerald-950/30 text-emerald-400 border-emerald-500/25' 
+                  : 'bg-emerald-50 text-emerald-800 border-emerald-300'
+              }`}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isFriendView) {
+                      onUpdateShow({
+                        ...show,
+                        hasAirDateReminder: !show.hasAirDateReminder
+                      });
+                    }
+                  }}
+                  className={`p-1 rounded-lg transition-all cursor-pointer flex items-center justify-center shrink-0 ${
+                    show.hasAirDateReminder 
+                      ? 'text-amber-400 bg-amber-500/20 border border-amber-500/40 shadow-[0_0_10px_rgba(245,158,11,0.35)]' 
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-white/5 border border-transparent'
+                  }`}
+                  title={
+                    show.hasAirDateReminder 
+                      ? "Reminder active! You will get an alert the day before this episode airs." 
+                      : "Click to get a text or email reminder the day before this show airs."
+                  }
+                >
+                  <Bell className={`w-3.5 h-3.5 ${show.hasAirDateReminder ? 'fill-amber-400 text-amber-400' : 'text-slate-500'}`} />
+                </button>
+                <span className="shrink-0 font-bold">Next Airing: {formatAirDate(show.nextEpisode.airDate)}</span>
+                <span className="text-emerald-500/40 shrink-0">•</span>
+                <span className="truncate">
+                  S{show.nextEpisode.season}E{show.nextEpisode.episode}
+                  {show.nextEpisode.title ? ` "${show.nextEpisode.title}"` : ''}
+                </span>
+                {show.hasAirDateReminder && (
+                  <span className="hidden lg:inline-block text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0 ml-auto">
+                    Alert On
+                  </span>
+                )}
+              </div>
+            ) : isCaughtUp ? (
+              <div className={`flex items-center gap-1.5 text-[11px] font-semibold min-w-0 w-full overflow-hidden px-2.5 py-1.5 rounded-xl border shadow-sm ${caughtUpStyles.pillBg}`}>
+                <Sparkles className={`w-3.5 h-3.5 shrink-0 ${caughtUpStyles.icon}`} />
+                <span className="shrink-0 font-bold">Caught Up!</span>
+                <span className={`shrink-0 ${caughtUpStyles.dot}`}>•</span>
+                <span className="truncate font-medium">
+                  Season {show.latestWatched.season} complete
+                </span>
+              </div>
+            ) : null}
+            {(onboardingStep === 1 && onboardingHighlight) && (
+              <div className="space-y-3 p-4 rounded-2xl border transition-all duration-300 bg-purple-950/25 border-purple-500/40 ring-2 ring-purple-500/45 shadow-lg shadow-purple-950/30 relative z-10">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg border border-purple-500 text-left flex items-start gap-2 text-white"
+                  className={`p-3 backdrop-blur-md rounded-xl shadow-xl border border-purple-500/40 text-left flex items-start gap-2 ${
+                    theme === 'dark' ? 'bg-[#151821]/95 text-slate-200' : 'bg-white text-slate-800'
+                  }`}
                 >
-                  <div className="p-1 bg-purple-500/20 rounded-lg text-amber-300 shrink-0">
+                  <div className="p-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-400 shrink-0">
                     <Sparkles className="w-3.5 h-3.5 animate-pulse" />
                   </div>
                   <div className="space-y-1">
-                    <h6 className="text-[10px] font-black uppercase tracking-wider text-purple-100">Step 3 of 9</h6>
-                    <p className="text-[11px] text-purple-100/95 leading-relaxed font-semibold">
-                      Tap the <span className="bg-purple-850 text-white px-1.5 py-0.5 rounded text-[10px] font-black shadow-sm">+</span> button next to <span className="text-amber-300 font-extrabold">E{show.latestWatched.episode}</span> to log your first watched episode!
+                    <h6 className="text-[10px] font-black uppercase tracking-wider text-purple-400">Step 1 of 4</h6>
+                    <p className="text-[11px] leading-relaxed font-medium">
+                      Tap <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase shadow-sm">Watching</span> below to move this show to your active watchlist!
                     </p>
                   </div>
                 </motion.div>
-              )}
-              {highlightStatusPrompt && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="p-3 bg-[#151821]/95 backdrop-blur-md rounded-xl shadow-xl border border-purple-500/40 text-left flex items-start gap-2 text-slate-200 relative z-10"
-              >
-                <div className="p-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-400 shrink-0">
-                  <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                </div>
-                <div className="space-y-1 pr-4">
-                  <h6 className="text-[10px] font-black uppercase tracking-wider text-purple-400">Quick Start!</h6>
-                  <p className="text-[11px] text-slate-300 leading-relaxed font-medium">
-                    Set your first status here! Tap <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black uppercase tracking-wider shadow-sm">Watching</span> to move this show to your active watchlist.
-                  </p>
-                </div>
-                {onDismissHighlight && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDismissHighlight();
-                    }}
-                    className="absolute top-2 right-2 p-1 hover:bg-white/10 rounded-md transition text-slate-400 hover:text-white cursor-pointer"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                )}
-              </motion.div>
+              </div>
             )}
-            {/* Status Segmented Controls */}
-            <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Status:</span>
-                <div className="flex gap-0.5 bg-[#15171C] p-0.5 rounded-lg border border-white/5">
+            {(onboardingStep === 2 && isTargetShow) && (
+              <div className={`space-y-3 p-4 rounded-2xl border transition-all duration-300 ${
+                isOnboardingHighlightActive
+                  ? 'bg-purple-950/25 border-purple-500/40 ring-2 ring-purple-500/45 shadow-lg shadow-purple-950/30 relative z-10' 
+                  : theme === 'dark'
+                    ? 'bg-[#0F1115]/50 border-white/5'
+                    : 'bg-neutral-50/80 border-neutral-200'
+              }`}>
+                {/* Onboarding step 2 inside card body */}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`p-3 backdrop-blur-md rounded-xl shadow-xl border border-purple-500/40 text-left flex items-start gap-2 ${
+                    theme === 'dark' ? 'bg-[#151821]/95 text-slate-200' : 'bg-white text-slate-800'
+                  }`}
+                >
+                  <div className="p-1 bg-purple-500/10 border border-purple-500/20 rounded-lg text-purple-400 shrink-0">
+                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                  </div>
+                  <div className="space-y-1">
+                    <h6 className="text-[10px] font-black uppercase tracking-wider text-purple-400">Step 2 of 4</h6>
+                    <p className="text-[11px] leading-relaxed font-medium">
+                      Tap the <span className="bg-purple-600 text-white px-1.5 py-0.5 rounded text-[10px] font-black shadow-sm">+</span> button below to log your first watched episode!
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
+        {/* Status Segmented Controls */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 w-full">
+                <div className={`flex gap-1 p-1 rounded-xl border flex-1 ${
+                  theme === 'dark' ? 'bg-[#15171C] border-white/5' : 'bg-neutral-100 border-neutral-200'
+                }`}>
                   {(['Watching', 'Backlog', 'Completed'] as ShowStatus[]).map((st) => (
                     <button
                       key={st}
                       onClick={() => handleStatusChange(st)}
-                      className={`px-2 py-0.5 text-[10px] font-bold rounded-md transition-all cursor-pointer flex items-center gap-1 ${
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 whitespace-nowrap ${
                         show.status === st
                           ? st === 'Completed'
                             ? 'bg-emerald-600 text-white shadow-sm font-extrabold'
                             : st === 'Backlog'
                               ? 'bg-amber-600 text-white shadow-sm font-extrabold'
                               : 'bg-blue-600 text-white shadow-sm font-extrabold'
-                          : 'text-slate-500 hover:text-slate-300 hover:bg-white/5'
+                          : theme === 'dark'
+                            ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                            : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
                       } ${
                         onboardingStep === 1 && onboardingHighlight && st === 'Watching'
-                          ? 'ring-2 ring-purple-500 bg-blue-600 text-white scale-105 relative z-10'
+                          ? 'ring-2 ring-purple-500 text-purple-300 bg-purple-500/20 relative z-10'
                           : ''
                       }`}
                     >
@@ -975,7 +1180,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         <motion.span
                           animate={{ x: [-2, 2, -2] }}
                           transition={{ repeat: Infinity, duration: 1, ease: "easeInOut" }}
-                          className="text-purple-300 font-black text-[10px] inline-block"
+                          className="text-purple-300 font-black text-xs inline-block"
                         >
                           ➜
                         </motion.span>
@@ -985,144 +1190,123 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                   ))}
                 </div>
               </div>
+            </div>
 
-              {/* Next episode status */}
-              <div className="text-xs">
-                {show.status === 'Completed' ? (
-                  <span className="text-emerald-500 font-bold flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
-                    Watched
+            {/* Unified Watched Progress Block */}
+            <div className={`p-3 rounded-2xl border space-y-2.5 transition-all duration-300 ${
+              onboardingStep === 2 && isTargetShow
+                ? 'bg-purple-950/30 border-purple-500/70 ring-2 ring-purple-500/60 shadow-xl shadow-purple-950/40 relative z-20'
+                : theme === 'dark' ? 'bg-[#15171C]/50 border-white/5' : 'bg-neutral-100/70 border-neutral-200'
+            }`}>
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className={`uppercase tracking-wider text-[10px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>Watched Progress</span>
+                <span className={`font-extrabold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
+                  S{show.latestWatched.season} • {show.latestWatched.episode === 0 ? 'Not Started' : `E${show.latestWatched.episode}`}{' '}
+                  <span className={`font-medium text-[10px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                    ({maxEpisodesInSeason > 0 ? Math.min(100, Math.round((show.latestWatched.episode / maxEpisodesInSeason) * 100)) : 0}%)
                   </span>
-                ) : show.concluded ? (
-                  <span className="text-slate-500 font-medium">Concluded</span>
-                ) : show.nextEpisode ? (
-                  <div className="text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg text-left flex items-center gap-2 shrink-0">
-                    <Calendar className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <div className="flex flex-col leading-none py-0.5">
-                      <span className="text-[11px] font-extrabold text-emerald-300 mb-0.5">
-                        S{show.nextEpisode.season}E{show.nextEpisode.episode}
-                      </span>
-                      <span className="text-[10px] font-medium text-emerald-400/80">
-                        {formatAirDate(show.nextEpisode.airDate)}
-                      </span>
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-slate-500 font-medium">Next Episode: TBD</span>
-                )}
-              </div>
-            </div>
-
-            {/* Episode Counter Controls */}
-            <div className="flex items-center justify-between pt-2.5 border-t border-white/5">
-              <div className="flex flex-col">
-                <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Watched Progress</span>
-              </div>
-              
-              <div className="flex items-center gap-1 bg-[#262A33] border border-white/5 rounded-xl p-1">
-                <button 
-                  onClick={handleDecrementEpisode}
-                  disabled={show.latestWatched.episode <= 1}
-                  className={`p-1.5 rounded-lg transition ${
-                    show.latestWatched.episode <= 1 
-                      ? "text-slate-600 opacity-30 cursor-not-allowed" 
-                      : "text-slate-400 hover:text-white hover:bg-[#1A1D23] cursor-pointer"
-                  }`}
-                  title="Decrement Episode"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="text-xs font-bold text-slate-300 min-w-[36px] text-center px-1">
-                  E{show.latestWatched.episode}
-                  {show.episodesPerSeason?.[show.latestWatched.season - 1] ? `/${show.episodesPerSeason[show.latestWatched.season - 1]}` : ""}
                 </span>
-                <button 
-                  onClick={handleIncrementEpisode}
-                  disabled={show.latestWatched.episode >= maxEpisodesInSeason}
-                  className={`p-1.5 rounded-lg transition ${
-                    show.latestWatched.episode >= maxEpisodesInSeason 
-                      ? "text-slate-600 opacity-30 cursor-not-allowed" 
-                      : "text-slate-400 hover:text-white hover:bg-[#1A1D23] cursor-pointer"
-                  } ${
-                    onboardingStep === 3 && isTargetShow
-                      ? 'ring-4 ring-purple-400 bg-[#581c87] border-purple-400 text-white animate-pulse shadow-lg shadow-purple-500/40 relative z-20 scale-110 font-bold'
-                      : ''
-                  }`}
-                  title="Increment Episode"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-                
-                <div className="w-[1px] h-4 bg-[#1A1D23] mx-1" />
-                
-                <button 
-                  onClick={handleDecrementSeason}
-                  disabled={show.latestWatched.season <= 1}
-                  className={`p-1.5 rounded-lg transition ${
-                    show.latestWatched.season <= 1 
-                    ? "text-slate-600 opacity-30 cursor-not-allowed" 
-                    : "text-slate-400 hover:text-white hover:bg-[#1A1D23] cursor-pointer"
-                  }`}
-                  title="Decrement Season"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="text-xs font-bold text-slate-300 min-w-[36px] text-center px-1">
-                  S{show.latestWatched.season}
-                  {show.totalSeasons ? `/${show.totalSeasons}` : ""}
-                </span>
-                <button 
-                  onClick={handleIncrementSeason}
-                  disabled={show.latestWatched.season >= maxSeasons}
-                  className={`p-1.5 rounded-lg transition ${
-                    show.latestWatched.season >= maxSeasons 
-                      ? "text-slate-600 opacity-30 cursor-not-allowed" 
-                      : "text-slate-400 hover:text-white hover:bg-[#1A1D23] cursor-pointer"
-                  }`}
-                  title="Increment Season"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
               </div>
-            </div>
 
-            {/* Visual Season Progress Bar Track */}
-            <div className="space-y-1.5 pt-2.5 border-t border-white/5 select-none">
-              <div className="flex items-center justify-between text-[9px] font-black uppercase text-slate-500 tracking-wider">
-                <span>Season {show.latestWatched.season} Progress</span>
-                <span className="text-slate-400 font-extrabold">{Math.min(100, Math.round((show.latestWatched.episode / maxEpisodesInSeason) * 100))}%</span>
-              </div>
+              {isCaughtUp && (
+                <div className={`text-[11px] font-semibold ${caughtUpStyles.text}`}>
+                  Caught up on Season {show.latestWatched.season}
+                </div>
+              )}
+
+              {show.latestWatched.title && (
+                <div className={`text-[11px] font-medium truncate flex items-center gap-1.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                  <span className={`font-extrabold text-[10px] uppercase shrink-0 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>
+                    {show.latestWatched.episode === 0 ? "Status:" : "Current:"}
+                  </span>
+                  <span className="font-medium truncate">"{show.latestWatched.title}"</span>
+                </div>
+              )}
+
+              {/* Interactive Progress Bar Track */}
               <div 
                 onClick={handleProgressBarClick}
-                className={`w-full h-3.5 flex items-center group relative ${isFriendView ? 'cursor-default' : 'cursor-pointer'}`}
-                title={isFriendView ? `Season progress: ${Math.min(100, Math.round((show.latestWatched.episode / maxEpisodesInSeason) * 100))}%` : "Click progress track to set episode / complete show!"}
+                className={`w-full h-2 rounded-full overflow-hidden border relative group ${
+                  theme === 'dark' ? 'bg-[#1C1F26] border-white/5' : 'bg-neutral-200 border-neutral-300/80'
+                } ${isFriendView ? 'cursor-default' : 'cursor-pointer'}`}
+                title={isFriendView ? undefined : "Click progress track to set episode"}
               >
-                {/* Background track */}
-                <div className="w-full h-1.5 bg-[#1C1F26] rounded-full overflow-hidden border border-white/[0.03] group-hover:h-2 transition-all relative">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-300 ease-out ${
-                      show.status === 'Completed' 
-                        ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
-                        : show.status === 'Backlog'
-                        ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
-                        : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'
-                    }`}
-                    style={{ width: `${Math.min(100, Math.round((show.latestWatched.episode / maxEpisodesInSeason) * 100))}%` }}
-                  />
-                </div>
-                {/* Visual thumb helper on hover */}
-                {!isFriendView && (
-                  <div 
-                    className="absolute w-2.5 h-2.5 bg-white rounded-full border border-slate-900 shadow opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                    style={{ left: `calc(${Math.min(100, (show.latestWatched.episode / maxEpisodesInSeason) * 100)}% - 5px)` }}
-                  />
-                )}
+                <div 
+                  className={`h-full rounded-full transition-all duration-300 ${
+                    isCaughtUp
+                      ? caughtUpStyles.bar
+                      : show.status === 'Completed' 
+                      ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]' 
+                      : show.status === 'Backlog'
+                      ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                      : 'bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]'
+                  }`}
+                  style={{ width: `${maxEpisodesInSeason > 0 ? Math.min(100, Math.round((show.latestWatched.episode / maxEpisodesInSeason) * 100)) : 0}%` }}
+                />
               </div>
+
+              {/* Stepper Toolbar */}
               {!isFriendView && (
-                <div className="flex items-center justify-between text-[8px] text-slate-600 font-bold tracking-wider uppercase select-none">
-                  <span>S{show.latestWatched.season}E1</span>
-                  <span>Click bar to jump to episode</span>
-                  <span>S{show.latestWatched.season}E{maxEpisodesInSeason}</span>
+                <div className={`flex items-center justify-between pt-1 text-xs ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
+                  {/* Episode Stepper */}
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[10px] uppercase font-extrabold mr-0.5 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Ep:</span>
+                    <button 
+                      onClick={handleDecrementEpisode}
+                      disabled={show.latestWatched.episode <= 0}
+                      className={`p-1 rounded-md transition disabled:opacity-20 cursor-pointer ${
+                        theme === 'dark' ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-black/10 text-slate-600 hover:text-slate-900'
+                      }`}
+                      title="Decrement Episode"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="font-extrabold text-xs min-w-[28px] text-center">
+                      E{show.latestWatched.episode}
+                    </span>
+                    <button 
+                      onClick={handleIncrementEpisode}
+                      disabled={show.latestWatched.episode >= maxEpisodesInSeason}
+                      className={`p-1.5 rounded-lg transition disabled:opacity-20 cursor-pointer flex items-center justify-center ${
+                        onboardingStep === 2 && isTargetShow 
+                          ? 'ring-4 ring-purple-400 bg-purple-600 text-white animate-bounce shadow-lg shadow-purple-500/60 scale-125 z-30 font-black' 
+                          : theme === 'dark' ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-black/10 text-slate-600 hover:text-slate-900'
+                      }`}
+                      title="Increment Episode"
+                    >
+                      <Plus className="w-4 h-4 stroke-[3]" />
+                    </button>
+                  </div>
+
+                  <div className={`w-[1px] h-3.5 ${theme === 'dark' ? 'bg-white/10' : 'bg-neutral-300'}`} />
+
+                  {/* Season Stepper */}
+                  <div className="flex items-center gap-1">
+                    <span className={`text-[10px] uppercase font-extrabold mr-0.5 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-400'}`}>Season:</span>
+                    <button 
+                      onClick={handleDecrementSeason}
+                      disabled={show.latestWatched.season <= 1}
+                      className={`p-1 rounded-md transition disabled:opacity-20 cursor-pointer ${
+                        theme === 'dark' ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-black/10 text-slate-600 hover:text-slate-900'
+                      }`}
+                      title="Decrement Season"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="font-extrabold text-xs min-w-[28px] text-center">
+                      S{show.latestWatched.season}
+                    </span>
+                    <button 
+                      onClick={handleIncrementSeason}
+                      disabled={show.latestWatched.season >= maxSeasons}
+                      className={`p-1 rounded-md transition disabled:opacity-20 cursor-pointer ${
+                        theme === 'dark' ? 'hover:bg-white/10 text-slate-400 hover:text-white' : 'hover:bg-black/10 text-slate-600 hover:text-slate-900'
+                      }`}
+                      title="Increment Season"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1132,28 +1316,23 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         {/* User Ratings & Review Notes Block */}
         <div className="space-y-2">
           {/* Rating Scores Integrated Section */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-[#15171C]/60 p-3 rounded-2xl border border-white/5">
+          <div className={`flex flex-wrap items-center justify-between p-2.5 rounded-xl border text-xs gap-2 ${
+            theme === 'dark' ? 'bg-[#15171C]/50 border-white/5' : 'bg-neutral-100/70 border-neutral-200'
+          }`}>
             {/* Rotten Tomatoes score */}
-            <div className="flex items-center justify-between sm:justify-start gap-2 flex-1">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                <Award className="w-3.5 h-3.5 text-rose-500" />
-                <span>RT<span className="inline md:hidden xl:inline"> Score</span>:</span>
-              </span>
-              <span className="text-xs font-black text-rose-400">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Award className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+              <span className={`text-[10px] font-bold uppercase ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>RT:</span>
+              <span className="text-xs font-black text-rose-500">
                 {show.rottenTomatoesScore != null ? `${show.rottenTomatoesScore}%` : 'TBD'}
               </span>
             </div>
 
-            {/* Divider line for mobile */}
-            {(!familyDetails || familyDetails.length === 0) && (
-              <div className="h-[1px] w-full bg-white/5 sm:hidden" />
-            )}
-
             {/* User score */}
             {(!familyDetails || familyDetails.length === 0) && (
-              <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{isFriendView ? "Friend:" : "You:"}</span>
-                <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-1 shrink-0 flex-wrap">
+                <span className={`text-[10px] font-bold uppercase shrink-0 mr-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>{isFriendView ? "Friend:" : "You:"}</span>
+                <div className="flex items-center gap-0.5 shrink-0">
                   {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                     <button
                       key={star}
@@ -1161,32 +1340,40 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                       disabled={isFriendView}
                       onClick={() => handleScoreChange(star)}
                       className={`transition-colors p-px text-amber-400 ${isFriendView ? "cursor-default" : ""}`}
-                      style={{ color: star <= (show.userScore || 0) ? '#fbbf24' : '#404040' }}
+                      style={{ color: star <= (show.userScore || 0) ? '#fbbf24' : (theme === 'dark' ? '#334155' : '#cbd5e1') }}
                     >
                       <Star className="w-2.5 h-2.5 fill-current" />
                     </button>
                   ))}
                 </div>
-                <span className="text-xs font-black text-amber-400">{(show.userScore || "—")}/10</span>
+                <span className="text-xs font-black text-amber-500 ml-0.5">{(show.userScore || "—")}</span>
               </div>
             )}
           </div>
 
           {/* User Review Text / Notes */}
           {(!familyDetails || familyDetails.length === 0) ? (
-            <div className="text-xs text-slate-300 italic bg-[#0F1115]/40 rounded-xl p-3 border border-white/5 relative">
+            <div className={`text-xs rounded-xl p-3 border relative ${
+              theme === 'dark' ? 'text-slate-300 bg-[#0F1115]/40 border-white/5' : 'text-slate-800 bg-neutral-50 border-neutral-200'
+            }`}>
               {isEditingNotes && !isFriendView ? (
                 <div className="space-y-2">
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="What's your current vibe check of this show?"
-                    className="w-full bg-[#1A1D23] text-slate-100 p-2.5 rounded-lg border border-white/10 focus:outline-none min-h-16"
+                    className={`w-full p-2.5 rounded-lg border focus:outline-none min-h-20 text-xs leading-relaxed ${
+                      theme === 'dark'
+                        ? 'bg-[#1A1D23] text-slate-100 border-white/10'
+                        : 'bg-white text-slate-900 border-neutral-300 focus:border-blue-500'
+                    }`}
                   />
                   <div className="flex justify-end gap-1.5">
                     <button 
                       onClick={() => setIsEditingNotes(false)}
-                      className="px-2 py-1 text-[10px] text-slate-400 hover:bg-[#262A33] rounded font-bold"
+                      className={`px-2 py-1 text-[10px] rounded font-bold ${
+                        theme === 'dark' ? 'text-slate-400 hover:bg-[#262A33]' : 'text-slate-600 hover:bg-neutral-200'
+                      }`}
                     >
                       Cancel
                     </button>
@@ -1199,8 +1386,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-between items-center group/notes">
-                  <p className="line-clamp-2 text-slate-400 leading-relaxed pr-2 flex-1">
+                <div className="flex justify-between items-start group/notes gap-2">
+                  <p className={`leading-relaxed pr-1 flex-1 whitespace-pre-wrap break-words italic ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>
                     {show.userNotes || (isFriendView ? "No review thoughts added by friend yet." : "No review thoughts added yet. Hit edit to log a review!")}
                   </p>
                   {!isFriendView && (
@@ -1209,7 +1396,11 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         setIsEditingNotes(true);
                         handleInteractionClick();
                       }}
-                      className="ml-1 text-slate-400 hover:text-white p-2.5 opacity-100 md:opacity-0 md:group-hover/notes:opacity-100 bg-white/5 md:bg-transparent hover:bg-white/10 md:hover:bg-transparent rounded-xl transition-all min-w-[36px] min-h-[36px] flex items-center justify-center shrink-0 cursor-pointer"
+                      className={`p-2 opacity-100 md:opacity-0 md:group-hover/notes:opacity-100 rounded-xl transition-all min-w-[32px] min-h-[32px] flex items-center justify-center shrink-0 cursor-pointer ${
+                        theme === 'dark'
+                          ? 'text-slate-400 hover:text-white bg-white/5 md:bg-transparent hover:bg-white/10 md:hover:bg-transparent'
+                          : 'text-slate-500 hover:text-slate-900 bg-neutral-200/50 md:bg-transparent hover:bg-neutral-200 md:hover:bg-transparent'
+                      }`}
                       title="Edit Notes"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -1219,36 +1410,42 @@ export const ShowCard: React.FC<ShowCardProps> = ({
               )}
             </div>
           ) : (
-            <div className="space-y-2.5 bg-[#0F1115]/50 p-4 rounded-2xl border border-purple-500/10">
-              <span className="text-[10px] text-purple-300 font-extrabold uppercase tracking-widest block mb-1">
+            <div className={`space-y-2.5 p-4 rounded-2xl border ${
+              theme === 'dark' ? 'bg-[#0F1115]/50 border-purple-500/10' : 'bg-purple-50/50 border-purple-200/60'
+            }`}>
+              <span className={`text-[10px] font-extrabold uppercase tracking-widest block mb-1 ${
+                theme === 'dark' ? 'text-purple-300' : 'text-purple-700'
+              }`}>
                 Who's Watching What ({familyDetails.length})
               </span>
-              <div className="divide-y divide-white/5 space-y-2.5">
+              <div className={`divide-y space-y-2.5 ${theme === 'dark' ? 'divide-white/5' : 'divide-purple-200/50'}`}>
                 {familyDetails.map((detail, idx) => (
                   <div key={`${detail.ownerName}-${idx}`} className="pt-2.5 first:pt-0 flex flex-col gap-1">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="font-extrabold text-purple-200">{detail.ownerName}</span>
+                      <span className={`font-extrabold ${theme === 'dark' ? 'text-purple-200' : 'text-purple-900'}`}>{detail.ownerName}</span>
                       <div className="flex items-center gap-1.5">
                         <span className={`px-1.5 py-0.5 text-[9px] font-bold rounded ${
                           detail.status === 'Completed'
-                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                             : detail.status === 'Backlog'
-                            ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                            ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
+                            : 'bg-blue-500/10 text-blue-500 border border-blue-500/20'
                         }`}>
                           {detail.status === 'Watching' ? 'Watching' : detail.status === 'Backlog' ? 'Up Next' : detail.status === 'Completed' ? 'Watched' : detail.status}
                         </span>
-                        <span className="text-slate-400 font-semibold text-[10px]">S{detail.latestWatched.season}E{detail.latestWatched.episode}</span>
+                        <span className={`font-semibold text-[10px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>S{detail.latestWatched.season}E{detail.latestWatched.episode}</span>
                       </div>
                     </div>
                     {detail.userScore && (
-                      <div className="flex items-center gap-1 text-[11px] text-amber-400">
+                      <div className="flex items-center gap-1 text-[11px] text-amber-500">
                         <span className="opacity-75">Score:</span>
                         <span className="font-bold">{detail.userScore}/10</span>
                       </div>
                     )}
                     {detail.userNotes && (
-                      <p className="text-[11px] text-slate-400 italic leading-relaxed pl-2 border-l border-purple-500/20 mt-0.5">
+                      <p className={`text-[11px] italic leading-relaxed pl-2 border-l mt-0.5 whitespace-pre-wrap break-words ${
+                        theme === 'dark' ? 'text-slate-300 border-purple-500/20' : 'text-slate-700 border-purple-300'
+                      }`}>
                         "{detail.userNotes}"
                       </p>
                     )}
@@ -1260,7 +1457,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         </div>
 
         {/* Collapsible Meta Data Section: Recap or Details */}
-        <div className="border-t border-white/5 pt-2.5">
+        <div className={`border-t pt-2.5 ${theme === 'dark' ? 'border-white/5' : 'border-neutral-200'}`}>
           <button
             onClick={() => {
               const nextState = !isExpanded;
@@ -1269,16 +1466,24 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 handleInteractionClick();
               }
             }}
-            className="w-full flex items-center justify-between text-xs text-slate-400 hover:text-white transition py-1"
+            className={`w-full flex items-center justify-between text-xs transition px-2.5 py-1.5 rounded-xl border ${
+              isExpanded
+                ? show.status === 'Watching'
+                  ? 'bg-blue-500/10 border-blue-500/25 text-blue-500'
+                  : theme === 'dark' ? 'bg-white/5 border-white/10 text-slate-200' : 'bg-neutral-100 border-neutral-300 text-slate-800'
+                : theme === 'dark' 
+                  ? 'bg-[#15171C]/60 hover:bg-[#1C1F26] border-white/5 text-slate-400 hover:text-white'
+                  : 'bg-neutral-100 hover:bg-neutral-200/80 border-neutral-200 text-slate-600 hover:text-slate-900'
+            }`}
           >
             {show.status === 'Watching' ? (
-              <span className="font-semibold uppercase tracking-wider text-[10px] flex items-center gap-1 text-blue-400">
-                <Sparkles className="w-3 h-3" /> Previous Episode Recap
+              <span className="font-extrabold uppercase tracking-wider text-[10px] flex items-center gap-1.5 text-blue-500">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" /> Episode Recap
               </span>
             ) : (
-              <span className="font-semibold uppercase tracking-wider text-[10px]">Cast, Crew & Details</span>
+              <span className="font-extrabold uppercase tracking-wider text-[10px]">Cast, Crew & Details</span>
             )}
-            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            {isExpanded ? <ChevronUp className="w-4 h-4 opacity-80" /> : <ChevronDown className="w-4 h-4 opacity-60" />}
           </button>
 
           <AnimatePresence>
@@ -1293,20 +1498,26 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 {show.status === 'Watching' ? (
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase flex items-center gap-1">
+                      <span className={`text-[10px] font-bold uppercase flex items-center gap-1 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                         <Sparkles className="w-3 h-3 text-blue-500 animate-pulse" /> Season {show.latestWatched.season}, Episode {show.latestWatched.episode} Recap
                       </span>
-                      <span className="text-[8px] font-extrabold bg-[#20252E] text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded tracking-wider uppercase">
+                      <span className={`text-[8px] font-extrabold border px-1.5 py-0.5 rounded tracking-wider uppercase ${
+                        theme === 'dark' ? 'bg-[#20252E] text-blue-400 border-blue-500/20' : 'bg-blue-50 text-blue-600 border-blue-200'
+                      }`}>
                         TVmaze Verified
                       </span>
                     </div>
                     {isLoadingRecap ? (
-                      <div className="text-slate-400 text-xs py-2.5 flex items-center gap-2 animate-pulse bg-[#20252E]/30 px-3 rounded-xl border border-white/5">
+                      <div className={`text-xs py-2.5 flex items-center gap-2 animate-pulse px-3 rounded-xl border ${
+                        theme === 'dark' ? 'text-slate-400 bg-[#20252E]/30 border-white/5' : 'text-slate-600 bg-neutral-100 border-neutral-200'
+                      }`}>
                         <Sparkles className="w-3.5 h-3.5 text-blue-500 animate-spin" />
                         <span>Retrieving recap from TVmaze...</span>
                       </div>
                     ) : (
-                      <p className="text-slate-300 leading-relaxed text-xs italic bg-[#20252E]/50 p-3 rounded-xl border border-white/5">
+                      <p className={`leading-relaxed text-xs italic p-3 rounded-xl border ${
+                        theme === 'dark' ? 'text-slate-300 bg-[#20252E]/50 border-white/5' : 'text-slate-700 bg-neutral-50 border-neutral-200'
+                      }`}>
                         "{recapText || "No recap summary available. Try changing your watched progress or reload."}"
                       </p>
                     )}
@@ -1315,10 +1526,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                   <>
                     {/* Overview */}
                     <div className="space-y-1">
-                      <span className="text-[10px] text-slate-500 font-bold uppercase">
+                      <span className={`text-[10px] font-bold uppercase ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'}`}>
                         {show.nextEpisode?.overview || show.nextEpisode?.summary ? "Upcoming Episode Summary" : "Overview"}
                       </span>
-                      <p className="text-slate-400 leading-relaxed text-xs">
+                      <p className={`leading-relaxed text-xs ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                         {show.nextEpisode?.overview || show.nextEpisode?.summary || show.overview}
                       </p>
                     </div>
@@ -1326,16 +1537,16 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                     {/* Directors */}
                     {show.directors && show.directors.length > 0 && (
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase">Creators & Showrunners</span>
-                        <span className="text-slate-300 font-medium">{show.directors.join(', ')}</span>
+                        <span className={`text-[10px] font-bold uppercase ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'}`}>Creators & Showrunners</span>
+                        <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{show.directors.join(', ')}</span>
                       </div>
                     )}
 
                     {/* Actors */}
                     {show.actors && show.actors.length > 0 && (
                       <div className="flex flex-col gap-0.5">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase">Cast</span>
-                        <span className="text-slate-300 font-medium">{show.actors.slice(0, 4).join(', ')}</span>
+                        <span className={`text-[10px] font-bold uppercase ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'}`}>Cast</span>
+                        <span className={`font-medium ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>{show.actors.slice(0, 4).join(', ')}</span>
                       </div>
                     )}
                   </>
@@ -1345,8 +1556,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 {!isFriendView && (
                   <div className="flex justify-end pt-2">
                     {showExpanderDeleteConfirm ? (
-                      <div className="flex items-center gap-2 bg-[#111319] border border-rose-500/30 px-3 py-1.5 rounded-xl shadow-md animate-in fade-in slide-in-from-right-3 duration-150">
-                        <span className="text-[10px] font-black uppercase text-rose-400 tracking-wider">Confirm Delete?</span>
+                      <div className={`flex items-center gap-2 border px-3 py-1.5 rounded-xl shadow-md animate-in fade-in slide-in-from-right-3 duration-150 ${
+                        theme === 'dark' ? 'bg-[#111319] border-rose-500/30' : 'bg-rose-50 border-rose-200'
+                      }`}>
+                        <span className="text-[10px] font-black uppercase text-rose-500 tracking-wider">Confirm Delete?</span>
                         <button
                           onClick={() => {
                             onDeleteShow(show.id);
@@ -1358,7 +1571,9 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         </button>
                         <button
                           onClick={() => setShowExpanderDeleteConfirm(false)}
-                          className="px-2.5 py-1 text-[10px] font-bold uppercase rounded bg-white/10 hover:bg-white/15 text-slate-300 transition cursor-pointer"
+                          className={`px-2.5 py-1 text-[10px] font-bold uppercase rounded transition cursor-pointer ${
+                            theme === 'dark' ? 'bg-white/10 hover:bg-white/15 text-slate-300' : 'bg-neutral-200 hover:bg-neutral-300 text-slate-700'
+                          }`}
                         >
                           Cancel
                         </button>
@@ -1368,7 +1583,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         onClick={() => {
                           setShowExpanderDeleteConfirm(true);
                         }}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-rose-450 hover:bg-rose-950/20 hover:text-rose-400 transition text-[11px] font-bold cursor-pointer"
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-rose-500 hover:bg-rose-500/10 transition text-[11px] font-bold cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         Delete Show
@@ -1382,6 +1597,6 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         </div>
 
       </div>
-    </motion.div>
+    </div>
   );
 };

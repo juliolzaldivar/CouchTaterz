@@ -18,19 +18,11 @@ interface ChatAgentProps {
 
 const QUICK_PROMPTS = [
   {
-    label: "🍿 Suggest what to watch next",
+    label: "Suggest what to watch next",
     prompt: "Analyze my followed shows list (genres, ratings, services) and recommend 3-5 real, exciting TV shows. Tell me where to stream them and why they match my taste!"
   },
   {
-    label: "🍳 Recap Season 3 of The Bear",
-    prompt: "Can you give me a quick, spoiler-friendly recap of what happened in Season 3 of The Bear? Focus on the main character arcs and what the season finale set up."
-  },
-  {
-    label: "🎨 Lets chat about animation as art",
-    prompt: "Let's chat about animation as a profound art form. Look at my list, highlight the animated shows, and let's discuss why animation is such an incredible medium!"
-  },
-  {
-    label: "⭐️ Rate my taste",
+    label: "Rate my taste",
     prompt: "Take a look at my followed TV shows list, my scores, and progress. Give me a fun, friendly 'taste analysis' or rating, pointing out any trends or hidden gems in my list."
   }
 ];
@@ -154,29 +146,29 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
   };
 
   return (
-    <div className="flex flex-col h-full md:h-[680px] lg:h-[750px] max-h-full bg-[#1A1D23] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
+    <div className="flex flex-col h-full md:h-[680px] lg:h-[750px] max-h-full bg-[#161920] border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative">
       {/* Agent Top Header */}
-      <div className="p-4 border-b border-white/5 bg-[#0F1115]/40 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+      <div className="p-4 sm:p-5 border-b border-white/10 bg-[#181B22] flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="p-2.5 bg-[#262A33] text-emerald-400 rounded-2xl flex items-center justify-center shadow-lg border border-white/5">
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-sm">
               <Bot className="w-5 h-5" />
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#1A1D23]" />
+            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-[#181B22]" />
           </div>
           <div>
-            <div className="flex items-center gap-1.5">
-              <h3 className="text-sm font-bold text-white tracking-tight">Spudz</h3>
-              <span className="px-1.5 py-0.5 text-[8px] font-extrabold bg-[#262A33] text-slate-400 border border-white/5 rounded tracking-widest uppercase">Agent</span>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">Spudz AI</h3>
+              <span className="px-2 py-0.5 text-[9px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md tracking-wider uppercase">Agent</span>
             </div>
-            <p className="text-[10px] text-slate-500 font-medium">Synced with your active watchlist</p>
+            <p className="text-xs text-slate-400 font-medium">Synced with your active watchlist</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2">
           <button
             onClick={handleClearHistory}
-            className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-[#262A33] transition"
+            className="p-2 sm:p-1.5 rounded-xl bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white transition cursor-pointer border border-white/5"
             title="Clear Chat History"
           >
             <Trash2 className="w-4 h-4" />
@@ -184,17 +176,18 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
           {onClose && (
             <button
               onClick={onClose}
-              className="p-1.5 rounded-lg text-slate-500 hover:text-white hover:bg-[#262A33] transition"
+              className="p-2 sm:p-1.5 rounded-xl bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white transition cursor-pointer border border-white/5"
               title="Close Panel"
+              aria-label="Close Panel"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5 sm:w-4 sm:h-4" />
             </button>
           )}
         </div>
       </div>
 
       {/* Messages Scroll Panel */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-3 bg-gradient-to-b from-[#1A1D23] to-[#0F1115]">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-3 bg-[#111319]">
         <AnimatePresence initial={false}>
           {messages.map((msg) => (
             <motion.div
@@ -207,7 +200,7 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
                 className={`rounded-2xl px-4 py-3 text-xs leading-relaxed border ${
                   msg.role === 'user'
                     ? 'max-w-[85%] bg-emerald-600 text-white border-transparent font-medium shadow-md shadow-emerald-950/15'
-                    : 'w-full bg-[#262A33] text-slate-200 border-white/5 shadow-sm'
+                    : 'w-full bg-[#1A1D25] text-slate-200 border-white/10 shadow-sm'
                 }`}
               >
                 {msg.role === 'model' ? (
@@ -226,21 +219,21 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
-            className="flex justify-start items-center gap-2 p-2 bg-[#0F1115]/20 rounded-xl"
+            className="flex justify-start items-center gap-2 p-2 bg-[#1A1D25]/50 rounded-xl border border-white/5"
           >
-            <div className="p-1.5 bg-[#262A33] text-slate-400 border border-white/5 rounded-lg">
+            <div className="p-1.5 bg-[#252932] text-emerald-400 border border-white/5 rounded-lg">
               <Bot className="w-3.5 h-3.5 animate-bounce" />
             </div>
             <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-slate-600 rounded-full animate-bounce delay-100" />
-              <span className="w-1.5 h-1.5 bg-slate-600 rounded-full animate-bounce delay-200" />
-              <span className="w-1.5 h-1.5 bg-slate-600 rounded-full animate-bounce delay-300" />
+              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce delay-100" />
+              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce delay-200" />
+              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce delay-300" />
             </div>
           </motion.div>
         )}
 
         {error && (
-          <div className="flex items-start gap-2 p-3 rounded-2xl bg-rose-950/20 text-rose-300 border border-rose-900/30 text-xs">
+          <div className="flex items-start gap-2 p-3 rounded-2xl bg-rose-950/30 text-rose-300 border border-rose-800/40 text-xs">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <p>{error}</p>
           </div>
@@ -248,14 +241,14 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
 
         {/* Suggested Quick Prompts Panel */}
         {messages.length === 1 && (
-          <div className="space-y-2">
-            <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest block mb-0.5">Recommended Topics</span>
-            <div className="grid grid-cols-2 gap-2">
+          <div className="space-y-2 pt-2">
+            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block mb-1">Recommended Topics</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {QUICK_PROMPTS.map((qp, i) => (
                 <button
                   key={i}
                   onClick={() => handleSendMessage(qp.prompt)}
-                  className="text-left px-3 py-2.5 rounded-xl bg-[#262A33]/50 border border-white/5 text-slate-400 hover:text-white hover:bg-[#262A33] text-xs font-semibold transition leading-tight flex items-center min-h-[44px]"
+                  className="text-left px-3.5 py-3 rounded-xl bg-[#1A1D25] border border-white/10 text-slate-300 hover:text-white hover:bg-[#222632] hover:border-emerald-500/40 text-xs font-semibold transition leading-tight flex items-center min-h-[44px] cursor-pointer"
                 >
                   <span>{qp.label}</span>
                 </button>
@@ -273,7 +266,7 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
           e.preventDefault();
           handleSendMessage(input);
         }}
-        className="px-4 py-3 border-t border-white/5 bg-[#0F1115]/40"
+        className="p-3 sm:p-4 border-t border-white/10 bg-[#14171F]"
       >
         <div className="relative flex items-center">
           <input
@@ -283,12 +276,12 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
             placeholder="Ask Spudz..."
-            className="w-full bg-[#1e222b] text-slate-100 pl-4 pr-12 py-3 rounded-2xl border-2 border-emerald-500/80 shadow-[0_0_12px_rgba(16,185,129,0.2)] focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/30 placeholder-slate-400 text-xs transition-all duration-200"
+            className="w-full bg-[#1C202B] text-slate-100 pl-4 pr-12 py-3 rounded-2xl border border-white/10 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30 placeholder-slate-400 text-xs transition-all duration-200"
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="absolute right-2 p-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-40 disabled:pointer-events-none transition"
+            className="absolute right-2 p-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-40 disabled:pointer-events-none transition cursor-pointer"
             aria-label="Send Message"
           >
             <Send className="w-3.5 h-3.5" />

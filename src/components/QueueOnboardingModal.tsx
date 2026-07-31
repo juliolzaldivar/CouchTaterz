@@ -50,7 +50,7 @@ export const QueueOnboardingModal: React.FC<QueueOnboardingModalProps> = ({ isOp
         <div className="flex items-start gap-1.5">
           <span className="text-purple-400 font-extrabold select-none mt-0.5">•</span>
           <p className="leading-snug">
-            <strong className="text-white font-bold">Buddy Picks:</strong> Toggle the purple <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-950/80 text-purple-300 border border-purple-500/30 text-[9px] font-extrabold uppercase tracking-wider align-middle mx-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> Buddy Picks</span> scope switch to browse what your Watch Buddies are watching and loving.
+            <strong className="text-white font-bold">Buddy Picks:</strong> Toggle the purple <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-purple-950/80 text-purple-300 border border-purple-500/30 text-[9px] font-extrabold uppercase tracking-wider align-middle mx-1"><span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-pulse" /> Buddy Picks</span> scope switch to browse what your Binge Buddies are watching and loving.
           </p>
         </div>
         <div className="flex items-start gap-1.5">
@@ -285,7 +285,7 @@ export const QueueOnboardingModal: React.FC<QueueOnboardingModalProps> = ({ isOp
   const step = steps[currentStep];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85">
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

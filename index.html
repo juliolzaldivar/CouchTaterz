@@ -2,13 +2,48 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>CouchTaterz — TV Show & Release Tracker</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+    
+    <!-- PWA & Mobile Web App Meta -->
+    <meta name="theme-color" content="#0f172a" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="CouchTaterz" />
+    <meta name="application-name" content="CouchTaterz" />
+
+    <!-- OpenGraph & Social Share Preview Cards -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CouchTaterz" />
+    <meta property="og:title" content="CouchTaterz — Your AI-Powered TV Tracker & Household Queue" />
+    <meta property="og:description" content="Never lose track of your shows again. Coordinate household queues across Netflix, HBO, Disney+, Apple TV+, and generate AI episode recaps." />
+    <meta property="og:image" content="/api/og-card" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter Card Meta -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CouchTaterz — Your AI-Powered TV Tracker & Household Queue" />
+    <meta name="twitter:description" content="Track progress across all streaming services, sync with family, and catch up with AI spoiler-free recaps." />
+    <meta name="twitter:image" content="/api/og-card" />
+
+    <title>CouchTaterz — AI TV Tracker & Household Queue</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch((err) => {
+            console.log('PWA ServiceWorker registration failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
 
