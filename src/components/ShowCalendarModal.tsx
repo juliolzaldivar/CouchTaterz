@@ -5,6 +5,9 @@
 
 import React, { useState, useMemo } from 'react';
 import { TvShow, StreamingService } from '../types';
+import { getStreamingServiceLink } from '../utils/streamingLinks';
+import { getShowBannerImage } from '../utils/showBanners';
+import { isFutureAirDate } from '../utils/airedEpisodes';
 import { 
   X, 
   ChevronLeft, 
@@ -26,12 +29,15 @@ interface ShowCalendarModalProps {
   shows: TvShow[];
   onUpdateShow: (updatedShow: TvShow) => void;
   onClose: () => void;
+  isOpen?: boolean;
+  theme?: 'dark' | 'light';
 }
 
 export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
   shows,
   onUpdateShow,
-  onClose
+  onClose,
+  theme = 'dark',
 }) => {
   // Ref for details panel to support auto-scrolling on mobile
   const detailsRef = React.useRef<HTMLDivElement>(null);
@@ -208,7 +214,7 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
 
   // List of unique streaming services among shows to filter
   const streamingServices: StreamingService[] = [
-    'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Other'
+    'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Starz', 'Other'
   ];
 
   // Selected date's airing shows
@@ -229,6 +235,7 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
   // Helper to mark episode as watched from calendar and advance/conclude progress
   const handleMarkWatched = (show: TvShow) => {
     if (!show.nextEpisode) return;
+    if (isFutureAirDate(show.nextEpisode.airDate)) return; // Cannot advance past un-aired episode
     
     const wasNext = show.nextEpisode;
     
@@ -263,20 +270,26 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-5xl rounded-2xl sm:rounded-3xl bg-[#14161C] border border-white/10 text-slate-100 shadow-2xl overflow-hidden flex flex-col h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:h-[82vh] max-h-[900px]"
+        className={`relative w-full max-w-5xl rounded-2xl sm:rounded-3xl border shadow-2xl overflow-hidden flex flex-col h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:h-[82vh] max-h-[900px] ${
+          theme === 'dark' ? 'bg-[#14161C] border-white/10 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+        }`}
         id="tv-calendar-modal"
       >
         {/* Header */}
-        <div className="py-3 px-3.5 sm:px-5 border-b border-white/10 flex items-center justify-between bg-[#181B22] shrink-0 min-h-[52px]">
+        <div className={`py-3 px-3.5 sm:px-5 border-b flex items-center justify-between shrink-0 min-h-[52px] ${
+          theme === 'dark' ? 'bg-[#181B22] border-white/10' : 'bg-slate-50 border-slate-200'
+        }`}>
           <div className="flex items-center gap-2 min-w-0 pr-2">
-            <CalendarIcon className="w-4 h-4 text-blue-400 shrink-0" />
+            <CalendarIcon className="w-4 h-4 text-blue-500 shrink-0" />
             <h3 className="text-xs sm:text-sm font-black tracking-tight uppercase truncate">
-              <span className="text-blue-500">COUCH</span><span className="text-white">TATERZ</span> <span className="text-slate-400 font-extrabold ml-1 hidden sm:inline">RELEASE CALENDAR</span><span className="text-slate-400 font-extrabold ml-1 sm:hidden">CALENDAR</span>
+              <span className="text-blue-600">COUCH</span><span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>TATERZ</span> <span className={`font-extrabold ml-1 hidden sm:inline ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>RELEASE CALENDAR</span><span className={`font-extrabold ml-1 sm:hidden ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>CALENDAR</span>
             </h3>
           </div>
           <button
             onClick={onClose}
-            className="p-2 sm:p-1.5 rounded-xl bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white transition cursor-pointer active:scale-95 flex items-center justify-center min-w-[38px] min-h-[38px] shrink-0 border border-white/5"
+            className={`p-2 sm:p-1.5 rounded-xl transition cursor-pointer active:scale-95 flex items-center justify-center min-w-[38px] min-h-[38px] shrink-0 border ${
+              theme === 'dark' ? 'bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white border-white/5' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200'
+            }`}
             title="Close Calendar"
             aria-label="Close Calendar"
           >
@@ -285,7 +298,9 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
         </div>
 
         {/* Dedicated Row for Jump to Next Release */}
-        <div className="py-2 px-4 border-b border-white/5 bg-[#171A21] flex items-center shrink-0">
+        <div className={`py-2 px-4 border-b flex items-center shrink-0 ${
+          theme === 'dark' ? 'bg-[#171A21] border-white/5' : 'bg-slate-100/60 border-slate-200'
+        }`}>
           <button
             onClick={handleJumpToNextAiring}
             className="w-full py-1.5 px-3 text-[10px] font-extrabold bg-blue-600 hover:bg-blue-500 text-white rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-950/20"
@@ -297,20 +312,26 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
         </div>
 
         {/* Filters and Stats bar */}
-        <div className="py-2 px-4 border-b border-white/5 bg-[#121419] flex flex-row items-center justify-between gap-3 shrink-0">
+        <div className={`py-2 px-4 border-b flex flex-row items-center justify-between gap-3 shrink-0 ${
+          theme === 'dark' ? 'bg-[#121419] border-white/5' : 'bg-slate-50 border-slate-200'
+        }`}>
           <div className="flex items-center gap-1.5">
-            <span className="text-[10px] text-slate-400 font-bold uppercase flex items-center gap-1">
-              <Filter className="w-3 h-3 text-blue-400" /> Filter:
+            <span className={`text-[10px] font-bold uppercase flex items-center gap-1 ${
+              theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              <Filter className="w-3 h-3 text-blue-500" /> Filter:
             </span>
 
             <select
               value={serviceFilter}
               onChange={(e) => setServiceFilter(e.target.value as StreamingService | 'All')}
-              className="bg-[#1E2128] border border-blue-500/20 hover:border-blue-500/40 text-slate-200 font-bold text-[10px] rounded-xl px-2.5 py-1 focus:outline-none transition cursor-pointer"
+              className={`border font-bold text-[10px] rounded-xl px-2.5 py-1 focus:outline-none transition cursor-pointer ${
+                theme === 'dark' ? 'bg-[#1E2128] border-blue-500/20 text-slate-200 hover:border-blue-500/40' : 'bg-white border-slate-200 text-slate-900 shadow-sm'
+              }`}
             >
               <option value="All">All Platforms</option>
-              {streamingServices.map((service) => (
-                <option key={service} value={service}>{service}</option>
+              {streamingServices.map((service, srvIdx) => (
+                <option key={`cal-srv-${service}-${srvIdx}`} value={service}>{service}</option>
               ))}
             </select>
           </div>
@@ -323,24 +344,24 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
         {/* Content body divided into Grid layout (Calendar Left, Details Right) */}
         <div className="flex-1 flex flex-col md:flex-row overflow-y-auto md:overflow-hidden">
           {/* Left panel: Calendar Grid */}
-          <div className="w-full md:flex-1 p-3 md:p-4 flex flex-col space-y-3 md:border-r border-white/5 md:overflow-y-auto shrink-0 md:shrink">
+          <div className={`w-full md:flex-1 p-3 md:p-4 flex flex-col space-y-3 md:border-r ${theme === 'dark' ? 'border-white/5' : 'border-slate-200'} md:overflow-y-auto shrink-0 md:shrink`}>
             {/* Calendar controller header */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <h4 className="text-xs md:text-sm font-black text-white uppercase tracking-tight">
+                <h4 className={`text-xs md:text-sm font-black uppercase tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                   {MONTH_NAMES[currentMonth]} {currentYear}
                 </h4>
                 {!hasAiringShowsInVisibleMonth && (
-                  <span className="px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <span className={`px-2 py-0.5 text-[8px] font-black uppercase tracking-wider rounded ${theme === 'dark' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-amber-50 text-amber-700 border border-amber-200'}`}>
                     No Airings
                   </span>
                 )}
               </div>
-              <div className="flex items-center gap-1 bg-[#1E2128] border border-white/5 p-1 rounded-xl">
+              <div className={`flex items-center gap-1 border p-1 rounded-xl ${theme === 'dark' ? 'bg-[#1E2128] border-white/5' : 'bg-slate-100 border-slate-200'}`}>
                 <button
                   type="button"
                   onClick={handlePrevMonth}
-                  className="p-1 md:p-1.5 hover:bg-[#2C323D] text-slate-400 hover:text-white rounded-lg transition"
+                  className={`p-1 md:p-1.5 rounded-lg transition ${theme === 'dark' ? 'hover:bg-[#2C323D] text-slate-400 hover:text-white' : 'hover:bg-slate-200 text-slate-600 hover:text-slate-900'}`}
                   title="Previous Month"
                 >
                   <ChevronLeft className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -351,7 +372,11 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
                     setCurrentMonth(today.getMonth());
                     setCurrentYear(today.getFullYear());
                   }}
-                  className="px-2 md:px-2.5 py-1 text-[9px] md:text-[10px] font-black bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg transition uppercase tracking-wider cursor-pointer"
+                  className={`px-2 md:px-2.5 py-1 text-[9px] md:text-[10px] font-black border rounded-lg transition uppercase tracking-wider cursor-pointer ${
+                    theme === 'dark' 
+                      ? 'bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border-blue-500/30' 
+                      : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300'
+                  }`}
                   title="Back to current month"
                 >
                   Today
@@ -359,7 +384,7 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
                 <button
                   type="button"
                   onClick={handleNextMonth}
-                  className="p-1 md:p-1.5 hover:bg-[#2C323D] text-slate-400 hover:text-white rounded-lg transition"
+                  className={`p-1 md:p-1.5 rounded-lg transition ${theme === 'dark' ? 'hover:bg-[#2C323D] text-slate-400 hover:text-white' : 'hover:bg-slate-200 text-slate-600 hover:text-slate-900'}`}
                   title="Next Month"
                 >
                   <ChevronRight className="w-3.5 h-3.5 md:w-4 md:h-4" />
@@ -370,7 +395,9 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
             {/* Calendar grid */}
             <div className="flex-1 flex flex-col">
               {/* Day names headers */}
-              <div className="grid grid-cols-7 gap-1 text-center text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest text-slate-500 pb-1.5 border-b border-white/5">
+              <div className={`grid grid-cols-7 gap-1 text-center text-[9px] md:text-[10px] font-extrabold uppercase tracking-widest pb-1.5 border-b ${
+                theme === 'dark' ? 'text-slate-500 border-white/5' : 'text-slate-600 border-slate-200'
+              }`}>
                 <div>Sun</div>
                 <div>Mon</div>
                 <div>Tue</div>
@@ -403,15 +430,29 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
                       onClick={() => setSelectedDateKey(dateStr)}
                       className={`min-h-[40px] sm:min-h-[48px] md:min-h-[64px] rounded-xl p-1 md:p-1.5 flex flex-col justify-between items-start transition-all border text-left cursor-pointer group relative ${
                         isToday 
-                          ? 'border-blue-500/60 bg-blue-500/10 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
+                          ? theme === 'dark'
+                            ? 'border-blue-500/60 bg-blue-500/10 shadow-[0_0_12px_rgba(59,130,246,0.15)]' 
+                            : 'border-blue-500 bg-blue-50/80 shadow-sm ring-1 ring-blue-400/40'
                           : isSelected
-                          ? 'border-blue-400/50 bg-blue-600/20 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
-                          : 'border-white/5 bg-[#171A21] hover:bg-[#1C1F28] hover:border-white/10'
+                          ? theme === 'dark'
+                            ? 'border-blue-400/50 bg-blue-600/20 text-blue-200 shadow-[0_0_10px_rgba(59,130,246,0.1)]'
+                            : 'border-blue-600 bg-blue-600 text-white shadow-md'
+                          : theme === 'dark'
+                            ? 'border-white/5 bg-[#171A21] hover:bg-[#1C1F28] hover:border-white/10'
+                            : 'border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300'
                       }`}
                     >
                       {/* Day digit */}
                       <span className={`text-[9px] md:text-[10px] font-bold ${
-                        isToday ? 'text-blue-400 bg-blue-500/20 px-1 rounded' : isSelected ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'
+                        isToday 
+                          ? theme === 'dark'
+                            ? 'text-blue-400 bg-blue-500/20 px-1 rounded' 
+                            : 'text-blue-700 bg-blue-200/70 px-1 rounded font-extrabold'
+                          : isSelected 
+                          ? 'text-white font-extrabold' 
+                          : theme === 'dark'
+                            ? 'text-slate-400 group-hover:text-slate-200'
+                            : 'text-slate-700 group-hover:text-slate-900'
                       }`}>
                         {dayNum}
                       </span>
@@ -429,7 +470,9 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
                           );
                         })}
                         {dayShows.length > 4 && (
-                          <div className="text-[6px] md:text-[7px] text-slate-500 font-black leading-none shrink-0">+{dayShows.length - 4}</div>
+                          <div className={`text-[6px] md:text-[7px] font-black leading-none shrink-0 ${
+                            isSelected && theme === 'light' ? 'text-blue-100' : 'text-slate-500'
+                          }`}>+{dayShows.length - 4}</div>
                         )}
                       </div>
 
@@ -445,12 +488,16 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
           </div>
 
           {/* Right panel: Details of Selected Date */}
-          <div ref={detailsRef} className="w-full md:w-80 bg-[#121419] p-4 md:p-5 flex flex-col space-y-4 md:overflow-y-auto border-t md:border-t-0 border-white/5 shrink-0">
-            <div className="border-b border-white/5 pb-3">
-              <h4 className="text-[10px] text-slate-400 font-bold uppercase tracking-widest flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-blue-400" /> Releases Airing On
+          <div ref={detailsRef} className={`w-full md:w-80 ${
+            theme === 'dark' ? 'bg-[#121419] border-white/5' : 'bg-slate-50 border-slate-200'
+          } p-4 md:p-5 flex flex-col space-y-4 md:overflow-y-auto border-t md:border-t-0 md:border-l shrink-0`}>
+            <div className={`border-b ${theme === 'dark' ? 'border-white/5' : 'border-slate-200'} pb-3`}>
+              <h4 className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-1 ${
+                theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+              }`}>
+                <Clock className="w-3.5 h-3.5 text-blue-500" /> Releases Airing On
               </h4>
-              <p className="text-xs font-black text-white mt-1">
+              <p className={`text-xs font-black mt-1 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
                 {selectedDateKey ? (() => {
                   const [y, m, d] = selectedDateKey.split('-');
                   return `${MONTH_NAMES[Number(m) - 1]} ${Number(d)}, ${y}`;
@@ -460,11 +507,11 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
 
             {selectedDateShows.length === 0 ? (
               <div className="flex-1 flex flex-col justify-center items-center text-center p-6 space-y-3">
-                <Tv className="w-10 h-10 text-slate-700 animate-pulse" />
-                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                <Tv className={`w-10 h-10 ${theme === 'dark' ? 'text-slate-700' : 'text-slate-300'} animate-pulse`} />
+                <p className={`text-xs font-medium leading-relaxed ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                   No shows or upcoming episodes scheduled to release on this day.
                 </p>
-                <p className="text-[10px] text-slate-600 leading-relaxed">
+                <p className={`text-[10px] leading-relaxed ${theme === 'dark' ? 'text-slate-600' : 'text-slate-500'}`}>
                   Pick highlighted days or change filters to discover more releases.
                 </p>
               </div>
@@ -475,19 +522,27 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
                   return (
                     <div 
                       key={`${show.id}-${sIdx}`}
-                      className="p-3.5 rounded-2xl bg-[#1A1D23] border border-white/5 hover:border-white/10 transition flex flex-col gap-3"
+                      className={`p-3.5 rounded-2xl border transition flex flex-col gap-3 ${
+                        theme === 'dark' 
+                          ? 'bg-[#1A1D23] border-white/5 hover:border-white/10' 
+                          : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
+                      }`}
                     >
                       {/* Card layout inside detail */}
                       <div className="flex items-start gap-3">
                         <img 
-                          src={show.bannerImage} 
+                          src={getShowBannerImage(show)} 
                           alt={show.title}
-                          className="w-16 h-10 rounded-lg object-cover bg-slate-800 border border-white/5"
+                          className={`w-16 h-10 rounded-lg object-cover border ${
+                            theme === 'dark' ? 'bg-slate-800 border-white/5' : 'bg-slate-100 border-slate-200'
+                          }`}
                           style={{ objectPosition: show.bannerPosition || 'center 25%' }}
                           referrerPolicy="no-referrer"
                         />
                         <div className="flex-1 min-w-0">
-                          <h5 className="text-xs font-bold text-white truncate leading-snug">{show.title}</h5>
+                          <h5 className={`text-xs font-bold truncate leading-snug ${
+                            theme === 'dark' ? 'text-white' : 'text-slate-900'
+                          }`}>{show.title}</h5>
                           <span className={`inline-block px-1.5 py-0.5 mt-1 text-[8px] font-black uppercase tracking-wider rounded border ${colors.bg} ${colors.text} ${colors.border}`}>
                             {show.streamingService}
                           </span>
@@ -495,50 +550,59 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
                       </div>
 
                       {/* Episode specifics */}
-                      <div className="p-2.5 rounded-xl bg-[#20242D] border border-white/5 text-[11px] space-y-1.5">
-                        <div className="font-extrabold text-blue-400">
+                      <div className={`p-2.5 rounded-xl border text-[11px] space-y-1.5 ${
+                        theme === 'dark' 
+                          ? 'bg-[#20242D] border-white/5' 
+                          : 'bg-slate-50 border-slate-200'
+                      }`}>
+                        <div className="font-extrabold text-blue-500">
                           Season {show.nextEpisode?.season}, Episode {show.nextEpisode?.episode}
                         </div>
-                        <div className="font-medium text-slate-200">
+                        <div className={`font-medium ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>
                           "{show.nextEpisode?.title}"
                         </div>
                         {show.nextEpisode?.airDate && (
-                          <div className="text-[10px] text-slate-500 flex items-center gap-1 font-medium">
-                            <Clock className="w-3 h-3 text-slate-500" /> Airing: {show.nextEpisode.airDate}
+                          <div className={`text-[10px] flex items-center gap-1 font-medium ${
+                            theme === 'dark' ? 'text-slate-500' : 'text-slate-600'
+                          }`}>
+                            <Clock className="w-3 h-3 text-slate-400" /> Airing: {show.nextEpisode.airDate}
                           </div>
                         )}
                       </div>
 
                       {/* Detailed Actions */}
                       <div className="flex items-center gap-2 pt-1.5">
-                        <button
-                          onClick={() => handleMarkWatched(show)}
-                          className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] rounded-xl flex items-center justify-center gap-1 transition"
-                          title="Click to bump watched progress to this episode"
-                        >
-                          <Check className="w-3 h-3" />
-                          <span>Mark Watched</span>
-                        </button>
+                        {(() => {
+                          const isFuture = isFutureAirDate(show.nextEpisode?.airDate);
+                          return (
+                            <button
+                              onClick={() => handleMarkWatched(show)}
+                              disabled={isFuture}
+                              className={`flex-1 py-1.5 font-extrabold text-[10px] rounded-xl flex items-center justify-center gap-1 transition ${
+                                isFuture 
+                                  ? theme === 'dark'
+                                    ? 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-60' 
+                                    : 'bg-slate-200 text-slate-500 cursor-not-allowed opacity-60'
+                                  : 'bg-blue-600 hover:bg-blue-500 text-white cursor-pointer'
+                              }`}
+                              title={isFuture ? `Airs ${show.nextEpisode?.airDate} — cannot mark watched before air date` : "Click to bump watched progress to this episode"}
+                            >
+                              <Check className="w-3 h-3" />
+                              <span>{isFuture ? 'Airs Soon' : 'Mark Watched'}</span>
+                            </button>
+                          );
+                        })()}
 
                         <button
                           onClick={() => {
-                            // Find corresponding service URL or fall back
-                            const serviceUrls: Record<StreamingService, string> = {
-                              'Netflix': 'https://www.netflix.com',
-                              'HBO': 'https://www.max.com',
-                              'Disney+': 'https://www.disneyplus.com',
-                              'Prime Video': 'https://www.amazon.com/primevideo',
-                              'Hulu': 'https://www.hulu.com',
-                              'Paramount+': 'https://www.paramountplus.com',
-                              'Apple TV': 'https://tv.apple.com',
-                              'Peacock': 'https://www.peacocktv.com',
-                              'AMC+': 'https://www.amcplus.com',
-                              'Other': 'https://google.com'
-                            };
-                            window.open(serviceUrls[show.streamingService] || 'https://google.com', '_blank');
+                            window.open(getStreamingServiceLink(show.streamingService, show.title), '_blank');
                           }}
-                          className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-white/5 transition flex items-center justify-center"
-                          title={`Launch ${show.streamingService}`}
+                          className={`p-1.5 rounded-xl border transition flex items-center justify-center cursor-pointer ${
+                            theme === 'dark' 
+                              ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border-white/5' 
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200'
+                          }`}
+                          title={`Watch ${show.title} on ${show.streamingService}`}
                         >
                           <ExternalLink className="w-3.5 h-3.5" />
                         </button>
@@ -552,15 +616,17 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-[#14161C] border-t border-white/5 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+        <div className={`p-4 border-t flex items-center justify-between text-[10px] font-medium ${
+          theme === 'dark' ? 'bg-[#14161C] border-white/5 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-600'
+        }`}>
           <div className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-            <span className="text-slate-400">Automatic timezone alignment enabled</span>
+            <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}>Automatic timezone alignment enabled</span>
           </div>
           <span>
             <span className="font-black text-blue-500">COUCH</span>
-            <span className="font-black text-slate-200">TATERZ</span>{' '}
-            <span className="text-slate-500 font-medium">Release Tracker</span>
+            <span className={`font-black ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>TATERZ</span>{' '}
+            <span className={theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}>Release Tracker</span>
           </span>
         </div>
       </motion.div>

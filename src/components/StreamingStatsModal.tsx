@@ -37,6 +37,7 @@ const SERVICE_COSTS: Record<StreamingService, number> = {
   'Paramount+': 11.99,
   'Peacock': 7.99,
   'AMC+': 8.99,
+  'Starz': 10.99,
   'Other': 0.00
 };
 
@@ -50,6 +51,7 @@ const SERVICE_COLORS: Record<StreamingService, string> = {
   'Apple TV': '#e2e8f0', // Neutral/Slate
   'Peacock': '#f59e0b', // Amber
   'AMC+': '#eab308', // Yellow
+  'Starz': '#f59e0b', // Amber/Gold
   'Other': '#6b7280' // Gray
 };
 
@@ -69,6 +71,7 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
       'Paramount+': false,
       'Peacock': false,
       'AMC+': false,
+      'Starz': false,
       'Other': false
     };
     shows.forEach(show => {
@@ -94,7 +97,7 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
     let totalWeeklyMinutes = 0;
     const serviceMinutes: Record<StreamingService, number> = {
       'HBO': 0, 'Netflix': 0, 'Disney+': 0, 'Prime Video': 0, 'Hulu': 0,
-      'Apple TV': 0, 'Paramount+': 0, 'Peacock': 0, 'AMC+': 0, 'Other': 0
+      'Apple TV': 0, 'Paramount+': 0, 'Peacock': 0, 'AMC+': 0, 'Starz': 0, 'Other': 0
     };
 
     activeShows.forEach(show => {
@@ -526,12 +529,12 @@ export function StreamingStatsModal({ isOpen, onClose, shows, theme }: Streaming
 
                   {/* Scrollable list of services */}
                   <div className="flex-1 space-y-2.5 overflow-y-auto pr-1 scrollbar-thin max-h-[290px]">
-                    {serviceStats.map((stat) => {
+                    {serviceStats.map((stat, statIdx) => {
                       if (stat.service === 'Other') return null; // We omit other because it's local/free
 
                       return (
                         <div 
-                          key={stat.service}
+                          key={`stat-srv-${stat.service}-${statIdx}`}
                           className={`flex items-center justify-between p-2.5 rounded-xl border transition ${
                             stat.isSubscribed
                               ? stat.valueRating === 'poor' || stat.valueRating === 'unused'

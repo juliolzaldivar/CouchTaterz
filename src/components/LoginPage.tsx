@@ -20,7 +20,8 @@ import {
   Chrome, 
   ShieldAlert,
   Users,
-  ArrowLeft
+  ArrowLeft,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -33,7 +34,7 @@ const GENRE_OPTIONS = [
 ];
 
 const SERVICE_OPTIONS: StreamingService[] = [
-  'Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+'
+  'Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+', 'Starz'
 ];
 
 const BACKGROUND_IMAGES = [
@@ -61,6 +62,199 @@ const BACKGROUND_IMAGES = [
   "https://s10019.cdn.ncms.io/wp-content/uploads/2025/03/The-Last-Of-Us-S2_HO_KA_16x9_v03.jpg.jpeg", // The Last Of Us
   "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNACrAMoLkgMH0e47maB2DZ7OeMG3ZWBtuheU7rgkUdg&s=10", // Severance
   "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRYxCCGjsy6Qz-8QFXGNNbWfyTcAbLe7J3A1DSnch1l5A&s=10", // The Mandalorian
+];
+
+// Curated, critically-acclaimed contemporary television series (2010s - 2020s modern era) for starter pack matching
+const MODERN_STARTER_SHOW_SELECTIONS: TvShow[] = [
+  {
+    id: "starter-the-bear",
+    title: "The Bear",
+    streamingService: "Hulu",
+    genres: ["Drama", "Comedy"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 99,
+    userScore: null,
+    userNotes: "",
+    overview: "A young chef from the fine dining world returns to Chicago to run his family sandwich shop after a heartbreaking death.",
+    directors: ["Christopher Storer"],
+    actors: ["Jeremy Allen White", "Ebon Moss-Bachrach", "Ayo Edebiri"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+    concluded: false,
+    totalSeasons: 4,
+    episodesPerSeason: [8, 10, 10, 10],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-severance",
+    title: "Severance",
+    streamingService: "Apple TV",
+    genres: ["Sci-Fi", "Thriller", "Mystery", "Drama"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 97,
+    userScore: null,
+    userNotes: "",
+    overview: "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+    directors: ["Ben Stiller", "Aoife McArdle"],
+    actors: ["Adam Scott", "Patricia Arquette", "John Turturro", "Britt Lower"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+    concluded: false,
+    totalSeasons: 2,
+    episodesPerSeason: [9, 10],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-shogun",
+    title: "Shōgun",
+    streamingService: "Hulu",
+    genres: ["Drama", "Action", "History"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 99,
+    userScore: null,
+    userNotes: "",
+    overview: "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him.",
+    directors: ["Jonathan van Tulleken", "Charlotte Brändström"],
+    actors: ["Hiroyuki Sanada", "Cosmo Jarvis", "Anna Sawai"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+    concluded: false,
+    totalSeasons: 1,
+    episodesPerSeason: [10],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-last-of-us",
+    title: "The Last of Us",
+    streamingService: "HBO",
+    genres: ["Drama", "Action", "Sci-Fi", "Horror"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 96,
+    userScore: null,
+    userNotes: "",
+    overview: "Twenty years after modern civilization has been destroyed, Joel, a hardened survivor, is hired to smuggle Ellie, a 14-year-old girl, out of an oppressive quarantine zone.",
+    directors: ["Craig Mazin", "Neil Druckmann"],
+    actors: ["Pedro Pascal", "Bella Ramsey", "Gabriel Luna"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/acevLdSl5I2MK5RYAm7gwAndt1w.jpg",
+    concluded: false,
+    totalSeasons: 2,
+    episodesPerSeason: [9, 7],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-ted-lasso",
+    title: "Ted Lasso",
+    streamingService: "Apple TV",
+    genres: ["Comedy", "Drama"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 90,
+    userScore: null,
+    userNotes: "",
+    overview: "An American football coach is hired to manage a British soccer team. What he lacks in knowledge, he makes up for with optimism and determination.",
+    directors: ["Declan Lowney"],
+    actors: ["Jason Sudeikis", "Hannah Waddingham", "Brett Goldstein"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/gEQkOMmnJcoh9Hh1vk7fpVYnksR.jpg",
+    concluded: true,
+    totalSeasons: 3,
+    episodesPerSeason: [10, 12, 12],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-slow-horses",
+    title: "Slow Horses",
+    streamingService: "Apple TV",
+    genres: ["Thriller", "Drama", "Spy Thriller"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 97,
+    userScore: null,
+    userNotes: "",
+    overview: "This quick-witted spy drama follows a dysfunctional team of MI5 agents—and their obnoxious boss—as they navigate the espionage world.",
+    directors: ["James Hawes"],
+    actors: ["Gary Oldman", "Jack Lowden", "Kristin Scott Thomas"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/bDfboQUb45Cv9MYyVBDZw8M8xSM.jpg",
+    concluded: false,
+    totalSeasons: 4,
+    episodesPerSeason: [6, 6, 6, 6],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-fallout",
+    title: "Fallout",
+    streamingService: "Prime Video",
+    genres: ["Sci-Fi", "Action", "Dystopian"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 93,
+    userScore: null,
+    userNotes: "",
+    overview: "In a future, post-apocalyptic Los Angeles, citizens must live in underground bunkers to protect themselves from radiation, mutants, and bandits.",
+    directors: ["Jonathan Nolan"],
+    actors: ["Ella Purnell", "Aaron Moten", "Walton Goggins"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/coaPCIqQBPUZsOnJcWZxhaORcDT.jpg",
+    concluded: false,
+    totalSeasons: 1,
+    episodesPerSeason: [8],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-arcane",
+    title: "Arcane",
+    streamingService: "Netflix",
+    genres: ["Animation", "Action", "Sci-Fi", "Drama"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 100,
+    userScore: null,
+    userNotes: "",
+    overview: "Set in the utopian region of Piltover and the oppressed underground of Zaun, the story follows the origins of two iconic champions.",
+    directors: ["Christian Linke", "Alex Yee"],
+    actors: ["Hailee Steinfeld", "Ella Purnell"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/q8eejQcg1bAqImEV8jh8RtBD4uH.jpg",
+    concluded: true,
+    totalSeasons: 2,
+    episodesPerSeason: [9, 9],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "starter-stranger-things",
+    title: "Stranger Things",
+    streamingService: "Netflix",
+    genres: ["Sci-Fi", "Horror", "Drama", "Mystery"],
+    status: "Backlog",
+    latestWatched: { season: 1, episode: 0, title: "Not Started" },
+    nextEpisode: null,
+    rottenTomatoesScore: 91,
+    userScore: null,
+    userNotes: "",
+    overview: "When a young boy vanishes, a small town uncovers a mystery involving secret experiments and terrifying supernatural forces.",
+    directors: ["The Duffer Brothers"],
+    actors: ["Winona Ryder", "David Harbour", "Millie Bobby Brown"],
+    bannerImage: "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+    concluded: false,
+    totalSeasons: 5,
+    episodesPerSeason: [8, 9, 8, 9, 8],
+    isStarter: true,
+    createdAt: new Date().toISOString()
+  }
 ];
 
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
@@ -138,10 +332,37 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     fetchBanners();
   }, []);
 
+  // Helper to identify Julio / Admin target account
+  const isJulioTarget = (userId: string, userObj?: User | null) => {
+    const cleanId = userId?.toLowerCase() || '';
+    const cleanName = userObj?.name?.toLowerCase().trim() || '';
+    const cleanEmail = userObj?.email?.toLowerCase().trim() || '';
+    return (
+      cleanId === 'default' ||
+      cleanId === 'user-julio' ||
+      cleanId === 'julio' ||
+      cleanName === 'julio' ||
+      cleanEmail === 'juliozaldivar@gmail.com'
+    );
+  };
+
   // Handle logging in with an existing user
-  const handleSelectUser = async (userId: string, options?: { startTour?: boolean }) => {
+  const handleSelectUser = async (userId: string, options?: { startTour?: boolean; verifiedGoogle?: boolean }) => {
     setIsLoggingIn(true);
     setLoginError(null);
+
+    // Check if user is attempting to log into Julio / Admin without Google validation
+    const targetUser = users.find(u => u.id === userId);
+    if (isJulioTarget(userId, targetUser) && !options?.verifiedGoogle) {
+      setGoogleEmail('juliozaldivar@gmail.com');
+      setGoogleName('Julio');
+      setGoogleStep(1);
+      setViewMode('google-sim');
+      setLoginError("Google Validation Required: Julio's Admin Account is protected and requires verified Google Sign-In with email juliozaldivar@gmail.com.");
+      setIsLoggingIn(false);
+      return;
+    }
+
     try {
       const url = (userId === 'guest-demo' && options?.startTour) 
         ? `/api/boards?id=${userId}&reset=true` 
@@ -180,14 +401,38 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
 
     const emailClean = loginEmail.trim().toLowerCase();
     
+    // Intercept Julio/Admin email or name to mandate Google Validation
+    if (emailClean === 'julio' || emailClean === 'juliozaldivar@gmail.com' || emailClean.includes('juliozaldivar')) {
+      setGoogleEmail('juliozaldivar@gmail.com');
+      setGoogleName('Julio');
+      setGoogleStep(1);
+      setViewMode('google-sim');
+      setLoginError("Google Validation Required: Julio's Admin Account is protected and requires verified Google Sign-In with email juliozaldivar@gmail.com.");
+      setIsLoggingIn(false);
+      return;
+    }
+
     // Check if user already exists
     const existingUser = users.find(u => u.email.toLowerCase() === emailClean || u.name.toLowerCase() === emailClean);
     
-    if (existingUser) {
+    if (emailClean === 'ejc' || emailClean.includes('ejc@')) {
+      handleSelectUser('user-ejc-2841');
+    } else if (emailClean === 'greg' || emailClean.includes('greg@')) {
+      handleSelectUser('user-greg-3842');
+    } else if (existingUser) {
+      if (isJulioTarget(existingUser.id, existingUser)) {
+        setGoogleEmail('juliozaldivar@gmail.com');
+        setGoogleName('Julio');
+        setGoogleStep(1);
+        setViewMode('google-sim');
+        setLoginError("Google Validation Required: Julio's Admin Account is protected and requires verified Google Sign-In with email juliozaldivar@gmail.com.");
+        setIsLoggingIn(false);
+        return;
+      }
       handleSelectUser(existingUser.id);
     } else {
       // Prompt user to sign up instead
-      setLoginError("Account not found. Select 'Join as New Member' to set up a new profile!");
+      setLoginError("Account not found. Select 'Join as New Member' or 'Sign in with Google' to set up a new profile!");
       setIsLoggingIn(false);
     }
   };
@@ -197,10 +442,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     setIsLoggingIn(true);
     const emailClean = email.trim().toLowerCase();
     
+    // Verified Google Sign-In for Julio/Admin
+    if (emailClean === 'juliozaldivar@gmail.com') {
+      handleSelectUser('default', { verifiedGoogle: true });
+      return;
+    }
+
     // Check if already registered
     const existingUser = users.find(u => u.email.toLowerCase() === emailClean);
     if (existingUser) {
-      handleSelectUser(existingUser.id);
+      if (isJulioTarget(existingUser.id, existingUser) && emailClean !== 'juliozaldivar@gmail.com') {
+        setLoginError("Access denied. Julio's admin account requires verified Google login as juliozaldivar@gmail.com.");
+        setIsLoggingIn(false);
+        return;
+      }
+      handleSelectUser(existingUser.id, { verifiedGoogle: true });
     } else {
       // Proceed to onboarding with details pre-populated!
       setFormData(prev => ({
@@ -221,6 +477,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         setLoginError("Please enter a valid email address");
         return;
       }
+
+      // Check if user is attempting to validate Julio's account with a non-Julio email
+      if (googleEmail.trim().toLowerCase() !== 'juliozaldivar@gmail.com' && (googleEmail.toLowerCase().includes('julio') || googleName.toLowerCase().includes('julio'))) {
+        setLoginError("Access denied. Julio's admin account requires verified Google login as juliozaldivar@gmail.com.");
+        return;
+      }
+
       // Extract a name suggestion from email
       const namePart = googleEmail.split('@')[0];
       const suggestedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
@@ -280,48 +543,36 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         createdAt: new Date().toISOString()
       };
 
-      // Select initial starter pack shows if checked
+      // Select initial starter pack shows if checked (strictly modern, critically-acclaimed series matching user genres)
       let starterShows: TvShow[] = [];
       if (formData.starterPack) {
-        // Fetch default shows or select ones that match their genre preferences
         try {
-          const res = await fetch('/api/boards?id=default');
-          if (res.ok) {
-            const defaultBoard = await res.json();
-            const defaultShows: TvShow[] = defaultBoard.shows || [];
-            
-            // Filter shows by matching genres
-            const matching = defaultShows.filter(show => 
-              show.genres.some(genre => formData.genres.includes(genre))
-            );
+          // Filter modern starter shows by matching user's selected genres
+          const matchingGenres = MODERN_STARTER_SHOW_SELECTIONS.filter(show => 
+            show.genres.some(genre => formData.genres.includes(genre))
+          );
 
-            // If we have matches, take up to 4. Otherwise, take top 3 default shows.
-            if (matching.length >= 2) {
-              starterShows = matching.slice(0, 4).map((s, idx) => ({
-                ...s,
-                id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}-${idx}`,
-                status: 'Backlog', // Start fresh in backlog
-                latestWatched: { season: 1, episode: 0, title: 'Not Started' },
-                userScore: null,
-                userNotes: '',
-                isStarter: true,
-                createdAt: new Date().toISOString()
-              }));
-            } else {
-              starterShows = defaultShows.slice(0, 3).map((s, idx) => ({
-                ...s,
-                id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}-${idx}`,
-                status: 'Backlog',
-                latestWatched: { season: 1, episode: 0, title: 'Not Started' },
-                userScore: null,
-                userNotes: '',
-                isStarter: true,
-                createdAt: new Date().toISOString()
-              }));
-            }
-          }
+          // If services were selected, optionally prioritize shows on those services
+          const matchingServices = matchingGenres.filter(show => 
+            formData.services.length === 0 || formData.services.includes(show.streamingService)
+          );
+
+          const candidatePool = matchingServices.length >= 2 
+            ? matchingServices 
+            : (matchingGenres.length >= 2 ? matchingGenres : MODERN_STARTER_SHOW_SELECTIONS);
+
+          starterShows = candidatePool.slice(0, 3).map((s, idx) => ({
+            ...s,
+            id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}-${idx}`,
+            status: 'Backlog',
+            latestWatched: { season: 1, episode: 0, title: 'Not Started' },
+            userScore: null,
+            userNotes: '',
+            isStarter: true,
+            createdAt: new Date().toISOString()
+          }));
         } catch (e) {
-          console.error("Could not fetch starter pack template shows", e);
+          console.error("Could not build starter pack shows", e);
         }
       }
 
@@ -332,6 +583,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         shows: starterShows,
         preferences: {
           genres: formData.genres,
+          eras: ['Current & Modern (2020s)', '2010s Prestige TV'],
+          vibes: [],
           actors: [],
           directors: [],
           services: formData.services
@@ -492,6 +745,22 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               exit={{ opacity: 0, x: 10 }}
               className="space-y-6"
             >
+              {/* Primary Google Sign-In Action */}
+              <button
+                type="button"
+                onClick={() => {
+                  setGoogleEmail('');
+                  setGoogleName('');
+                  setGoogleStep(1);
+                  setLoginError(null);
+                  setViewMode('google-sim');
+                }}
+                className="w-full py-3.5 px-4 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-500/60 rounded-2xl text-xs sm:text-sm font-bold text-slate-100 hover:text-white flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-blue-950/30 cursor-pointer group"
+              >
+                <Chrome className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                <span>Sign in with Google</span>
+              </button>
+
               {/* Existing Family / Friends profiles */}
               {!loadingUsers && users.length > 0 && (
                 <div className="space-y-3">
@@ -505,43 +774,81 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     </span>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    {users.map((user, idx) => (
-                      <button
-                        key={`${user.id}-${idx}`}
-                        onClick={() => handleSelectUser(user.id)}
-                        disabled={isLoggingIn}
-                        className="flex flex-col items-center p-3.5 bg-slate-900/50 hover:bg-slate-900 border border-slate-800/60 hover:border-blue-500/50 rounded-2xl transition-all duration-300 group relative cursor-pointer shadow-sm hover:shadow-blue-500/10 active:scale-95"
-                      >
-                        <div className="relative mb-2">
-                          <div className="w-13 h-13 rounded-full overflow-hidden bg-slate-800 border-2 border-slate-700/80 group-hover:border-blue-400 transition-colors flex items-center justify-center shadow-md">
-                            {user.avatarUrl ? (
-                              <img 
-                                src={user.avatarUrl} 
-                                alt={user.name} 
-                                className="w-full h-full object-cover"
-                                referrerPolicy="no-referrer"
-                              />
-                            ) : (
-                              <UserIcon className="w-5 h-5 text-slate-500" />
-                            )}
+                    {users.map((user, idx) => {
+                      const isJulio = isJulioTarget(user.id, user);
+                      return (
+                        <button
+                          key={`${user.id}-${idx}`}
+                          onClick={() => handleSelectUser(user.id)}
+                          disabled={isLoggingIn}
+                          className="flex flex-col items-center p-3.5 bg-slate-900/50 hover:bg-slate-900 border border-slate-800/60 hover:border-blue-500/50 rounded-2xl transition-all duration-300 group relative cursor-pointer shadow-sm hover:shadow-blue-500/10 active:scale-95"
+                        >
+                          {isJulio && (
+                            <span 
+                              className="absolute top-2 right-2 p-1 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full z-10"
+                              title="Admin account - Google Auth Required"
+                            >
+                              <Lock className="w-2.5 h-2.5 stroke-[2.5]" />
+                            </span>
+                          )}
+                          <div className="relative mb-2">
+                            <div className="w-13 h-13 rounded-full overflow-hidden bg-slate-800 border-2 border-slate-700/80 group-hover:border-blue-400 transition-colors flex items-center justify-center shadow-md">
+                              {user.avatarUrl ? (
+                                <img 
+                                  src={user.avatarUrl} 
+                                  alt={user.name} 
+                                  className="w-full h-full object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                              ) : (
+                                <UserIcon className="w-5 h-5 text-slate-500" />
+                              )}
+                            </div>
+                            <span
+                              className={`w-3.5 h-3.5 rounded-full border-2 border-slate-900 absolute bottom-0 right-0 ${
+                                user.isOnline
+                                  ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
+                                  : 'bg-slate-500/80'
+                              }`}
+                              title={user.isOnline ? "Active now" : "Offline"}
+                            />
                           </div>
-                          <span
-                            className={`w-3.5 h-3.5 rounded-full border-2 border-slate-900 absolute bottom-0 right-0 ${
-                              user.isOnline
-                                ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.9)]'
-                                : 'bg-slate-500/80'
-                            }`}
-                            title={user.isOnline ? "Active now" : "Offline"}
-                          />
-                        </div>
-                        <span className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors truncate max-w-full">
-                          {user.name}
-                        </span>
-                      </button>
-                    ))}
+                          <span className="text-xs font-semibold text-slate-200 group-hover:text-blue-400 transition-colors truncate max-w-full">
+                            {user.name}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
+
+              {/* Login by Handle / Email */}
+              <form onSubmit={handleEmailLogin} className="space-y-2.5 pt-2 border-t border-slate-800/80">
+                <label className="text-xs font-semibold text-slate-400 tracking-wider uppercase block">
+                  Or Sign In by Email / Handle
+                </label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    <input
+                      type="text"
+                      placeholder="e.g. juliozaldivar@gmail.com or name"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-950 border border-slate-800 focus:border-blue-500/40 rounded-xl text-xs text-slate-200 focus:outline-none placeholder-slate-600"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoggingIn || !loginEmail.trim()}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-xs flex items-center gap-1 transition-all disabled:opacity-40 cursor-pointer shrink-0"
+                  >
+                    <span>Login</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </form>
 
               {/* Login Error Alert */}
               {loginError && (
@@ -861,6 +1168,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               </div>
 
               <form onSubmit={handleGoogleSimSubmit} className="space-y-4">
+                {loginError && (
+                  <div className="flex items-start gap-2 text-xs text-amber-400 bg-amber-500/10 border border-amber-500/20 p-3 rounded-xl">
+                    <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+                    <span>{loginError}</span>
+                  </div>
+                )}
+
                 {googleStep === 1 ? (
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-400 tracking-wider uppercase">

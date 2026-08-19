@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { TvShow, UserPreferences, StreamingService, User } from '../types';
+import { normalizeShowTitle, getCanonicalShowTitle } from '../utils/titleUtils';
 import { 
   Sparkles, 
   ChevronLeft, 
@@ -29,6 +30,7 @@ interface RecommendationsCarouselProps {
   onSavePreferences: (updatedPrefs: UserPreferences) => void;
   onAddRecommendedShow: (show: TvShow) => void;
   currentUser?: User | null;
+  theme?: 'dark' | 'light';
 }
 
 export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = ({
@@ -37,6 +39,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   onSavePreferences,
   onAddRecommendedShow,
   currentUser,
+  theme = 'dark',
 }) => {
   const [recommendations, setRecommendations] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,8 +98,8 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
 
       if (response.ok) {
         const data = await response.json();
-        const existingTitles = new Set((shows || []).map(s => s.title.toLowerCase().trim()));
-        const filtered = Array.isArray(data) ? data.filter((rec: any) => !existingTitles.has(rec.title?.toLowerCase().trim())) : [];
+        const existingTitles = new Set((shows || []).map(s => normalizeShowTitle(s.title)));
+        const filtered = Array.isArray(data) ? data.filter((rec: any) => !existingTitles.has(normalizeShowTitle(rec.title))) : [];
         setRecommendations(filtered);
         setActiveIndex(0);
       } else {
@@ -125,7 +128,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   const handleAddShowToWatchlist = (rec: any) => {
     const newShow: TvShow = {
       id: `rec-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-      title: rec.title,
+      title: getCanonicalShowTitle(rec.title),
       streamingService: (rec.streamingService || 'Other') as StreamingService,
       genres: rec.genres || ['Drama'],
       status: 'Watching',
@@ -168,7 +171,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
       {/* Title Header with Profile Config toggle */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-blue-400 animate-pulse" />
+          <Sparkles className="w-4 h-4 text-blue-400" />
           <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
             AI-POWERED RECOMMENDATIONS
           </h3>
@@ -195,15 +198,19 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="rounded-3xl bg-[#16181D] border border-white/5 p-6 overflow-hidden space-y-4 shadow-xl"
+            className={`rounded-3xl p-6 overflow-hidden space-y-4 shadow-xl border ${
+              theme === 'dark' ? 'bg-[#16181D] border-white/5' : 'bg-white border-slate-200 text-slate-900 shadow-md'
+            }`}
           >
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-blue-600/10 text-blue-400 border border-blue-500/10 rounded-xl">
+              <div className={`p-2 rounded-xl ${
+                theme === 'dark' ? 'bg-blue-600/10 text-blue-400 border border-blue-500/10' : 'bg-blue-50 text-blue-600 border border-blue-200'
+              }`}>
                 <Heart className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-white">Your Entertainment Taste Profile</h4>
-                <p className="text-[11px] text-slate-500 font-medium">Guide Spudz with your specific entertainment criteria</p>
+                <h4 className={`text-sm font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Your Entertainment Taste Profile</h4>
+                <p className={`text-[11px] font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>Guide Spudz with your specific entertainment criteria</p>
               </div>
             </div>
 
@@ -211,7 +218,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Genres */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                     Favorite Genres
                   </label>
                   <input
@@ -219,14 +226,16 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                     value={prefGenres}
                     onChange={(e) => setPrefGenres(e.target.value)}
                     placeholder="e.g. Sci-Fi, Mystery, Comedy"
-                    className="w-full bg-[#1F2128] border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-blue-500 font-semibold"
+                    className={`w-full border rounded-xl p-2.5 focus:outline-none focus:border-blue-500 font-semibold ${
+                      theme === 'dark' ? 'bg-[#1F2128] border-white/10 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
                   />
-                  <span className="text-[9px] text-slate-600 block leading-tight">Comma-separated genres</span>
+                  <span className={`text-[9px] block leading-tight ${theme === 'dark' ? 'text-slate-600' : 'text-slate-500'}`}>Comma-separated genres</span>
                 </div>
 
                 {/* Actors */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                     Favorite Actors
                   </label>
                   <input
@@ -234,14 +243,16 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                     value={prefActors}
                     onChange={(e) => setPrefActors(e.target.value)}
                     placeholder="e.g. Jeremy Allen White, Pedro Pascal"
-                    className="w-full bg-[#1F2128] border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-blue-500 font-semibold"
+                    className={`w-full border rounded-xl p-2.5 focus:outline-none focus:border-blue-500 font-semibold ${
+                      theme === 'dark' ? 'bg-[#1F2128] border-white/10 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
                   />
-                  <span className="text-[9px] text-slate-600 block leading-tight">Actors to search for</span>
+                  <span className={`text-[9px] block leading-tight ${theme === 'dark' ? 'text-slate-600' : 'text-slate-500'}`}>Actors to search for</span>
                 </div>
 
                 {/* Directors */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <label className={`text-[10px] font-black uppercase tracking-wider ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                     Favorite Directors / Writers
                   </label>
                   <input
@@ -249,17 +260,21 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                     value={prefDirectors}
                     onChange={(e) => setPrefDirectors(e.target.value)}
                     placeholder="e.g. Christopher Nolan, Sam Esmail"
-                    className="w-full bg-[#1F2128] border border-white/10 rounded-xl p-2.5 text-slate-200 focus:outline-none focus:border-blue-500 font-semibold"
+                    className={`w-full border rounded-xl p-2.5 focus:outline-none focus:border-blue-500 font-semibold ${
+                      theme === 'dark' ? 'bg-[#1F2128] border-white/10 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-900'
+                    }`}
                   />
-                  <span className="text-[9px] text-slate-600 block leading-tight">Showrunners or directors</span>
+                  <span className={`text-[9px] block leading-tight ${theme === 'dark' ? 'text-slate-600' : 'text-slate-500'}`}>Showrunners or directors</span>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-2 border-t border-white/5">
+              <div className={`flex justify-end gap-2 pt-2 border-t ${theme === 'dark' ? 'border-white/5' : 'border-slate-200'}`}>
                 <button
                   type="button"
                   onClick={() => setIsEditingTaste(false)}
-                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white transition font-bold"
+                  className={`px-4 py-2 rounded-xl font-bold transition ${
+                    theme === 'dark' ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
                   Cancel
                 </button>
@@ -279,14 +294,16 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="rounded-3xl bg-[#1A1D23] border border-white/5 p-12 text-center min-h-[220px] flex flex-col justify-center items-center space-y-4"
+            className={`rounded-3xl p-12 text-center min-h-[220px] flex flex-col justify-center items-center space-y-4 ${
+              theme === 'dark' ? 'bg-[#1A1D23] border border-white/5' : 'bg-white border border-slate-200 shadow-sm'
+            }`}
           >
-            <div className="p-3 bg-blue-500/10 rounded-full text-blue-400 border border-blue-500/20 animate-spin">
+            <div className="p-3 bg-blue-500/10 rounded-full text-blue-500 border border-blue-500/20 animate-spin">
               <Loader2 className="w-6 h-6" />
             </div>
             <div className="space-y-1.5">
-              <h4 className="text-sm font-semibold text-slate-200">Analyzing Your Watchlist & Tastes...</h4>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+              <h4 className={`text-sm font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>Analyzing Your Watchlist & Tastes...</h4>
+              <p className={`text-xs max-w-sm mx-auto ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                 Gemini is checking your favorite genres, actor profiles, review notes, and scores to assemble a bespoke recommendations deck.
               </p>
             </div>
@@ -298,15 +315,19 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="relative overflow-hidden rounded-3xl bg-[#1A1D23] border border-white/5 p-8 text-center min-h-[220px] flex flex-col justify-center items-center space-y-4 shadow-xl"
+            className={`relative overflow-hidden rounded-3xl p-8 text-center min-h-[220px] flex flex-col justify-center items-center space-y-4 shadow-xl ${
+              theme === 'dark' ? 'bg-[#1A1D23] border border-white/5' : 'bg-white border border-slate-200/90 shadow-sm'
+            }`}
           >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_60%)]" />
-            <div className="p-3.5 bg-[#0F1115]/80 rounded-full border border-white/5 text-blue-400 shadow-md">
-              <Sparkles className="w-6 h-6 animate-pulse" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_60%)] pointer-events-none" />
+            <div className={`p-3.5 rounded-full border text-blue-500 shadow-md ${
+              theme === 'dark' ? 'bg-[#0F1115]/80 border-white/5' : 'bg-blue-50 border-blue-200'
+            }`}>
+              <Sparkles className="w-6 h-6" />
             </div>
             <div className="max-w-md space-y-1 z-10">
-              <h4 className="text-sm font-bold text-slate-200 uppercase tracking-wide">Ask Spudz Suggestions</h4>
-              <p className="text-xs text-slate-500 leading-relaxed">
+              <h4 className={`text-sm font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>Ask Spudz Suggestions</h4>
+              <p className={`text-xs leading-relaxed ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                 Connect your unique watchlists, ratings, custom notes, and favorite director preferences with Gemini Flash to generate 5 real, customized television suggestions.
               </p>
             </div>
@@ -371,7 +392,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                     {currentRec.streamingService}
                   </span>
                   <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-blue-950/80 text-blue-300 border border-blue-800/30">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-400 animate-pulse" />
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                     {currentRec.matchingScore}% MATCH
                   </span>
                 </div>

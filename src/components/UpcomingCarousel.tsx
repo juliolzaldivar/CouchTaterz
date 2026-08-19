@@ -5,7 +5,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { TvShow } from '../types';
-import { Calendar, ChevronLeft, ChevronRight, Play, Sparkles, EyeOff, RefreshCw } from 'lucide-react';
+import { getShowBannerImage } from '../utils/showBanners';
+import { Calendar, ChevronLeft, ChevronRight, Play, Sparkles, RefreshCw, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SERVICE_COLORS } from './ShowCard';
 
@@ -13,9 +14,10 @@ interface UpcomingCarouselProps {
   shows: TvShow[];
   onSelectShow?: (show: TvShow) => void;
   onUpdateShow?: (show: TvShow) => void;
+  theme?: 'dark' | 'light';
 }
 
-export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSelectShow, onUpdateShow }) => {
+export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSelectShow, onUpdateShow, theme = 'dark' }) => {
   const [activeIndex, setActiveIndex] = useState(0);
 
   // Helper to parse date string safely (returns null if invalid or falsy)
@@ -130,22 +132,38 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
 
   if (upcomingShows.length === 0) {
     return (
-      <div className="relative overflow-hidden rounded-3xl bg-[#1A1D23] border border-white/5 p-8 text-center min-h-[220px] flex flex-col justify-center items-center space-y-4">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(30,30,30,0.5),transparent_60%)]" />
-        <div className="p-3 bg-[#0F1115]/80 rounded-full border border-white/5 text-slate-400 z-10">
+      <div className={`relative overflow-hidden rounded-3xl p-8 text-center min-h-[280px] md:min-h-[310px] flex flex-col justify-center items-center space-y-4 ${
+        theme === 'dark' ? 'bg-[#1A1D23] border border-white/5' : 'bg-slate-900 border border-slate-200/90 shadow-sm'
+      }`}>
+        {/* Background Couch Image */}
+        <div className="absolute inset-0 w-full h-full pointer-events-none">
+          <img
+            src="/couch-bg.jpg"
+            alt="Couch background"
+            className="w-full h-full object-cover filter brightness-[0.9] contrast-[1.05]"
+            style={{ objectPosition: 'center 40%' }}
+            referrerPolicy="no-referrer"
+          />
+          {/* Same vignette treatment as active banners so instructions are clearly readable */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0F1115]/95 via-[#0F1115]/70 to-[#0F1115]/50 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0F1115]/95 via-[#0F1115]/60 to-[#0F1115]/50 pointer-events-none" />
+        </div>
+
+        <div className="p-3 rounded-full z-10 bg-[#0F1115]/90 border border-white/10 text-amber-400 shadow-xl">
           <Calendar className="w-6 h-6" />
         </div>
+
         <div className="z-10 max-w-md space-y-3">
           <div>
-            <h4 className="text-sm font-semibold text-slate-200">No Banners Active</h4>
-            <p className="text-xs text-slate-500 mt-1">
+            <h4 className="text-base font-extrabold text-white drop-shadow-md">No Banners Active</h4>
+            <p className="text-xs mt-1 text-slate-300 font-medium">
               Your featured carousel is currently empty.
             </p>
           </div>
           
-          <div className="p-3.5 rounded-2xl bg-amber-500/5 border border-amber-500/25 text-[11px] text-slate-300 flex flex-col gap-2.5 max-w-sm mx-auto shadow-sm text-left">
-            <p className="leading-normal">
-              Move a show to <span className="text-blue-400 font-extrabold">Watching</span> or mark it as a <span className="text-amber-300 font-extrabold">Favorite</span> to generate its banner.
+          <div className="p-4 rounded-2xl text-[12px] flex flex-col gap-2.5 max-w-sm mx-auto shadow-2xl text-left bg-[#0F1115]/85 backdrop-blur-md border border-amber-500/30 text-slate-200">
+            <p className="leading-relaxed">
+              Move a show to <span className="text-blue-400 font-extrabold">Watching</span> to generate its banner.
             </p>
           </div>
 
@@ -158,14 +176,13 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
                   }
                 });
               }}
-              className="mt-3 text-[10px] font-bold text-blue-400 hover:text-blue-300 underline cursor-pointer transition flex items-center gap-1 mx-auto bg-blue-500/5 px-2.5 py-1 rounded-lg border border-blue-500/10"
+              className="mt-3 text-[11px] font-bold text-blue-300 hover:text-blue-200 cursor-pointer transition flex items-center gap-1.5 mx-auto bg-[#0F1115]/90 px-3 py-1.5 rounded-xl border border-blue-500/30 backdrop-blur-sm shadow-md active:scale-95"
             >
-              <RefreshCw className="w-3 h-3" />
-              Reset hidden banners ({hiddenShowsCount})
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Reset hidden banners ({hiddenShowsCount})</span>
             </button>
           )}
         </div>
-
       </div>
     );
   }
@@ -174,36 +191,40 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
   const colors = SERVICE_COLORS[currentShow.streamingService] || SERVICE_COLORS['Other'];
   
   // Calculate relative time or human air date safely
+  const diffDays = getDiffDays(currentShow);
   const airDate = currentShow.nextEpisode ? parseAirDate(currentShow.nextEpisode.airDate) : null;
-  const now = new Date();
-  const diffTime = airDate ? airDate.getTime() - now.getTime() : 0;
-  const diffDays = airDate ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) : 0;
+  
+  // An episode is considered active/recent only if it is upcoming or aired within the last 30 days (1 month)
+  const isRecentOrUpcoming = diffDays !== null ? diffDays >= -30 : false;
   
   let countdownText = '';
-  if (currentShow.isFavorite && !airDate) {
-    countdownText = '⭐ Featured Spotlight';
-  } else if (!airDate) {
-    countdownText = 'Release TBD';
-  } else if (diffDays === 0) {
-    countdownText = 'Airing Today!';
-  } else if (diffDays === 1) {
-    countdownText = 'Airing Tomorrow!';
+  if (currentShow.concluded) {
+    countdownText = 'Currently Watching';
+  } else if (diffDays === null || !isRecentOrUpcoming) {
+    countdownText = currentShow.isFavorite ? '⭐ Featured Spotlight' : 'Currently Watching';
   } else if (diffDays > 1) {
     countdownText = `In ${diffDays} days`;
-  } else if (diffDays >= -7) {
-    countdownText = `Aired ${Math.abs(diffDays)} days ago`;
+  } else if (diffDays === 1) {
+    countdownText = 'Airing Tomorrow!';
+  } else if (diffDays === 0) {
+    countdownText = 'Airing Today!';
+  } else if (diffDays >= -30) {
+    const daysAgo = Math.abs(diffDays);
+    countdownText = daysAgo === 0 ? 'Airing Today!' : `Aired ${daysAgo} ${daysAgo === 1 ? 'day' : 'days'} ago`;
   } else {
-    countdownText = 'New Season Airing';
+    countdownText = currentShow.isFavorite ? '⭐ Featured Spotlight' : 'Currently Watching';
   }
 
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-[#1A1D23] border border-white/5 h-[360px] md:h-[310px] group/carousel">
+    <div className={`relative overflow-hidden rounded-3xl h-[395px] sm:h-[350px] md:h-[320px] group/carousel ${
+      theme === 'dark' ? 'bg-[#1A1D23] border border-white/5' : 'bg-slate-900 border border-slate-200/90 shadow-sm'
+    }`}>
       {/* Background Banner Image */}
       <div className="absolute inset-0 w-full h-full">
         <AnimatePresence mode="wait">
           <motion.img
             key={currentShow.id}
-            src={currentShow.bannerImage}
+            src={getShowBannerImage(currentShow)}
             alt={currentShow.title}
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 0.85, scale: 1 }}
@@ -216,7 +237,7 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
         </AnimatePresence>
         {/* Cinematic targeted shadows to guarantee text legibility on the bottom-left while keeping the rest of the image bright and vivid */}
         {/* Bottom edge shadow (deep dark at the bottom, fades to clear at 60% height) */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F1115]/95 via-[#0F1115]/45 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0F1115]/98 via-[#0F1115]/50 to-transparent pointer-events-none" />
         {/* Left edge shadow (deep dark on the left, fades to clear at 50% width) */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#0F1115]/95 via-[#0F1115]/40 to-transparent pointer-events-none" />
       </div>
@@ -242,67 +263,50 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
       )}
 
       {/* Content overlay */}
-      <div className="absolute inset-0 z-10 pt-4 px-5 pb-5 md:pt-8 md:px-8 md:pb-8 flex flex-col justify-between">
+      <div className="absolute inset-0 z-10 pt-3.5 px-3.5 pb-5 sm:pt-6 sm:px-6 sm:pb-6 flex flex-col justify-between">
         {/* Top bar of slide */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg bg-emerald-950/80 text-emerald-300 border border-emerald-800/30">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              {currentShow.isFavorite ? 'SPOTLIGHT' : 'UP NEXT'}
-            </span>
-            <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg border ${colors.bg} ${colors.text} ${colors.border}`}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <span className={`px-2 sm:px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg border truncate max-w-[120px] sm:max-w-none ${colors.bg} ${colors.text} ${colors.border}`}>
               {currentShow.streamingService}
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Control to turn off this particular banner */}
-            {onUpdateShow && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onUpdateShow({
-                    ...currentShow,
-                    isBannerHidden: true
-                  });
-                  // If we are at the last index, reset the active index
-                  if (activeIndex >= upcomingShows.length - 1) {
-                    setActiveIndex(Math.max(0, upcomingShows.length - 2));
-                  }
-                }}
-                className="flex items-center justify-center p-1.5 rounded-lg bg-[#0F1115] hover:bg-rose-950/80 text-slate-400 hover:text-rose-300 border border-white/5 hover:border-rose-800/40 transition-colors duration-150 cursor-pointer"
-                title="Hide this show's banner"
-              >
-                <EyeOff className="w-3 h-3" />
-              </button>
-            )}
-
-            {/* Indicators */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Top Right Progress Counter */}
             {upcomingShows.length > 1 && (
-              <div className="flex items-center gap-1 bg-[#0F1115] rounded-full px-2 py-1 border border-white/5">
-                {upcomingShows.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveIndex(i)}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${
-                      i === safeActiveIndex ? 'w-4 bg-white' : 'w-1.5 bg-neutral-600'
-                    }`}
-                    aria-label={`Go to slide ${i + 1}`}
-                  />
-                ))}
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-[#0F1115]/95 backdrop-blur-md border border-white/20 shadow-xl pointer-events-auto">
+                <div className="flex items-center gap-1">
+                  {upcomingShows.slice(0, 8).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveIndex(i);
+                      }}
+                      className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                        i === safeActiveIndex ? 'w-3.5 bg-amber-400 shadow-sm shadow-amber-400/50' : 'w-1.5 bg-white/30 hover:bg-white/60'
+                      }`}
+                      aria-label={`Go to slide ${i + 1}`}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-black text-slate-100 tracking-wider border-l border-white/20 pl-2 font-mono">
+                  {safeActiveIndex + 1}<span className="text-slate-500 font-normal">/</span>{upcomingShows.length}
+                </span>
               </div>
             )}
           </div>
         </div>
 
         {/* Middle/Bottom block info */}
-        <div className="max-w-2xl mt-4 md:mt-6">
+        <div className="max-w-2xl mt-3 md:mt-6 mb-1">
           {/* Title & Countdown Group */}
           <div className="space-y-1">
             <span className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center flex-wrap gap-1.5">
               <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
               <span>{countdownText}</span>
-              {airDate && (
+              {airDate && isRecentOrUpcoming && !currentShow.concluded && (
                 <>
                   <span className="text-slate-500">—</span>
                   <span className="text-white font-extrabold">
@@ -311,37 +315,43 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
                 </>
               )}
             </span>
-            <h2 className="text-xl md:text-3xl font-black text-white tracking-tight drop-shadow-md line-clamp-1">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight drop-shadow-md leading-tight line-clamp-2">
               {currentShow.title}
             </h2>
           </div>
 
-          {/* Episode Pill & Description Group (Close together, separate from title) */}
-          <div className="mt-4 md:mt-5 space-y-1.5 md:space-y-2">
-            {currentShow.nextEpisode && (
+          {/* Episode Pill & Description Group */}
+          <div className="mt-3 md:mt-5 space-y-1.5 md:space-y-2">
+            {currentShow.nextEpisode && isRecentOrUpcoming && !currentShow.concluded && (
               <p className="text-[11px] md:text-xs font-bold text-blue-400 flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg w-fit">
                 <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 animate-pulse" />
-                <span>Next Episode: S{currentShow.nextEpisode.season}E{currentShow.nextEpisode.episode} &ldquo;{currentShow.nextEpisode.title}&rdquo;</span>
+                <span>
+                  {diffDays >= 0 ? 'Next Episode:' : 'Recent Episode:'} S{currentShow.nextEpisode.season}E{currentShow.nextEpisode.episode} &ldquo;{currentShow.nextEpisode.title}&rdquo;
+                </span>
               </p>
             )}
 
             <p className="text-xs md:text-sm text-slate-300 line-clamp-2 leading-relaxed drop-shadow-sm font-medium">
               {(() => {
-                const epSummary = currentShow.nextEpisode?.overview || currentShow.nextEpisode?.summary;
-                const text = epSummary || currentShow.overview;
+                const epSummary = (isRecentOrUpcoming && !currentShow.concluded)
+                  ? (currentShow.nextEpisode?.overview || currentShow.nextEpisode?.summary)
+                  : null;
+                const rawText = (epSummary || currentShow.overview || '').replace(/<[^>]*>?/gm, '').trim();
+                const text = rawText || `${currentShow.title} — tracked on CouchTaterz.`;
                 return text.length > 180 ? `${text.slice(0, 180)}...` : text;
               })()}
             </p>
           </div>
 
-          {/* Streaming & Genre Info */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 pt-2 md:pt-3">
-            <span className="text-[10px] text-slate-500 font-bold uppercase">Streaming:</span>
-            <span className="text-xs font-bold text-slate-200">{currentShow.streamingService}</span>
-            <div className="w-1 h-1 bg-[#262A33] rounded-full" />
-            <span className="text-[10px] text-slate-500 font-bold uppercase">Genres:</span>
-            <span className="text-xs text-slate-300 font-medium">{currentShow.genres.join(', ')}</span>
-          </div>
+          {/* Genre Glass Micro-Badge */}
+          {currentShow.genres && currentShow.genres.length > 0 && (
+            <div className="flex items-center gap-2 pt-2.5 md:pt-3">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#0F1115]/90 backdrop-blur-md border border-white/20 text-xs font-semibold text-slate-100 shadow-lg max-w-full">
+                <Tag className="w-3 h-3 text-amber-400 shrink-0" />
+                <span className="text-slate-200 font-bold truncate">{currentShow.genres.join(' • ')}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -11,9 +11,10 @@ interface QueueOnboardingModalProps {
   isOpen: boolean;
   onClose: () => void;
   hasRecommendations?: boolean;
+  theme?: 'dark' | 'light';
 }
 
-export const QueueOnboardingModal: React.FC<QueueOnboardingModalProps> = ({ isOpen, onClose, hasRecommendations = true }) => {
+export const QueueOnboardingModal: React.FC<QueueOnboardingModalProps> = ({ isOpen, onClose, hasRecommendations = true, theme = 'dark' }) => {
   const [currentStep, setCurrentStep] = useState(0);
 
   if (!isOpen) return null;
@@ -290,7 +291,9 @@ export const QueueOnboardingModal: React.FC<QueueOnboardingModalProps> = ({ isOp
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-md overflow-hidden rounded-3xl bg-[#1A1D23] border border-white/5 shadow-2xl flex flex-col"
+        className={`relative w-full max-w-md overflow-hidden rounded-3xl border shadow-2xl flex flex-col ${
+          theme === 'dark' ? 'bg-[#1A1D23] border-white/5 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+        }`}
       >
         {/* Top Header Decorator */}
         <div className={`h-1.5 w-full bg-gradient-to-r ${getHeaderGradient(step.title)}`} />
@@ -298,7 +301,9 @@ export const QueueOnboardingModal: React.FC<QueueOnboardingModalProps> = ({ isOp
         {/* Absolute Close Button */}
         <button 
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-1.5 rounded-xl text-slate-500 hover:text-white hover:bg-[#262A33] transition cursor-pointer border border-transparent hover:border-white/5"
+          className={`absolute top-4 right-4 z-10 p-1.5 rounded-xl transition cursor-pointer border ${
+            theme === 'dark' ? 'text-slate-500 hover:text-white hover:bg-[#262A33] border-transparent hover:border-white/5' : 'text-slate-400 hover:text-slate-900 hover:bg-slate-100 border-slate-200/50'
+          }`}
           title="Close"
         >
           <X className="w-4 h-4" />
@@ -310,10 +315,10 @@ export const QueueOnboardingModal: React.FC<QueueOnboardingModalProps> = ({ isOp
             <h2 className={`text-xl font-black leading-tight tracking-tight ${step.accentColor}`}>
               {step.subtitle}
             </h2>
-            <h3 className="text-sm font-bold text-white leading-snug">
+            <h3 className={`text-sm font-bold leading-snug ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
               {step.title}
             </h3>
-            <div className="text-xs text-slate-400 leading-relaxed font-medium pt-1">
+            <div className={`text-xs leading-relaxed font-medium pt-1 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
               {step.description}
             </div>
           </div>

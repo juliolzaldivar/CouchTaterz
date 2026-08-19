@@ -5,10 +5,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, UserPreferences, StreamingService, TvShow } from '../types';
+import { isSameShowTitle } from '../utils/titleUtils';
+import { TaterzAvatarBuilderModal } from './TaterzAvatarBuilderModal';
 import { 
   X, Check, Sparkles, Sliders, Mail, User as UserIcon, Trash2, 
   AlertTriangle, Download, Upload, Tv, Globe, Clock, Film, Heart, Plus, Calendar,
-  Camera, ShieldCheck, MapPin, Tag, Star, Bell, Phone, Smartphone
+  Camera, ShieldCheck, MapPin, Tag, Star, Bell, Phone, Smartphone, Send, CheckCircle2, BellRing, Palette, Crown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -29,21 +31,10 @@ const GENRE_OPTIONS = [
 ];
 
 const SERVICE_OPTIONS: StreamingService[] = [
-  'Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+'
+  'Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+', 'Starz'
 ];
 
-const PRESET_AVATARS = [
-  { name: 'Julio', seed: 'Julio' },
-  { name: 'Sarah', seed: 'Sarah' },
-  { name: 'CouchPotato', seed: 'CouchPotato' },
-  { name: 'BingeWatcher', seed: 'BingeWatcher' },
-  { name: 'TvStar', seed: 'TvStar' },
-  { name: 'TaterTot', seed: 'TaterTot' },
-  { name: 'Popcorn', seed: 'Popcorn' },
-  { name: 'MovieGeek', seed: 'MovieGeek' },
-  { name: 'Cat', seed: 'Cat' },
-  { name: 'SuperFan', seed: 'SuperFan' }
-];
+const PRESET_AVATARS: { name: string; seed: string }[] = [];
 
 const GENDER_OPTIONS = [
   'Prefer not to say', 'Female', 'Male', 'Non-binary', 'Other'
@@ -54,7 +45,7 @@ const AGE_RANGE_OPTIONS = [
 ];
 
 const ERA_OPTIONS = [
-  '70s & Classic TV', '80s Nostalgia', '90s Golden Era', '2000s Peak TV', '2010s Prestige TV', 'Current & Modern (2020s)'
+  'Current & Modern (2020s)', '2010s Prestige TV', '2000s Peak TV', '90s Golden Era', '80s Nostalgia', '70s & Classic TV'
 ];
 
 const VIBE_OPTIONS = [
@@ -62,7 +53,7 @@ const VIBE_OPTIONS = [
 ];
 
 const POPULAR_SHOW_SUGGESTIONS = [
-  'Breaking Bad', 'The Office', 'Game of Thrones', 'Succession', 'The Sopranos', 'Stranger Things', 'Ted Lasso', 'Friends', 'Seinfeld', 'The Wire', 'Twin Peaks', 'Severance'
+  'The Bear', 'Severance', 'Shōgun', 'The Last of Us', 'Succession', 'The White Lotus', 'Stranger Things', 'Ted Lasso', 'Fallout', 'House of the Dragon', 'Slow Horses', 'Breaking Bad'
 ];
 
 export const PreferencesModal: React.FC<PreferencesModalProps> = ({
@@ -83,15 +74,34 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
-  const [customAvatarInput, setCustomAvatarInput] = useState(
-    currentUser?.avatarUrl?.startsWith('http') && !currentUser?.avatarUrl?.includes('dicebear.com')
-      ? currentUser.avatarUrl
-      : ''
-  );
-  const [showCustomAvatarField, setShowCustomAvatarField] = useState(
-    Boolean(currentUser?.avatarUrl?.startsWith('http') && !currentUser?.avatarUrl?.includes('dicebear.com'))
-  );
+  const isJulioUser = currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com' || currentUser?.id === 'default' || currentUser?.id === 'user-julio' || currentUser?.name?.trim().toLowerCase() === 'julio';
+  const isPro = isJulioUser || localStorage.getItem('couchtaterz_is_pro') === 'true' || Boolean((currentUser as any)?.isPro) || Boolean((currentUser as any)?.isAdmin) || false;
+  const maxVariations = isPro ? 10 : 1;
+  const [savedVariations, setSavedVariations] = useState<{ id: string; name: string; url: string; createdAt: number }[]>([]);
+
   const [isAvatarExpanded, setIsAvatarExpanded] = useState(false);
+  const [isAvatarStudioOpen, setIsAvatarStudioOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('couchtaterz_saved_avatar_variations');
+      if (raw) {
+        setSavedVariations(JSON.parse(raw));
+      } else if (currentUser?.avatarUrl) {
+        const initVar = [{ id: 'var_default', name: 'Active Tater Avatar', url: currentUser.avatarUrl, createdAt: Date.now() }];
+        setSavedVariations(initVar);
+        localStorage.setItem('couchtaterz_saved_avatar_variations', JSON.stringify(initVar));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [isAvatarExpanded, isAvatarStudioOpen, currentUser?.avatarUrl]);
+
+  const handleDeleteVariation = (idToDelete: string) => {
+    const updated = savedVariations.filter(v => v.id !== idToDelete);
+    setSavedVariations(updated);
+    localStorage.setItem('couchtaterz_saved_avatar_variations', JSON.stringify(updated));
+  };
 
   // Notifications Preference State
   const [alertPreference, setAlertPreference] = useState<'email' | 'text'>(
@@ -107,6 +117,58 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
       ? preferences.alertDestination
       : ''
   );
+  const [testAlertMsg, setTestAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [isSendingTest, setIsSendingTest] = useState(false);
+
+  const handleSendTestAlert = async () => {
+    const dest = alertPreference === 'email' ? alertEmail.trim() : alertPhone.trim();
+    if (!dest) {
+      setTestAlertMsg({
+        type: 'error',
+        text: `Please enter a valid ${alertPreference === 'email' ? 'email address' : 'phone number'} to test alerts.`
+      });
+      return;
+    }
+
+    setIsSendingTest(true);
+    setTestAlertMsg(null);
+
+    // Try browser push notification if supported
+    let pushSent = false;
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      try {
+        let perm = Notification.permission;
+        if (perm === 'default') {
+          perm = await Notification.requestPermission();
+        }
+        if (perm === 'granted') {
+          new Notification("🍿 CouchTaterz Air Date Alert", {
+            body: "Futurama Season 14 Episode 1 premieres on Hulu! (Test Alert)",
+            icon: "/favicon.ico"
+          });
+          pushSent = true;
+        }
+      } catch (err) {
+        console.log("Browser push notification blocked or restricted in frame:", err);
+      }
+    }
+
+    setTimeout(() => {
+      setIsSendingTest(false);
+      const pushNote = pushSent ? " (Web Push Notification dispatched to your browser!)" : "";
+      if (alertPreference === 'text') {
+        setTestAlertMsg({
+          type: 'success',
+          text: `📱 Test Alert Triggered for ${dest}! "CouchTaterz Air Date Alert: Futurama Season 14 Episode 1 premieres on Hulu!"${pushNote}`
+        });
+      } else {
+        setTestAlertMsg({
+          type: 'success',
+          text: `📧 Test Alert Triggered for ${dest}! "CouchTaterz Air Date Alert: Futurama Season 14 Episode 1 premieres on Hulu!"${pushNote}`
+        });
+      }
+    }, 600);
+  };
 
   // Expanded Demographics & Granular Location
   const [gender, setGender] = useState<string>(preferences?.gender || 'Prefer not to say');
@@ -181,7 +243,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
     Array.isArray(preferences?.genres) ? preferences.genres : []
   );
   const [selectedEras, setSelectedEras] = useState<string[]>(
-    Array.isArray(preferences?.eras) ? preferences.eras : ['90s Golden Era', '2000s Peak TV', 'Current & Modern (2020s)']
+    Array.isArray(preferences?.eras) ? preferences.eras : ['Current & Modern (2020s)', '2010s Prestige TV']
   );
   const [selectedVibes, setSelectedVibes] = useState<string[]>(
     Array.isArray(preferences?.vibes) ? preferences.vibes : []
@@ -223,7 +285,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
-  const isJulio = currentUser?.id === 'default' || currentUser?.id === 'user-julio' || currentUser?.name?.trim().toLowerCase() === 'julio' || currentUser?.email?.toLowerCase() === 'juliozaldivar@gmail.com';
+  const isJulio = currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com';
 
   const handleConfirmDelete = () => {
     if (isJulio) {
@@ -236,7 +298,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   };
 
   const handleExportBackup = () => {
-    window.location.href = '/api/admin/backup';
+    window.location.href = `/api/admin/backup?email=${encodeURIComponent(currentUser?.email || '')}`;
   };
 
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -260,7 +322,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
         }
 
         const activeBoardId = currentUser?.id || 'default';
-        const res = await fetch(`/api/admin/restore?boardId=${encodeURIComponent(activeBoardId)}`, {
+        const res = await fetch(`/api/admin/restore?boardId=${encodeURIComponent(activeBoardId)}&email=${encodeURIComponent(currentUser?.email || '')}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(parsed),
@@ -335,8 +397,6 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   const handleSelectPresetAvatar = (seed: string) => {
     const url = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(seed)}`;
     setAvatarUrl(url);
-    setCustomAvatarInput('');
-    setShowCustomAvatarField(false);
     setIsAvatarExpanded(false);
   };
 
@@ -344,9 +404,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
     e.preventDefault();
     if (!name.trim()) return;
 
-    const finalAvatarUrl = showCustomAvatarField && customAvatarInput.trim()
-      ? customAvatarInput.trim()
-      : avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(name.trim())}`;
+    const finalAvatarUrl = avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(name.trim())}`;
 
     const updatedUser: User = {
       ...currentUser,
@@ -551,29 +609,39 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                     </div>
                   </div>
 
-                  {/* Right: Change Avatar Action Button */}
-                  <button
-                    type="button"
-                    onClick={() => setIsAvatarExpanded(!isAvatarExpanded)}
-                    className="text-xs font-semibold px-3.5 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 transition cursor-pointer shrink-0"
-                  >
-                    {isAvatarExpanded ? 'Close Avatar Picker' : 'Edit Avatar'}
-                  </button>
+                  {/* Right: Change Avatar & Studio Action Buttons */}
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarStudioOpen(true)}
+                      className="text-xs font-semibold px-3 py-2 rounded-xl bg-orange-600/20 hover:bg-orange-600/30 border border-orange-500/30 text-orange-300 transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-orange-400" />
+                      <span>TaterCreator</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setIsAvatarExpanded(!isAvatarExpanded)}
+                      className="text-xs font-semibold px-3 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-300 transition cursor-pointer"
+                    >
+                      {isAvatarExpanded ? 'Close Library' : 'Avatar Gallery'}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Profile Stats Quick-Bar */}
                 <div className="grid grid-cols-3 gap-2.5 pt-3 border-t border-white/10">
                   <div className="bg-[#141722]/80 p-2.5 rounded-xl border border-white/5 text-center">
-                    <span className="block text-xs sm:text-sm font-black text-white">{selectedServices.length}</span>
-                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Services</span>
+                    <span className="block text-xs sm:text-sm font-black text-sky-300">{selectedServices.length}</span>
+                    <span className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Services</span>
                   </div>
                   <div className="bg-[#141722]/80 p-2.5 rounded-xl border border-white/5 text-center">
-                    <span className="block text-xs sm:text-sm font-black text-emerald-400">{selectedGenres.length}</span>
-                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Genres</span>
+                    <span className="block text-xs sm:text-sm font-black text-purple-400">{selectedGenres.length}</span>
+                    <span className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Genres</span>
                   </div>
                   <div className="bg-[#141722]/80 p-2.5 rounded-xl border border-white/5 text-center">
-                    <span className="block text-xs sm:text-sm font-black text-amber-400">{favoriteShows.length}</span>
-                    <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wider">Favorites</span>
+                    <span className="block text-xs sm:text-sm font-black text-rose-400">{existingShows?.length || 0}</span>
+                    <span className="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Total Shows</span>
                   </div>
                 </div>
 
@@ -584,51 +652,90 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="pt-4 border-t border-white/10 space-y-3 overflow-hidden"
+                      className="pt-4 border-t border-white/10 space-y-4 overflow-hidden"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-slate-200">Select Avatar Preset</span>
-                        <button
-                          type="button"
-                          onClick={() => setShowCustomAvatarField(!showCustomAvatarField)}
-                          className="text-xs text-blue-400 hover:text-blue-300 font-medium cursor-pointer"
-                        >
-                          {showCustomAvatarField ? "Choose Preset Icon" : "Use Custom Image URL"}
-                        </button>
+                      {/* Saved Avatar Variations */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
+                              Saved Avatar Variations ({savedVariations.length}/{maxVariations})
+                            </span>
+                            {isPro ? (
+                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
+                                VIP (Up to 10)
+                              </span>
+                            ) : (
+                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase">
+                                Free (1 Slot)
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setIsAvatarStudioOpen(true)}
+                            className="text-[11px] font-bold text-orange-400 hover:text-orange-300 flex items-center gap-1 cursor-pointer"
+                          >
+                            <Plus className="w-3 h-3" /> New TaterCreator
+                          </button>
+                        </div>
+
+                        {savedVariations.length > 0 ? (
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                            {savedVariations.map((v) => {
+                              const isSelected = avatarUrl === v.url;
+                              return (
+                                <div
+                                  key={v.id}
+                                  className={`group relative p-2 rounded-xl bg-[#161822] border transition flex flex-col items-center gap-1.5 ${
+                                    isSelected ? 'border-amber-400 ring-2 ring-amber-400/30 bg-amber-500/10' : 'border-white/10 hover:border-white/30'
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => setAvatarUrl(v.url)}
+                                    className="w-12 h-12 rounded-lg overflow-hidden bg-black/40 cursor-pointer flex items-center justify-center"
+                                    title={`Equip ${v.name}`}
+                                  >
+                                    <img src={v.url} alt={v.name} className="w-full h-full object-contain" />
+                                  </button>
+                                  <span className="text-[10px] font-bold text-slate-300 truncate w-full text-center">
+                                    {v.name}
+                                  </span>
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      type="button"
+                                      onClick={() => setAvatarUrl(v.url)}
+                                      className={`text-[9px] font-black px-2 py-0.5 rounded transition cursor-pointer ${
+                                        isSelected ? 'bg-amber-500 text-black' : 'bg-white/10 text-slate-300 hover:bg-white/20'
+                                      }`}
+                                    >
+                                      {isSelected ? 'EQUIPPED' : 'Equip'}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteVariation(v.id);
+                                      }}
+                                      className="p-1 rounded hover:bg-rose-500/20 text-slate-500 hover:text-rose-400 transition cursor-pointer"
+                                      title="Delete variation"
+                                    >
+                                      <Trash2 className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="p-3 rounded-xl bg-black/40 border border-white/5 text-center text-xs text-slate-400">
+                            No saved variations yet. Click <span className="font-bold text-orange-400">TaterCreator</span> to design one!
+                          </div>
+                        )}
                       </div>
 
-                      {showCustomAvatarField ? (
-                        <input
-                          type="url"
-                          placeholder="https://example.com/avatar.jpg"
-                          value={customAvatarInput}
-                          onChange={(e) => {
-                            setCustomAvatarInput(e.target.value);
-                            if (e.target.value.trim()) setAvatarUrl(e.target.value.trim());
-                          }}
-                          className="w-full bg-[#16181E] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500/60"
-                        />
-                      ) : (
-                        <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
-                          {PRESET_AVATARS.map((avatar) => {
-                            const presetUrl = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(avatar.seed)}`;
-                            const isSelected = avatarUrl === presetUrl;
-                            return (
-                              <button
-                                key={avatar.seed}
-                                type="button"
-                                onClick={() => handleSelectPresetAvatar(avatar.seed)}
-                                className={`p-1 rounded-xl bg-[#16181E] border transition cursor-pointer flex items-center justify-center ${
-                                  isSelected ? 'border-blue-500 ring-2 ring-blue-500/40 bg-blue-500/20' : 'border-white/5 hover:border-white/20'
-                                }`}
-                                title={avatar.name}
-                              >
-                                <img src={presetUrl} alt={avatar.name} className="w-8 h-8 rounded-lg" />
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -732,6 +839,45 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                     )}
                   </div>
                 </div>
+
+                <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-[#13161D] p-3 rounded-xl border border-white/5">
+                  <div className="text-[11px] text-slate-400">
+                    <span className="font-semibold text-slate-300">Test Alert Delivery</span>
+                    <p className="text-[10px] text-slate-500">Trigger a test air date alert to verify your browser notifications and alert preferences.</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSendTestAlert}
+                    disabled={isSendingTest}
+                    className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 rounded-lg text-xs font-medium transition flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{isSendingTest ? 'Sending...' : 'Send Test Alert'}</span>
+                  </button>
+                </div>
+
+                <div className="text-[10px] text-slate-400 bg-slate-900/60 p-2.5 rounded-xl border border-white/5 leading-relaxed">
+                  💡 <span className="font-semibold text-slate-300">How Air Date Alerts Work:</span> In-app alerts, countdown banners, active bell badges, and web browser notifications trigger automatically. Live SMS/Email carrier delivery to external phones requires an active cellular gateway API key (e.g. Twilio/SendGrid).
+                </div>
+
+                {testAlertMsg && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`p-3 rounded-xl border text-xs leading-relaxed flex items-start gap-2 ${
+                      testAlertMsg.type === 'success'
+                        ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                        : 'bg-rose-950/40 border-rose-500/30 text-rose-300'
+                    }`}
+                  >
+                    {testAlertMsg.type === 'success' ? (
+                      <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                    )}
+                    <span>{testAlertMsg.text}</span>
+                  </motion.div>
+                )}
               </div>
             </div>
           )}
@@ -775,11 +921,11 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {GENRE_OPTIONS.map((genre) => {
+                  {GENRE_OPTIONS.map((genre, gIdx) => {
                     const isSelected = selectedGenres.includes(genre);
                     return (
                       <button
-                        key={genre}
+                        key={`genre-opt-${genre}-${gIdx}`}
                         type="button"
                         onClick={() => handleToggleGenre(genre)}
                         className={`p-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between cursor-pointer ${
@@ -827,11 +973,11 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {ERA_OPTIONS.map(era => {
+                  {ERA_OPTIONS.map((era, eraIdx) => {
                     const isSelected = selectedEras.includes(era);
                     return (
                       <button
-                        key={era}
+                        key={`era-opt-${era}-${eraIdx}`}
                         type="button"
                         onClick={() => handleToggleEra(era)}
                         className={`p-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between cursor-pointer ${
@@ -879,11 +1025,11 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                  {VIBE_OPTIONS.map(vibe => {
+                  {VIBE_OPTIONS.map((vibe, vibeIdx) => {
                     const isSelected = selectedVibes.includes(vibe);
                     return (
                       <button
-                        key={vibe}
+                        key={`vibe-opt-${vibe}-${vibeIdx}`}
                         type="button"
                         onClick={() => handleToggleVibe(vibe)}
                         className={`p-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between cursor-pointer ${
@@ -950,16 +1096,16 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                         <span>From Your Tracked Collection (Tap to favorite)</span>
                       </span>
                       <span className="text-[10px] text-slate-400 font-semibold">
-                        {existingShows.filter(s => s && typeof s.title === 'string' && favoriteShows.some(fav => typeof fav === 'string' && fav.toLowerCase().trim() === s.title.toLowerCase().trim())).length} selected
+                        {existingShows.filter(s => s && typeof s.title === 'string' && favoriteShows.some(fav => typeof fav === 'string' && isSameShowTitle(fav, s.title))).length} selected
                       </span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                      {existingShows.map(s => {
+                      {existingShows.map((s, idx) => {
                         if (!s || typeof s.title !== 'string') return null;
-                        const isSelected = favoriteShows.some(fav => typeof fav === 'string' && fav.toLowerCase().trim() === s.title.toLowerCase().trim());
+                        const isSelected = favoriteShows.some(fav => typeof fav === 'string' && isSameShowTitle(fav, s.title));
                         return (
                           <button
-                            key={s.id || s.title}
+                            key={`fav-exist-${s.id || s.title}-${idx}`}
                             type="button"
                             onClick={() => {
                               if (isSelected) {
@@ -993,11 +1139,11 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                 <div className="space-y-2 pt-1 border-t border-white/5">
                   <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Popular Suggestions (Tap to select)</span>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    {POPULAR_SHOW_SUGGESTIONS.map(s => {
+                    {POPULAR_SHOW_SUGGESTIONS.map((s, idx) => {
                       const isSelected = favoriteShows.some(fav => typeof fav === 'string' && fav.toLowerCase() === s.toLowerCase());
                       return (
                         <button
-                          key={s}
+                          key={`pop-${s}-${idx}`}
                           type="button"
                           onClick={() => {
                             if (isSelected) {
@@ -1041,9 +1187,9 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                           !POPULAR_SHOW_SUGGESTIONS.some(p => typeof p === 'string' && p.toLowerCase() === s.toLowerCase()) &&
                           !(Array.isArray(existingShows) && existingShows.some(e => e && typeof e.title === 'string' && e.title.toLowerCase().trim() === s.toLowerCase().trim()))
                         )
-                        .map(s => (
+                        .map((s, idx) => (
                           <div
-                            key={s}
+                            key={`custom-fav-${s}-${idx}`}
                             className="p-3 rounded-xl text-xs font-semibold border bg-emerald-500/15 border-emerald-500/40 text-emerald-100 ring-1 ring-emerald-500/30 flex items-center justify-between shadow-sm"
                           >
                             <span className="truncate mr-1">{s}</span>
@@ -1090,11 +1236,11 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                  {SERVICE_OPTIONS.map((service) => {
+                  {SERVICE_OPTIONS.map((service, srvIdx) => {
                     const isSelected = selectedServices.includes(service);
                     return (
                       <button
-                        key={service}
+                        key={`service-opt-${service}-${srvIdx}`}
                         type="button"
                         onClick={() => handleToggleService(service)}
                         className={`p-3 rounded-xl text-xs font-semibold border transition-all flex items-center justify-between cursor-pointer ${
@@ -1146,7 +1292,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
               </div>
 
               {/* Database Backup & Portability */}
-              {(currentUser?.id === 'default' || currentUser?.id === 'user-julio' || currentUser?.name?.toLowerCase() === 'julio' || currentUser?.email?.toLowerCase() === 'juliozaldivar@gmail.com') && (
+              {isJulio && (
                 <div className="bg-[#0D0F14] p-4 sm:p-5 rounded-2xl border border-white/5 space-y-3.5 shadow-sm">
                   <div className="flex items-center gap-2">
                     <Download className="w-4 h-4 text-emerald-400" />
@@ -1284,6 +1430,18 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
 
         </form>
       </motion.div>
+
+      {/* Custom Tater Avatar Studio Modal */}
+      <TaterzAvatarBuilderModal
+        isOpen={isAvatarStudioOpen}
+        onClose={() => setIsAvatarStudioOpen(false)}
+        currentAvatarUrl={avatarUrl}
+        onSaveAvatar={(newAvatarUrl) => {
+          setAvatarUrl(newAvatarUrl);
+          setIsAvatarExpanded(false);
+        }}
+        isPro={localStorage.getItem('couchtaterz_is_pro') === 'true'}
+      />
     </div>
   );
 };

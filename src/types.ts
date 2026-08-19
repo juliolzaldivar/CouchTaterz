@@ -13,6 +13,7 @@ export type StreamingService =
   | 'Apple TV'
   | 'Peacock'
   | 'AMC+'
+  | 'Starz'
   | 'Other';
 
 export type ShowStatus = 'Watching' | 'Backlog' | 'Completed' | 'Dropped';
@@ -52,6 +53,7 @@ export interface TvShow {
   totalSeasons?: number;
   episodesPerSeason?: number[];
   episodes?: Record<string, string>; // Map of "S1E1" or "1-1" -> "Episode Title"
+  episodeReviews?: Record<string, string>; // Map of "S1E1" -> "2-3 line VIP episode review text"
   isFavorite?: boolean;
   isBannerHidden?: boolean;
   hasAirDateReminder?: boolean;
@@ -67,6 +69,13 @@ export interface User {
   email: string;
   avatarUrl?: string;
   isOnline?: boolean;
+  isPro?: boolean;
+  isAdmin?: boolean;
+  isVip?: boolean;
+  lastLoginAt?: string; // ISO string timestamp of last login
+  lastActiveAt?: string; // ISO string timestamp of most recent activity
+  totalTimeSpentSeconds?: number; // Total cumulative time spent active in the app
+  sessionCount?: number; // Number of login sessions
   createdAt: string;
 }
 
@@ -91,9 +100,10 @@ export interface UserPreferences {
 
 export interface AppNotification {
   id: string;
+  senderId?: string;
   senderName: string;
   senderAvatarUrl?: string;
-  show: TvShow;
+  show?: TvShow;
   message?: string;
   createdAt: string;
 }
@@ -113,4 +123,61 @@ export interface ChatMessage {
   role: 'user' | 'model';
   content: string;
   timestamp: string;
+  intent?: 'recap' | 'group_recommendation' | 'natural_search' | 'general_chat';
+  cached?: boolean;
 }
+
+export type TaterzAIIntent = 'recap' | 'group_recommendation' | 'natural_search' | 'general_chat';
+
+export interface TaterzAIRecapPayload {
+  showId?: string;
+  showTitle: string;
+  showStatus?: string;
+  targetSeason: number;
+  targetEpisode: number;
+  lastWatchedSeason?: number;
+  lastWatchedEpisode?: number;
+  overview?: string;
+}
+
+export interface TaterzAIGroupBuddy {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  topShows?: { title: string; rating?: number | null; streamingService?: string }[];
+}
+
+export interface TaterzAIGroupPayload {
+  buddies: TaterzAIGroupBuddy[];
+}
+
+export interface TaterzAINaturalSearchPayload {
+  prompt: string;
+}
+
+export interface TaterzAIRequestPayload {
+  intent: TaterzAIIntent;
+  recap?: TaterzAIRecapPayload;
+  group?: TaterzAIGroupPayload;
+  search?: TaterzAINaturalSearchPayload;
+  customPrompt?: string;
+  messages?: ChatMessage[];
+  shows?: TvShow[];
+  preferences?: UserPreferences;
+  userState?: {
+    isPro?: boolean;
+    freeCreditsUsed?: number;
+  };
+}
+
+export interface TaterzAIResponse {
+  success: boolean;
+  content: string;
+  cached?: boolean;
+  cacheKey?: string;
+  freeCreditsUsed?: number;
+  isLimitReached?: boolean;
+  intent?: TaterzAIIntent;
+  error?: string;
+}
+

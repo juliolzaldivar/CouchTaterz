@@ -26,12 +26,11 @@ export const JULIO_USER_ID = 'default';
 
 export const CORE_BUDDY_IDS = [
   'user-kris-5139',
-  'user-kris-vance',
   'user-rafael-9639',
-  'user-rafael-gomez',
   'user-lily-9367',   // AnnaDee
   'user-lilyann-4290', // Lilyann
-  'user-julian-7667'   // Julian
+  'user-julian-7667',  // Julian
+  'user-ejc-2841'      // EJC
 ];
 
 export const getFriendsData = (userId: string): FriendsData => {
@@ -124,6 +123,8 @@ export const saveFriendsData = (userId: string, data: FriendsData): void => {
   }
 };
 
+const isGuestId = (id?: string) => !id || id === 'guest-demo' || id.startsWith('guest');
+
 /**
  * Sends a friend request from current user to target user
  */
@@ -142,6 +143,11 @@ export const sendFriendRequest = (
   if (!senderData.pendingSent.includes(toUserId) && !senderData.friends.includes(toUserId)) {
     senderData.pendingSent.push(toUserId);
     saveFriendsData(fromUserId, senderData);
+  }
+
+  // If sender or recipient is guest/demo, do not alter target real user's state or post to backend
+  if (isGuestId(fromUserId) || isGuestId(toUserId)) {
+    return;
   }
 
   // Update recipient's pendingReceived
@@ -187,6 +193,32 @@ export const respondToFriendRequest = (
   if (!userId || !targetUserId) return;
 
   const userData = getFriendsData(userId);
+
+  // If either user is guest/demo, only update local demo state for the acting user
+  if (isGuestId(userId) || isGuestId(targetUserId)) {
+    if (isGuestId(userId)) {
+      if (action === 'accept') {
+        if (!userData.friends.includes(targetUserId)) userData.friends.push(targetUserId);
+        userData.pendingReceived = userData.pendingReceived.filter(item => 
+          (typeof item === 'string' ? item : item.fromUserId) !== targetUserId
+        );
+        userData.pendingSent = userData.pendingSent.filter(id => id !== targetUserId);
+      } else if (action === 'reject') {
+        userData.pendingReceived = userData.pendingReceived.filter(item => 
+          (typeof item === 'string' ? item : item.fromUserId) !== targetUserId
+        );
+      } else if (action === 'cancel') {
+        userData.pendingSent = userData.pendingSent.filter(id => id !== targetUserId);
+      } else if (action === 'unfriend') {
+        if (targetUserId !== JULIO_USER_ID) {
+          userData.friends = userData.friends.filter(id => id !== targetUserId);
+        }
+      }
+      saveFriendsData(userId, userData);
+    }
+    return;
+  }
+
   const targetData = getFriendsData(targetUserId);
 
   if (action === 'accept') {
@@ -240,6 +272,17 @@ export const autoConnectUsers = (user1Id: string, user2Id: string): void => {
   if (!user1Id || !user2Id || user1Id === user2Id) return;
 
   const u1Data = getFriendsData(user1Id);
+
+  if (isGuestId(user1Id) || isGuestId(user2Id)) {
+    if (isGuestId(user1Id)) {
+      if (!u1Data.friends.includes(user2Id)) u1Data.friends.push(user2Id);
+      u1Data.pendingSent = u1Data.pendingSent.filter(id => id !== user2Id);
+      u1Data.pendingReceived = u1Data.pendingReceived.filter(item => (typeof item === 'string' ? item : item.fromUserId) !== user2Id);
+      saveFriendsData(user1Id, u1Data);
+    }
+    return;
+  }
+
   const u2Data = getFriendsData(user2Id);
 
   if (!u1Data.friends.includes(user2Id)) u1Data.friends.push(user2Id);

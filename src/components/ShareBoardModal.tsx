@@ -26,10 +26,12 @@ import {
   MessageSquare,
   MoreVertical,
   UserX,
-  Send
+  Send,
+  Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { User } from '../types';
+import { NetworkGraph } from './NetworkGraph';
 import { 
   getFriendsData, 
   fetchFriendsDataAsync,
@@ -47,6 +49,7 @@ interface ShareBoardModalProps {
   onJoinBoard: (boardId: string) => void;
   onClose: () => void;
   onFriendsUpdated?: () => void;
+  onOpenGroupWatchAi?: () => void;
   theme?: 'dark' | 'light';
 }
 
@@ -57,9 +60,31 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
   onJoinBoard,
   onClose,
   onFriendsUpdated,
+  onOpenGroupWatchAi,
   theme = 'dark'
 }) => {
-  const [activeTab, setActiveTab] = useState<'invite' | 'search' | 'buddies'>('invite');
+  const [activeTab, setActiveTab] = useState<'network' | 'invite' | 'search' | 'buddies'>('network');
+  
+  // Feature 4: Network Graph State
+  const [networkData, setNetworkData] = useState<{ users: any[]; networkConnections: any[]; topShows: any[] } | null>(null);
+  const [networkLoading, setNetworkLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (activeTab === 'network' && !networkData) {
+      setNetworkLoading(true);
+      fetch('/api/network/graph')
+        .then(res => res.json())
+        .then(data => {
+          setNetworkData(data);
+        })
+        .catch(err => {
+          console.error('Failed to fetch network graph:', err);
+        })
+        .finally(() => {
+          setNetworkLoading(false);
+        });
+    }
+  }, [activeTab, networkData]);
   
   // Feature 1: Invite Link State
   const [linkCopied, setLinkCopied] = useState(false);
@@ -173,6 +198,18 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
   const handleSendMessage = async (targetUser: User) => {
     if (!currentUser || !messageInput.trim()) return;
     setSendingMessage(true);
+
+    const isGuest = currentUser.id === 'guest-demo' || currentUser.id.startsWith('guest') || currentUser.email?.includes('guest');
+    if (isGuest) {
+      setTimeout(() => {
+        showToast(`Message sent to ${targetUser.name}! (Demo Mode)`);
+        setMessageInput('');
+        setMessagingUserId(null);
+        setSendingMessage(false);
+      }, 400);
+      return;
+    }
+
     try {
       const customMsg = messageInput.trim();
       await fetch('/api/notify', {
@@ -182,6 +219,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
           targetUserId: targetUser.id,
           notification: {
             id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            senderId: currentUser.id,
             senderName: currentUser.name || 'Binge Buddy',
             senderAvatarUrl: currentUser.avatarUrl,
             message: customMsg,
@@ -279,37 +317,37 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`relative w-full max-w-xl overflow-hidden rounded-2xl sm:rounded-3xl border shadow-2xl flex flex-col max-h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:max-h-[90vh] ${
+        className={`relative w-full ${activeTab === 'network' ? 'max-w-5xl' : 'max-w-xl'} overflow-hidden rounded-2xl sm:rounded-3xl border shadow-2xl flex flex-col transition-all duration-300 max-h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:max-h-[90vh] ${
           theme === 'dark' ? 'bg-[#161920] border-white/10' : 'bg-white border-neutral-200'
         }`}
       >
         {/* Header Banner */}
-        <div className={`p-5 sm:p-6 pb-4 border-b ${
+        <div className={`p-3.5 sm:p-6 pb-3 sm:pb-4 border-b ${
           theme === 'dark'
             ? 'border-white/10 bg-gradient-to-r from-purple-950/60 via-[#1A1D25] to-indigo-950/40'
             : 'border-neutral-200 bg-gradient-to-r from-purple-100/80 via-neutral-50 to-indigo-50/60'
         }`}>
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-2xl border shadow-inner ${
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+              <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border shadow-inner shrink-0 ${
                 theme === 'dark' ? 'bg-purple-600/20 text-purple-400 border-purple-500/30' : 'bg-purple-100 text-purple-700 border-purple-300'
               }`}>
-                <UserPlus className="w-6 h-6" />
+                <UserPlus className="w-4 h-4 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <h3 className={`text-lg sm:text-xl font-black tracking-tight flex items-center gap-2 ${
+              <div className="min-w-0">
+                <h3 className={`text-sm sm:text-xl font-black tracking-tight truncate ${
                   theme === 'dark' ? 'text-white' : 'text-slate-900'
                 }`}>
-                  <span>+ Add & Manage Buddies</span>
+                  + Add & Manage Buddies
                 </h3>
-                <p className={`text-xs mt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
-                  Invite friends to CouchTaterz or search existing members to swap show picks
+                <p className={`text-[11px] sm:text-xs mt-0.5 truncate ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                  Invite friends to CouchTaterz or search existing members
                 </p>
               </div>
             </div>
             <button 
               onClick={onClose}
-              className={`p-2 rounded-xl transition cursor-pointer shrink-0 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95 ${
+              className={`p-1.5 sm:p-2 rounded-xl transition cursor-pointer shrink-0 min-w-[36px] min-h-[36px] sm:min-w-[44px] sm:min-h-[44px] flex items-center justify-center active:scale-95 ${
                 theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-900 hover:bg-neutral-200/60'
               }`}
               title="Close modal"
@@ -318,44 +356,26 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
             </button>
           </div>
 
-          {/* Modal Tabs Header */}
-          <div className={`flex items-center gap-1 sm:gap-1.5 mt-5 p-1 rounded-2xl border ${
+          {/* Modal Tabs Header - Grid 4 Columns guarantees Invite tab never falls off screen */}
+          <div className={`grid grid-cols-4 gap-1 mt-3 sm:mt-5 p-1 rounded-xl sm:rounded-2xl border w-full ${
             theme === 'dark' ? 'bg-[#0A0C10] border-white/10' : 'bg-neutral-100 border-neutral-200'
           }`}>
             <button
-              onClick={() => setActiveTab('invite')}
-              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
-                activeTab === 'invite'
+              onClick={() => setActiveTab('network')}
+              className={`py-1.5 sm:py-2.5 px-1 sm:px-3 rounded-lg sm:rounded-xl text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-2 cursor-pointer min-w-0 w-full ${
+                activeTab === 'network'
                   ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
                   : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
               }`}
             >
-              <LinkIcon className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Invite Friend</span>
-              <span className="sm:hidden">Invite</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('search')}
-              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer relative ${
-                activeTab === 'search'
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
-                  : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
-              }`}
-            >
-              <Search className="w-3.5 h-3.5 shrink-0" />
-              <span className="hidden sm:inline">Find CouchTaterz</span>
-              <span className="sm:hidden">Find</span>
-              {pendingCount > 0 && (
-                <span className="ml-0.5 sm:ml-1 px-1.5 py-0.2 rounded-full bg-amber-400 text-black text-[9px] font-black animate-pulse">
-                  {pendingCount}
-                </span>
-              )}
+              <Share2 className="w-3.5 h-3.5 shrink-0 text-purple-300" />
+              <span className="hidden sm:inline">Binge Network</span>
+              <span className="sm:hidden truncate">Network</span>
             </button>
 
             <button
               onClick={() => setActiveTab('buddies')}
-              className={`flex-1 py-2 sm:py-2.5 px-2 sm:px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 sm:gap-2 cursor-pointer ${
+              className={`py-1.5 sm:py-2.5 px-1 sm:px-3 rounded-lg sm:rounded-xl text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-2 cursor-pointer min-w-0 w-full ${
                 activeTab === 'buddies'
                   ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
                   : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
@@ -363,12 +383,43 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
             >
               <Users className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Binge Buddies</span>
-              <span className="sm:hidden">Buddies</span>
-              <span className={`text-[10px] opacity-80 font-semibold px-1.5 py-0.5 rounded-md ${
+              <span className="sm:hidden truncate">Buddies</span>
+              <span className={`text-[9px] sm:text-[10px] opacity-80 font-bold px-1 sm:px-1.5 py-0.2 sm:py-0.5 rounded ${
                 theme === 'dark' ? 'bg-white/10' : 'bg-neutral-200 text-slate-800'
-              }`}>
+              } shrink-0`}>
                 {connectedCount}
               </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('search')}
+              className={`py-1.5 sm:py-2.5 px-1 sm:px-3 rounded-lg sm:rounded-xl text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-2 cursor-pointer relative min-w-0 w-full ${
+                activeTab === 'search'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
+                  : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
+              }`}
+            >
+              <Search className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Find Taterz</span>
+              <span className="sm:hidden truncate">Find</span>
+              {pendingCount > 0 && (
+                <span className="px-1 sm:px-1.5 py-0.2 rounded-full bg-amber-400 text-black text-[9px] font-black animate-pulse shrink-0">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('invite')}
+              className={`py-1.5 sm:py-2.5 px-1 sm:px-3 rounded-lg sm:rounded-xl text-[10px] xs:text-[11px] sm:text-xs font-bold transition-all flex items-center justify-center gap-1 sm:gap-2 cursor-pointer min-w-0 w-full ${
+                activeTab === 'invite'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/30 font-black ring-1 ring-purple-400/30'
+                  : theme === 'dark' ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-neutral-200/50'
+              }`}
+            >
+              <LinkIcon className="w-3.5 h-3.5 shrink-0" />
+              <span className="hidden sm:inline">Invite Link</span>
+              <span className="sm:hidden truncate">Invite</span>
             </button>
           </div>
         </div>
@@ -411,7 +462,11 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                       type="text"
                       readOnly
                       value={inviteUrl}
-                      className="w-full bg-[#0A0C10] text-slate-200 text-xs px-3.5 py-2.5 sm:py-3 rounded-xl border border-white/10 select-all font-mono outline-none pr-8 focus:border-purple-500 transition"
+                      className={`w-full text-xs px-3.5 py-2.5 sm:py-3 rounded-xl border select-all font-mono outline-none pr-8 focus:border-purple-500 transition ${
+                        theme === 'dark'
+                          ? 'bg-[#0A0C10] text-slate-200 border-white/10'
+                          : 'bg-white text-slate-800 border-purple-200 shadow-inner'
+                      }`}
                     />
                     <LinkIcon className="w-3.5 h-3.5 text-slate-500 absolute right-3 top-3 sm:top-3.5 pointer-events-none" />
                   </div>
@@ -441,17 +496,23 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
               </div>
 
               {/* SECTION 2: DIRECT EMAIL INVITATION */}
-              <div className="p-4 sm:p-5 rounded-2xl bg-[#171A24] border border-white/10 space-y-3 sm:space-y-3.5 shadow-md">
+              <div className={`p-4 sm:p-5 rounded-2xl border space-y-3 sm:space-y-3.5 shadow-md ${
+                theme === 'dark' ? 'bg-[#171A24] border-white/10' : 'bg-slate-50 border-slate-200'
+              }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <div className="p-2 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20 shrink-0">
                       <Mail className="w-4 h-4" />
                     </div>
                     <div>
-                      <h4 className="text-xs font-black text-white uppercase tracking-wider">
+                      <h4 className={`text-xs font-black uppercase tracking-wider ${
+                        theme === 'dark' ? 'text-white' : 'text-slate-900'
+                      }`}>
                         Send Email Invitation
                       </h4>
-                      <p className="text-[11px] text-slate-400 leading-snug">
+                      <p className={`text-[11px] leading-snug ${
+                        theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+                      }`}>
                         Send a direct email with an optional personal message
                       </p>
                     </div>
@@ -460,7 +521,9 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
 
                 <form onSubmit={handleSendEmailInvite} className="space-y-2.5">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <label className={`text-[10px] font-bold uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
                       Friend's Email Address
                     </label>
                     <input
@@ -468,14 +531,20 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       placeholder="e.g. friend@example.com"
-                      className="w-full bg-[#0D0F15] text-slate-100 px-3.5 py-2.5 rounded-xl border border-white/10 placeholder-slate-600 text-xs focus:outline-none focus:border-blue-500 transition"
+                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-blue-500 transition ${
+                        theme === 'dark'
+                          ? 'bg-[#0D0F15] text-slate-100 border-white/10 placeholder-slate-600'
+                          : 'bg-white text-slate-900 border-slate-300 placeholder-slate-400 shadow-sm'
+                      }`}
                     />
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <label className={`text-[10px] font-bold uppercase tracking-wider flex items-center justify-between ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
                       <span>Personal Note or Recommendation</span>
-                      <span className="text-[10px] text-slate-500 font-normal normal-case">Optional</span>
+                      <span className="text-[10px] opacity-70 font-normal normal-case">Optional</span>
                     </label>
                     <div className="relative">
                       <MessageSquare className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-3 pointer-events-none" />
@@ -484,7 +553,11 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                         value={emailNote}
                         onChange={(e) => setEmailNote(e.target.value)}
                         placeholder="e.g. You have to check out Severance! Join CouchTaterz so we can track shows together."
-                        className="w-full bg-[#0D0F15] text-slate-100 pl-9 pr-3.5 py-2.5 rounded-xl border border-white/10 placeholder-slate-600 text-xs focus:outline-none focus:border-blue-500 transition"
+                        className={`w-full pl-9 pr-3.5 py-2.5 rounded-xl border text-xs focus:outline-none focus:border-blue-500 transition ${
+                          theme === 'dark'
+                            ? 'bg-[#0D0F15] text-slate-100 border-white/10 placeholder-slate-600'
+                            : 'bg-white text-slate-900 border-slate-300 placeholder-slate-400 shadow-sm'
+                        }`}
                       />
                     </div>
                   </div>
@@ -514,33 +587,43 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
               </div>
 
               {/* SECTION 3: VISUAL HOW IT WORKS STEPS */}
-              <div className="p-4 rounded-2xl bg-[#141720] border border-white/5 space-y-3">
-                <h5 className="text-[11px] font-black text-slate-400 uppercase tracking-wider text-center">
+              <div className={`p-4 rounded-2xl border space-y-3 ${
+                theme === 'dark' ? 'bg-[#141720] border-white/5' : 'bg-slate-100 border-slate-200'
+              }`}>
+                <h5 className={`text-[11px] font-black uppercase tracking-wider text-center ${
+                  theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+                }`}>
                   How Binge Buddy Invitations Work
                 </h5>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center">
-                  <div className="p-3 rounded-xl bg-[#0D0F15] border border-white/5 space-y-1">
+                  <div className={`p-3 rounded-xl border space-y-1 ${
+                    theme === 'dark' ? 'bg-[#0D0F15] border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
                     <div className="w-7 h-7 mx-auto rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-xs font-black">
                       1
                     </div>
-                    <p className="text-xs font-bold text-white">Share Your Link</p>
-                    <p className="text-[10px] text-slate-400">Copy link or email direct invitation</p>
+                    <p className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Share Your Link</p>
+                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Copy link or email direct invitation</p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#0D0F15] border border-white/5 space-y-1">
+                  <div className={`p-3 rounded-xl border space-y-1 ${
+                    theme === 'dark' ? 'bg-[#0D0F15] border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
                     <div className="w-7 h-7 mx-auto rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-black">
                       2
                     </div>
-                    <p className="text-xs font-bold text-white">Friend Joins CouchTaterz</p>
-                    <p className="text-[10px] text-slate-400">They log in or create an account</p>
+                    <p className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Friend Joins CouchTaterz</p>
+                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>They log in or create an account</p>
                   </div>
 
-                  <div className="p-3 rounded-xl bg-[#0D0F15] border border-white/5 space-y-1">
+                  <div className={`p-3 rounded-xl border space-y-1 ${
+                    theme === 'dark' ? 'bg-[#0D0F15] border-white/5' : 'bg-white border-slate-200 shadow-sm'
+                  }`}>
                     <div className="w-7 h-7 mx-auto rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-black">
                       3
                     </div>
-                    <p className="text-xs font-bold text-white">Swap Recommendations</p>
-                    <p className="text-[10px] text-slate-400">Instantly share watchlist picks & ratings</p>
+                    <p className={`text-xs font-bold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Swap Recommendations</p>
+                    <p className={`text-[10px] ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Instantly share watchlist picks & ratings</p>
                   </div>
                 </div>
               </div>
@@ -550,6 +633,20 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
           {/* TAB 2: FIND EXISTING COUCHTATERZ */}
           {activeTab === 'search' && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+              {onOpenGroupWatchAi && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenGroupWatchAi();
+                  }}
+                  className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:via-indigo-500 hover:to-pink-500 text-white font-black text-xs sm:text-sm shadow-xl shadow-purple-950/40 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01] active:scale-[0.98] cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300 animate-pulse" />
+                  <span>✨ AskTaterz What to Watch Together</span>
+                </button>
+              )}
+
               {/* Search Bar */}
               <div className="relative">
                 <Search className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
@@ -558,12 +655,16 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search CouchTaterz by first name, last name, or email address..."
-                  className="w-full bg-[#0A0C10] text-slate-100 text-xs pl-10 pr-9 py-3 rounded-2xl border border-white/10 placeholder-slate-600 focus:outline-none focus:border-blue-500 transition"
+                  className={`w-full text-xs pl-10 pr-9 py-3 rounded-2xl border transition focus:outline-none focus:border-blue-500 ${
+                    theme === 'dark'
+                      ? 'bg-[#0A0C10] text-slate-100 border-white/10 placeholder-slate-600'
+                      : 'bg-slate-100 text-slate-900 border-slate-300 placeholder-slate-500 shadow-inner'
+                  }`}
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-3 text-slate-500 hover:text-white"
+                    className="absolute right-3 top-3 text-slate-500 hover:text-slate-800 dark:hover:text-white"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -571,18 +672,24 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
               </div>
 
               {/* Sensible Search Filters */}
-              <div className="flex items-center gap-1.5 p-1 bg-[#0A0C10] rounded-2xl border border-white/10 overflow-x-auto scrollbar-none">
+              <div className={`flex items-center gap-1.5 p-1 rounded-2xl border overflow-x-auto scrollbar-none ${
+                theme === 'dark' ? 'bg-[#0A0C10] border-white/10' : 'bg-slate-100 border-slate-200'
+              }`}>
                 <button
                   onClick={() => setSearchFilter('all')}
                   className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
                     searchFilter === 'all'
-                      ? 'bg-white/10 text-white font-black border border-white/10 shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200'
+                      ? theme === 'dark'
+                        ? 'bg-white/10 text-white font-black border border-white/10 shadow-sm'
+                        : 'bg-white text-slate-900 font-black border border-slate-300 shadow-sm'
+                      : theme === 'dark' ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <span className="hidden sm:inline">All Members</span>
                   <span className="sm:hidden">All</span>
-                  <span className="text-[10px] opacity-70 px-1.5 py-0.5 rounded-md bg-white/5">
+                  <span className={`text-[10px] opacity-70 px-1.5 py-0.5 rounded-md ${
+                    theme === 'dark' ? 'bg-white/5' : 'bg-slate-200'
+                  }`}>
                     {allUsers.filter(u => u.id !== currentUser?.id).length}
                   </span>
                 </button>
@@ -592,7 +699,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                   className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
                     searchFilter === 'pending'
                       ? 'bg-amber-500/20 text-amber-300 font-black border border-amber-500/30'
-                      : 'text-slate-400 hover:text-slate-200'
+                      : theme === 'dark' ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <span>Pending</span>
@@ -601,7 +708,9 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                       {pendingCount}
                     </span>
                   ) : (
-                    <span className="text-[10px] opacity-70 px-1.5 py-0.5 rounded-md bg-white/5">0</span>
+                    <span className={`text-[10px] opacity-70 px-1.5 py-0.5 rounded-md ${
+                      theme === 'dark' ? 'bg-white/5' : 'bg-slate-200'
+                    }`}>0</span>
                   )}
                 </button>
 
@@ -610,11 +719,13 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                   className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 ${
                     searchFilter === 'connected'
                       ? 'bg-emerald-500/20 text-emerald-300 font-black border border-emerald-500/30'
-                      : 'text-slate-400 hover:text-slate-200'
+                      : theme === 'dark' ? 'text-slate-400 hover:text-slate-200' : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <span>Connected</span>
-                  <span className="text-[10px] opacity-70 px-1.5 py-0.5 rounded-md bg-white/5">
+                  <span className={`text-[10px] opacity-70 px-1.5 py-0.5 rounded-md ${
+                    theme === 'dark' ? 'bg-white/5' : 'bg-slate-200'
+                  }`}>
                     {connectedCount}
                   </span>
                 </button>
@@ -623,20 +734,26 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
               {/* User Results List */}
               <div className="space-y-2.5 pt-1">
                 {filteredUsers.length === 0 ? (
-                  <div className="p-8 text-center bg-[#0F1117] rounded-3xl border border-white/5 space-y-2">
-                    <Users className="w-8 h-8 text-slate-600 mx-auto" />
-                    <p className="text-xs text-slate-400 font-medium">
+                  <div className={`p-8 text-center rounded-3xl border space-y-2 ${
+                    theme === 'dark' ? 'bg-[#0F1117] border-white/5' : 'bg-slate-50 border-slate-200'
+                  }`}>
+                    <Users className="w-8 h-8 text-slate-400 mx-auto" />
+                    <p className={`text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                       No CouchTaterz members matched your search "{searchQuery}".
                     </p>
-                    <p className="text-[11px] text-slate-500">
+                    <p className={`text-[11px] ${theme === 'dark' ? 'text-slate-500' : 'text-slate-500'}`}>
                       Try searching for a different first name, last name, or send an email invite!
                     </p>
                   </div>
                 ) : (
-                  filteredUsers.map(({ user, isJulio, isConnected, isPendingSent, isPendingReceived }) => (
+                  filteredUsers.map(({ user, isJulio, isConnected, isPendingSent, isPendingReceived }, uIdx) => (
                     <div
-                      key={user.id}
-                      className="p-2.5 sm:p-3 rounded-2xl bg-[#161922] border border-white/10 hover:border-white/20 transition flex flex-col gap-2.5 shadow-sm"
+                      key={`search-user-${user.id}-${uIdx}`}
+                      className={`p-2.5 sm:p-3 rounded-2xl border transition flex flex-col gap-2.5 shadow-sm ${
+                        theme === 'dark'
+                          ? 'bg-[#161922] border-white/10 hover:border-white/20'
+                          : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                      }`}
                     >
                       {/* Top Row: User Details & Primary Action */}
                       <div className="flex items-center justify-between gap-2.5">
@@ -662,7 +779,9 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5">
-                              <h4 className="text-xs sm:text-sm font-bold text-white truncate">{user.name}</h4>
+                              <h4 className={`text-xs sm:text-sm font-bold truncate ${
+                                theme === 'dark' ? 'text-white' : 'text-slate-900'
+                              }`}>{user.name}</h4>
                               {isJulio && (
                                 <span title="Community Host">
                                   <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -855,10 +974,14 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
               <div className="space-y-2.5">
                 {processedUsers
                   .filter(u => u.isConnected && !u.isSelf)
-                  .map(({ user, isJulio }) => (
+                  .map(({ user, isJulio }, uIdx) => (
                     <div
-                      key={user.id}
-                      className={`rounded-2xl bg-[#1A1E27] border border-white/5 hover:border-white/10 transition relative ${
+                      key={`connected-user-${user.id}-${uIdx}`}
+                      className={`rounded-2xl border transition relative ${
+                        theme === 'dark'
+                          ? 'bg-[#1A1E27] border-white/5 hover:border-white/10'
+                          : 'bg-slate-50 border-slate-200 hover:border-slate-300 shadow-sm'
+                      } ${
                         menuOpenUserId === user.id ? 'z-40' : 'z-10'
                       }`}
                     >
@@ -881,7 +1004,9 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <h4 className="text-xs sm:text-sm font-bold text-white truncate">{user.name}</h4>
+                              <h4 className={`text-xs sm:text-sm font-bold truncate ${
+                                theme === 'dark' ? 'text-white' : 'text-slate-900'
+                              }`}>{user.name}</h4>
                               {isJulio && (
                                 <span className="px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 text-[9px] font-extrabold uppercase shrink-0">
                                   Host
@@ -1014,6 +1139,30 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
               </div>
             </motion.div>
           )}
+
+          {/* TAB 4: SOCIAL & CONTENT NETWORK GRAPH */}
+          {activeTab === 'network' && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-2">
+              {networkLoading ? (
+                <div className="h-80 rounded-2xl bg-slate-950/60 border border-slate-800 flex flex-col items-center justify-center gap-3 text-slate-400">
+                  <Sparkles className="w-6 h-6 animate-spin text-purple-400" />
+                  <span className="text-xs font-semibold">Mapping Binge Buddy & Content Connections...</span>
+                </div>
+              ) : (
+                <NetworkGraph
+                  usersList={networkData?.users || []}
+                  networkConnections={networkData?.networkConnections || []}
+                  topShowsList={networkData?.topShows || []}
+                  theme={theme}
+                  currentUser={currentUser}
+                  onInspectUserLibrary={(uId) => {
+                    onJoinBoard(uId);
+                    onClose();
+                  }}
+                />
+              )}
+            </motion.div>
+          )}
         </div>
 
         {/* Interactive Toast Banner */}
@@ -1037,8 +1186,10 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
         </AnimatePresence>
 
         {/* Footer */}
-        <div className="p-3.5 px-5 bg-[#12141A] border-t border-white/10 flex items-center justify-center">
-          <span className="text-[11px] text-slate-400 font-medium text-center">Julio is Everybody's Binge Buddy on CouchTaterz!</span>
+        <div className={`p-3.5 px-5 border-t flex items-center justify-center ${
+          theme === 'dark' ? 'bg-[#12141A] border-white/10 text-slate-400' : 'bg-slate-100 border-neutral-200 text-slate-600'
+        }`}>
+          <span className="text-[11px] font-medium text-center">Julio is Everybody's Binge Buddy on CouchTaterz!</span>
         </div>
       </motion.div>
     </div>

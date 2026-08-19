@@ -1,4 +1,41 @@
 {
+  "user-lilyann-4290": {
+    "friends": [
+      "default",
+      "user-lily-9367",
+      "user-stphsolowgmailcom-4369"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-rafael-9639": {
+    "friends": [
+      "default",
+      "user-kris-5139",
+      "user-hyunjin-6821"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-ejc-2841": {
+    "friends": [
+      "default",
+      "user-kris-5139",
+      "user-hyunjin-6821"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-lily-9367": {
+    "friends": [
+      "default",
+      "user-julian-7667",
+      "user-lilyann-4290",
+      "user-hyunjin-6821"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
   "default": {
     "friends": [
       "user-kris-5139",
@@ -7,19 +44,27 @@
       "user-rafael-gomez",
       "user-lily-9367",
       "user-lilyann-4290",
-      "user-julian-7667"
+      "user-julian-7667",
+      "user-ejc-2841",
+      "user-ejc",
+      "guest-demo",
+      "user-danic-4753",
+      "user-stphsolowgmailcom-4369",
+      "user-ljc-6150",
+      "user-bob-5649",
+      "user-john-6858",
+      "user-google-8850",
+      "user-lulu-1407",
+      "user-alex-9292",
+      "user-bob-2157",
+      "user-lulu-5556",
+      "user-greg-3842",
+      "user-hyunjin-6821"
     ],
     "pendingSent": [],
     "pendingReceived": []
   },
-  "user-lilyann-4290": {
-    "friends": [
-      "default"
-    ],
-    "pendingSent": [],
-    "pendingReceived": []
-  },
-  "user-lily-9367": {
+  "guest-demo": {
     "friends": [
       "default"
     ],
@@ -28,21 +73,131 @@
   },
   "user-kris-5139": {
     "friends": [
-      "default"
+      "default",
+      "user-rafael-9639",
+      "user-ejc-2841",
+      "user-hyunjin-6821"
     ],
     "pendingSent": [],
     "pendingReceived": []
   },
   "user-julian-7667": {
     "friends": [
+      "default",
+      "user-lily-9367",
+      "user-hyunjin-6821"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-julio": {
+    "friends": [
+      "user-kris-5139",
+      "user-kris-vance",
+      "user-rafael-9639",
+      "user-rafael-gomez",
+      "user-lily-9367",
+      "user-lilyann-4290",
+      "user-julian-7667",
+      "user-ejc-2841",
+      "user-ejc",
+      "guest-demo",
+      "user-ljc-6150",
+      "user-stphsolowgmailcom-4369",
+      "user-alex-9292",
+      "user-lulu-1407",
+      "user-lulu-5556",
+      "user-john-6858",
+      "user-bob-2157",
+      "user-bob-5649"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-ljc-6150": {
+    "friends": [
       "default"
     ],
     "pendingSent": [],
     "pendingReceived": []
   },
-  "user-rafael-9639": {
+  "user-bob-5649": {
     "friends": [
       "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-john-6858": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-stphsolowgmailcom-4369": {
+    "friends": [
+      "default",
+      "user-lilyann-4290"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-google-8850": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-lulu-1407": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-alex-9292": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-bob-2157": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-lulu-5556": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-greg-3842": {
+    "friends": [
+      "default",
+      "user-kris-5139",
+      "user-lily-9367",
+      "user-ejc-2841",
+      "user-hyunjin-6821"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-hyunjin-6821": {
+    "friends": [
+      "default",
+      "user-julian-7667",
+      "user-lily-9367",
+      "user-rafael-9639",
+      "user-kris-5139",
+      "user-ejc-2841",
+      "user-greg-3842"
     ],
     "pendingSent": [],
     "pendingReceived": []

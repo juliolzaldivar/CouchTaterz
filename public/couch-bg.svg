@@ -1,0 +1,263 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 480" width="100%" height="100%">
+  <defs>
+    <!-- Wall & Floor Gradients -->
+    <radialGradient id="wallGlow" cx="72%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#808285" />
+      <stop offset="60%" stop-color="#484a4d" />
+      <stop offset="100%" stop-color="#2d2f31" />
+    </radialGradient>
+    <linearGradient id="floorGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f2022" />
+      <stop offset="100%" stop-color="#0c0d0e" />
+    </linearGradient>
+
+    <!-- Light Cones -->
+    <radialGradient id="leftLampGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.25" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="rightArcBeam" x1="0.5" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35" />
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#ffffff" stop-opacity="0" />
+    </linearGradient>
+
+    <!-- Sofa Shading -->
+    <linearGradient id="sofaBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#82858a" />
+      <stop offset="50%" stop-color="#676a6f" />
+      <stop offset="100%" stop-color="#4e5054" />
+    </linearGradient>
+    <linearGradient id="sofaCushion" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#909399" />
+      <stop offset="80%" stop-color="#696c71" />
+      <stop offset="100%" stop-color="#54565b" />
+    </linearGradient>
+    <linearGradient id="armRestLeft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a0a3a8" />
+      <stop offset="70%" stop-color="#686b70" />
+      <stop offset="100%" stop-color="#4a4c50" />
+    </linearGradient>
+    <linearGradient id="armRestRight" x1="1" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9b9ea3" />
+      <stop offset="70%" stop-color="#63666a" />
+      <stop offset="100%" stop-color="#44464a" />
+    </linearGradient>
+    
+    <!-- Table & Frame Wood -->
+    <linearGradient id="woodGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8a837b" />
+      <stop offset="50%" stop-color="#665f57" />
+      <stop offset="100%" stop-color="#47423c" />
+    </linearGradient>
+    <linearGradient id="silverLamp" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#e0e0e0" />
+      <stop offset="50%" stop-color="#999999" />
+      <stop offset="100%" stop-color="#444444" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Wall -->
+  <rect width="1100" height="400" fill="url(#wallGlow)" />
+  
+  <!-- Skirting / Baseboard -->
+  <rect y="392" width="1100" height="8" fill="#222426" />
+  <rect y="398" width="1100" height="2" fill="#151617" />
+
+  <!-- Hardwood Floor -->
+  <rect y="400" width="1100" height="80" fill="url(#floorGrad)" />
+  <!-- Plank Lines -->
+  <path d="M 0 425 L 1100 425 M 0 455 L 1100 455" stroke="#121314" stroke-width="1.5" opacity="0.6" />
+  
+  <!-- Concentric Oval Rug -->
+  <g transform="translate(550, 452)">
+    <!-- Outer Ring -->
+    <ellipse cx="0" cy="0" rx="360" ry="24" fill="#1a1b1d" stroke="#383a3d" stroke-width="2" />
+    <ellipse cx="0" cy="0" rx="335" ry="22.5" fill="#525559" />
+    <ellipse cx="0" cy="0" rx="305" ry="20.5" fill="#1f2022" />
+    <ellipse cx="0" cy="0" rx="275" ry="18.5" fill="#888c91" />
+    <ellipse cx="0" cy="0" rx="240" ry="16" fill="#2b2c2e" />
+    <ellipse cx="0" cy="0" rx="205" ry="13.5" fill="#6d7075" />
+    <ellipse cx="0" cy="0" rx="165" ry="11" fill="#1c1d1f" />
+    <ellipse cx="0" cy="0" rx="120" ry="8" fill="#9da1a6" />
+    <ellipse cx="0" cy="0" rx="70" ry="4.5" fill="#252628" />
+  </g>
+
+  <!-- Left Wall Outlet & Plug -->
+  <g transform="translate(60, 350)">
+    <rect x="0" y="0" width="20" height="26" rx="3" fill="#3a3c3e" stroke="#222" stroke-width="1" />
+    <circle cx="10" cy="8" r="4" fill="#1c1d1e" />
+    <circle cx="10" cy="18" r="4" fill="#1c1d1e" />
+    <path d="M 10 18 C 0 35, 30 50, 40 60" fill="none" stroke="#111" stroke-width="2.5" />
+  </g>
+
+  <!-- Left Side Table -->
+  <g id="side-table">
+    <!-- Table Shadow -->
+    <ellipse cx="155" cy="434" rx="90" ry="8" fill="#000000" opacity="0.6" />
+    <!-- Table Legs -->
+    <rect x="85" y="325" width="12" height="105" fill="#383430" />
+    <rect x="210" y="325" width="12" height="105" fill="#2d2925" />
+    <rect x="95" y="325" width="10" height="100" fill="#423e39" opacity="0.7" />
+    <!-- Lower Shelf & Books -->
+    <rect x="85" y="385" width="137" height="8" fill="#4d4740" />
+    <!-- Stacked Books on shelf -->
+    <rect x="160" y="340" width="18" height="45" rx="1" fill="#8c857b" />
+    <rect x="180" y="345" width="16" height="40" rx="1" fill="#524e47" />
+    <!-- Main Cabinet / Drawer Body -->
+    <rect x="80" y="290" width="147" height="45" rx="3" fill="url(#woodGrad)" stroke="#2b2824" stroke-width="1" />
+    <rect x="86" y="296" width="135" height="33" rx="2" fill="none" stroke="#3d3731" stroke-width="1.5" />
+    <!-- Drawer Knob -->
+    <circle cx="153" cy="312.5" r="4.5" fill="#c4beba" stroke="#444" stroke-width="1" />
+    <!-- Table Top -->
+    <rect x="75" y="282" width="157" height="10" rx="2" fill="#9c948b" stroke="#333" stroke-width="1" />
+
+    <!-- Vintage Telephone -->
+    <g transform="translate(170, 240)">
+      <ellipse cx="20" cy="40" rx="22" ry="6" fill="#111" opacity="0.4" />
+      <path d="M 5 36 C 5 22, 35 22, 35 36 Z" fill="#dedada" stroke="#888" stroke-width="1" />
+      <!-- Dial -->
+      <circle cx="20" cy="30" r="6" fill="#f0efed" stroke="#999" stroke-width="1" />
+      <!-- Handset Cradle & Receiver -->
+      <path d="M -2 18 C 10 10, 30 10, 42 18 C 45 22, -5 22, -2 18 Z" fill="#e6e4e1" stroke="#aaa" stroke-width="1" />
+      <!-- Coiled Cord -->
+      <path d="M 5 34 Q -5 38 -10 32 T -15 36 T -22 30" fill="none" stroke="#b0acb0" stroke-width="2.5" />
+    </g>
+
+    <!-- Table Lamp -->
+    <g transform="translate(125, 105)">
+      <!-- Lamp Glow Beam -->
+      <polygon points="-30,-40 90,-40 140,180 -80,180" fill="url(#leftLampGlow)" />
+      <!-- Lamp Base -->
+      <ellipse cx="30" cy="177" rx="28" ry="4" fill="#222" opacity="0.5" />
+      <path d="M 10 176 C 5 140, 55 140, 50 176 Z" fill="url(#silverLamp)" stroke="#444" stroke-width="1" />
+      <ellipse cx="30" cy="138" rx="14" ry="4" fill="#dedede" />
+      <!-- Metallic Neck -->
+      <rect x="27" y="110" width="6" height="30" fill="#cccccc" />
+      <!-- Lampshade -->
+      <polygon points="12,30 48,30 58,110 2,110" fill="#f5f5f7" stroke="#d0d0d5" stroke-width="1.5" />
+      <ellipse cx="30" cy="30" rx="18" ry="5" fill="#e8e8ec" />
+      <ellipse cx="30" cy="110" rx="28" ry="7" fill="#ffffff" />
+      <!-- Inner Light bulb brightness -->
+      <ellipse cx="30" cy="105" rx="15" ry="4" fill="#fff" opacity="0.9" />
+    </g>
+  </g>
+
+  <!-- Tilted Frame above Sofa -->
+  <g transform="translate(530, 115) rotate(-7)">
+    <!-- Drop Shadow behind Frame -->
+    <rect x="-122" y="-72" width="250" height="150" rx="2" fill="#000000" opacity="0.5" />
+    <!-- Outer Wooden Frame -->
+    <rect x="-125" y="-75" width="250" height="150" rx="3" fill="#756a5f" stroke="#3b342e" stroke-width="3" />
+    <rect x="-112" y="-62" width="224" height="124" fill="#222" />
+    <!-- Canvas Artwork (Ocean Sailboat) -->
+    <rect x="-110" y="-60" width="220" height="120" fill="#4d5459" />
+    <!-- Sky & Ocean Horizon -->
+    <rect x="-110" y="-60" width="220" height="70" fill="#788087" />
+    <line x1="-110" y1="10" x2="110" y2="10" stroke="#303538" stroke-width="1.5" />
+    <!-- Water Ripple lines -->
+    <path d="M -110 20 Q -60 18 0 22 T 110 20 M -110 35 Q -40 38 40 33 T 110 36" fill="none" stroke="#3a4045" stroke-width="2" />
+    <!-- Sailboat -->
+    <g transform="translate(10, -15)">
+      <!-- Hull -->
+      <path d="M -20 20 L 22 20 L 15 26 L -15 26 Z" fill="#181a1c" />
+      <!-- Mast -->
+      <line x1="2" y1="20" x2="2" y2="-35" stroke="#111" stroke-width="2" />
+      <!-- Main Sail -->
+      <path d="M 4 -32 C 15 -10, 20 10, 4 18 Z" fill="#f0f2f5" stroke="#ccc" stroke-width="0.5" />
+      <!-- Front Jib Sail -->
+      <path d="M 0 -25 C -8 -5, -12 10, -2 18 Z" fill="#d6dade" />
+    </g>
+  </g>
+
+  <!-- Center Sofa / Couch -->
+  <g id="sofa" transform="translate(550, 310)">
+    <!-- Couch Shadow on Rug -->
+    <ellipse cx="0" cy="120" rx="310" ry="18" fill="#000000" opacity="0.75" />
+
+    <!-- Sofa Legs -->
+    <rect x="-270" y="105" width="24" height="18" fill="#24211e" rx="2" />
+    <rect x="-100" y="105" width="20" height="18" fill="#1c1a17" rx="2" />
+    <rect x="80" y="105" width="20" height="18" fill="#1c1a17" rx="2" />
+    <rect x="246" y="105" width="24" height="18" fill="#24211e" rx="2" />
+
+    <!-- Sofa Backrest Structure -->
+    <path d="M -275 10 C -275 -100, 275 -100, 275 10 L 285 110 L -285 110 Z" fill="url(#sofaBody)" stroke="#38393d" stroke-width="2" />
+
+    <!-- Backrest Vertical Cushion Divisions -->
+    <g>
+      <!-- Left Back Cushion -->
+      <rect x="-260" y="-85" width="168" height="110" rx="16" fill="url(#sofaCushion)" stroke="#3f4145" stroke-width="2" />
+      <!-- Center Back Cushion -->
+      <rect x="-84" y="-85" width="168" height="110" rx="16" fill="url(#sofaCushion)" stroke="#3f4145" stroke-width="2" />
+      <!-- Right Back Cushion -->
+      <rect x="92" y="-85" width="168" height="110" rx="16" fill="url(#sofaCushion)" stroke="#3f4145" stroke-width="2" />
+    </g>
+
+    <!-- Seat Cushions (3 Sections) -->
+    <g transform="translate(0, 32)">
+      <!-- Left Seat Cushion -->
+      <rect x="-260" y="-10" width="170" height="75" rx="14" fill="url(#sofaCushion)" stroke="#3b3c40" stroke-width="2" />
+      <!-- Center Seat Cushion -->
+      <rect x="-83" y="-10" width="166" height="75" rx="14" fill="url(#sofaCushion)" stroke="#3b3c40" stroke-width="2" />
+      <!-- Right Seat Cushion -->
+      <rect x="90" y="-10" width="170" height="75" rx="14" fill="url(#sofaCushion)" stroke="#3b3c40" stroke-width="2" />
+
+      <!-- Soft Cushion Highlights & Creases -->
+      <path d="M -240 25 Q -175 30 -110 25 M -60 25 Q 0 30 60 25 M 110 25 Q 175 30 240 25" fill="none" stroke="#2a2b2e" stroke-width="2" opacity="0.5" />
+    </g>
+
+    <!-- Armrests -->
+    <!-- Left Armrest -->
+    <path d="M -295 10 C -300 -40, -240 -60, -230 15 L -235 98 C -240 108, -290 108, -295 98 Z" fill="url(#armRestLeft)" stroke="#36383c" stroke-width="2" />
+    <ellipse cx="-260" cy="-20" rx="32" ry="18" fill="#9ba0a6" opacity="0.6" />
+
+    <!-- Right Armrest (Receives Beam Light from Floor Lamp) -->
+    <path d="M 230 15 C 240 -60, 300 -40, 295 10 L 295 98 C 290 108, 240 108, 235 98 Z" fill="url(#armRestRight)" stroke="#36383c" stroke-width="2" />
+    <ellipse cx="260" cy="-20" rx="32" ry="18" fill="#d0d5dc" opacity="0.7" />
+  </g>
+
+  <!-- Right Arced Floor Lamp & Accessories -->
+  <g id="right-lamp">
+    <!-- Light Beam Overlay projecting down from Lamp -->
+    <polygon points="760,95 900,95 1060,480 520,480" fill="url(#rightArcBeam)" />
+
+    <!-- Lamp Heavy Base on Floor -->
+    <ellipse cx="950" cy="435" rx="35" ry="8" fill="#111" opacity="0.5" />
+    <path d="M 918 433 C 918 420, 982 420, 982 433 Z" fill="url(#silverLamp)" stroke="#333" stroke-width="1" />
+
+    <!-- Arcing Metallic Pole -->
+    <path d="M 950 425 L 950 250 C 950 50, 780 20, 775 80" fill="none" stroke="url(#silverLamp)" stroke-width="7" stroke-linecap="round" />
+
+    <!-- Hanging Woven Lamp Shade -->
+    <g transform="translate(775, 80)">
+      <ellipse cx="0" cy="35" rx="38" ry="12" fill="#000" opacity="0.4" />
+      <polygon points="-30,0 30,0 42,36 -42,36" fill="#dedede" stroke="#aaaaaa" stroke-width="1.5" />
+      <ellipse cx="0" cy="0" rx="30" ry="7" fill="#b5b5b5" />
+      <ellipse cx="0" cy="36" rx="42" ry="9" fill="#ffffff" />
+      <!-- Inner Bulb Glow -->
+      <ellipse cx="0" cy="32" rx="22" ry="6" fill="#ffffff" />
+      <circle cx="0" cy="30" r="10" fill="#ffffff" />
+    </g>
+
+    <!-- Right Wall Outlet & Cord -->
+    <g transform="translate(930, 355)">
+      <rect x="0" y="0" width="18" height="24" rx="3" fill="#353739" stroke="#1d1e1f" stroke-width="1" />
+      <circle cx="9" cy="7" r="3.5" fill="#18191a" />
+      <circle cx="9" cy="17" r="3.5" fill="#18191a" />
+      <path d="M 9 17 C 15 35, 20 50, 20 70" fill="none" stroke="#111" stroke-width="2.5" />
+    </g>
+
+    <!-- Mid-Century Starburst Wall Accent (Far Right) -->
+    <g transform="translate(995, 280)">
+      <path d="M 0 -35 L 5 -8 L 35 0 L 5 8 L 0 35 L -5 8 L -35 0 L -5 -8 Z" fill="#1c1d1f" />
+      <path d="M -22 -22 L -4 -4 L -4 -22 Z M 22 -22 L 4 -4 L 22 -4 Z M 22 22 L 4 4 L 4 22 Z M -22 22 L -4 4 L -22 4 Z" fill="#2d2f33" />
+      <polygon points="0,-12 12,0 0,12 -12,0" fill="#52565c" />
+    </g>
+
+    <!-- Sparkle Stars -->
+    <g transform="translate(1015, 385)" fill="#ffffff" opacity="0.6">
+      <path d="M 0 -12 Q 0 0 12 0 Q 0 0 0 12 Q 0 0 -12 0 Q 0 0 0 -12 Z" />
+    </g>
+  </g>
+</svg>

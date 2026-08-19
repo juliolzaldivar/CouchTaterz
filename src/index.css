@@ -9,10 +9,12 @@
 
 body {
   background-color: #0F1115;
+  color: #f8fafc;
 }
 
 body.light {
-  background-color: #f9fafb;
+  background-color: #f8fafc;
+  color: #0f172a;
 }
 
 /* Custom modern scrollbars */
@@ -26,12 +28,12 @@ body.light {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 100, 100, 0.15);
+  background: rgba(148, 163, 184, 0.25);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 100, 100, 0.3);
+  background: rgba(100, 116, 139, 0.45);
 }
 
 /* Scrollbar Utility to hide bars completely */
@@ -57,6 +59,15 @@ body.light {
   letter-spacing: -0.025em;
 }
 
+body.light .markdown-body h1,
+body.light .markdown-body h2,
+body.light .markdown-body h3,
+.markdown-body.light h1,
+.markdown-body.light h2,
+.markdown-body.light h3 {
+  color: #0f172a;
+}
+
 .markdown-body h1 { font-size: 1.1rem; }
 .markdown-body h2 { font-size: 1rem; }
 .markdown-body h3 { font-size: 0.9rem; }
@@ -64,6 +75,13 @@ body.light {
 .markdown-body p {
   margin-bottom: 0.75rem;
   line-height: 1.6;
+}
+
+body.light .markdown-body p,
+body.light .markdown-body li,
+.markdown-body.light p,
+.markdown-body.light li {
+  color: #334155;
 }
 
 .markdown-body ul, .markdown-body ol {
@@ -81,10 +99,21 @@ body.light {
   color: #ffffff;
 }
 
+body.light .markdown-body strong,
+.markdown-body.light strong {
+  color: #0f172a;
+}
+
 .markdown-body blockquote {
   border-left: 3px solid #4b5563; /* border-gray-600 */
   padding-left: 0.75rem;
   color: #9ca3af; /* text-gray-400 */
   font-style: italic;
   margin: 0.75rem 0;
+}
+
+body.light .markdown-body blockquote,
+.markdown-body.light blockquote {
+  border-left-color: #cbd5e1;
+  color: #64748b;
 }

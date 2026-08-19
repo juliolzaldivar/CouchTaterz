@@ -5,6 +5,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { TvShow, StreamingService, ShowStatus, User } from '../types';
+import { getNormalizedGenres } from '../utils/genreUtils';
+import { normalizeShowTitle, getCanonicalShowTitle } from '../utils/titleUtils';
 import { Search, Loader2, X, Film, AlertCircle, Plus, Star, Tv, ChevronDown, Sparkles, SlidersHorizontal, Check, Info, ArrowLeft, Users, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -30,7 +32,7 @@ const DEFAULT_BUDDY_SHOWS: BuddyShowItem[] = [
     ownerName: 'Julio',
     show: {
       id: 'shogun-2024',
-      title: 'Shogun',
+      title: 'Shōgun',
       overview: 'When a mysterious European ship is found shipwrecked in a nearby fishing village, Lord Yoshii Toranaga discovers secrets that could tip the scales of power.',
       genres: ['Drama', 'History', 'Action'],
       bannerImage: 'https://image.tmdb.org/t/p/w1280/bwSmgmd90hCWwqOKQYTEraeOZhJ.jpg',
@@ -173,7 +175,7 @@ const DEFAULT_BUDDY_SHOWS: BuddyShowItem[] = [
 ];
 
 const STREAMING_SERVICES: StreamingService[] = [
-  'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Other'
+  'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Starz', 'Other'
 ];
 
 export const AddShowModal: React.FC<AddShowModalProps> = ({ 
@@ -200,7 +202,7 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
   // Track added shows so buttons switch to "Added ✓" instantly
   const [addedShowTitles, setAddedShowTitles] = useState<Set<string>>(() => {
     const set = new Set<string>();
-    (existingShows || []).forEach(s => set.add(s.title.toLowerCase().trim()));
+    (existingShows || []).forEach(s => set.add(normalizeShowTitle(s.title)));
     return set;
   });
 
@@ -208,7 +210,7 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
     if (existingShows && existingShows.length > 0) {
       setAddedShowTitles(prev => {
         const next = new Set(prev);
-        existingShows.forEach(s => next.add(s.title.toLowerCase().trim()));
+        existingShows.forEach(s => next.add(normalizeShowTitle(s.title)));
         return next;
       });
     }
@@ -233,10 +235,7 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
 
   // Admin status check (Julio / admin only for custom cover editing)
-  const isAdmin = currentUser?.name?.trim().toLowerCase() === 'julio' || 
-    currentUser?.email?.toLowerCase() === 'juliozaldivar@gmail.com' || 
-    currentUser?.id === 'default' ||
-    currentUser?.id === 'user-julio';
+  const isAdmin = currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com';
 
   // Check if there are other active users in the group besides the current user
   const hasOtherActiveUsers = React.useMemo(() => {
@@ -310,7 +309,7 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
 
     // Filter out shows already added to user's board so suggestions stay actionable
     return Array.from(mergedMap.values()).filter(item => {
-      const titleClean = item.show.title.toLowerCase().trim();
+      const titleClean = normalizeShowTitle(item.show.title);
       return !addedShowTitles.has(titleClean);
     });
   }, [buddyShows, activeUserNames, addedShowTitles, currentUser]);
@@ -351,6 +350,8 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
     setBannerPosition(s.bannerPosition || 'center 25%');
     setSearchResults([s]);
     setSelectedIndex(0);
+    setUserNotes('');
+    setUserScore(null);
   };
 
   const handleDirectQuickAdd = (item: BuddyShowItem, e?: React.MouseEvent) => {
@@ -363,16 +364,17 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
       return;
     }
 
-    const normTitle = item.show.title.toLowerCase().trim();
+    const normTitle = normalizeShowTitle(item.show.title);
     if (addedShowTitles.has(normTitle)) return;
 
     const fullShow: TvShow = {
       ...item.show,
+      title: getCanonicalShowTitle(item.show.title, existingShows),
       id: `show-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       status: 'Watching',
       latestWatched: item.show.latestWatched || { season: 1, episode: 0, title: 'Not Started' },
-      userScore: item.show.userScore || 9.0,
-      userNotes: item.show.userNotes || `Added from ${item.ownerName}'s picks`,
+      userScore: null,
+      userNotes: '',
       createdAt: new Date().toISOString()
     };
 
@@ -418,12 +420,17 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
     setPreviewShow(selectedShow);
     setBannerImage(selectedShow.bannerImage || 'https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg');
     setBannerPosition(selectedShow.bannerPosition || 'center 25%');
+    setUserNotes('');
+    setUserScore(null);
   };
 
   const handleBack = () => {
     setPreviewShow(null);
     setSearchResults([]);
     setSelectedIndex(0);
+    setUserNotes('');
+    setUserScore(null);
+    setSelectedBuddyOwner(null);
   };
 
   const runSteps = async () => {
@@ -449,6 +456,9 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
     setPreviewShow(null);
     setSearchResults([]);
     setSelectedIndex(0);
+    setUserNotes('');
+    setUserScore(null);
+    setSelectedBuddyOwner(null);
 
     // Run parallel steps loader
     const stepsPromise = runSteps();
@@ -502,9 +512,9 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
 
     const fullShow: TvShow = {
       id: `show-${Date.now()}`,
-      title: previewShow.title || query,
+      title: getCanonicalShowTitle(previewShow.title || query, existingShows),
       streamingService: (previewShow.streamingService as StreamingService) || 'Other',
-      genres: previewShow.genres || ['Drama'],
+      genres: getNormalizedGenres(previewShow),
       status: status,
       latestWatched: initialWatched,
       nextEpisode: previewShow.nextEpisode || null,
@@ -646,10 +656,14 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                       value={query}
                       onChange={(e) => setQuery(e.target.value)}
                       placeholder={onboardingStep === 3 ? "Type title OR select from Binge Buddies below..." : "e.g., Shogun, Succession, Shingeki no Kyojin..."}
-                      className={`w-full bg-[#0F1115] text-slate-100 pl-10 pr-4 py-3.5 rounded-2xl border transition-all duration-300 placeholder-slate-500 text-sm focus:outline-none focus:border-blue-500 ${
+                      className={`w-full text-sm pl-10 pr-4 py-3.5 rounded-2xl border transition-all duration-300 focus:outline-none focus:border-blue-500 ${
+                        theme === 'dark'
+                          ? 'bg-[#0F1115] text-slate-100 placeholder-slate-500 border-white/10'
+                          : 'bg-slate-50 text-slate-900 placeholder-slate-500 border-slate-300 shadow-sm focus:bg-white focus:ring-2 focus:ring-blue-500/20'
+                      } ${
                         onboardingStep === 3
                           ? 'border-purple-500 ring-4 ring-purple-500/30 shadow-lg shadow-purple-950/40'
-                          : 'border-white/10'
+                          : ''
                       }`}
                       autoFocus
                     />
@@ -686,16 +700,20 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                   </div>
 
                   <div className="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none">
-                    {availableBuddyShows.slice(0, 5).map(({ show, ownerName }) => {
-                      const isAdded = addedShowTitles.has(show.title.toLowerCase().trim());
+                    {availableBuddyShows.slice(0, 5).map(({ show, ownerName }, idx) => {
+                      const isAdded = addedShowTitles.has(normalizeShowTitle(show.title));
                       return (
                         <div
-                          key={`quick-buddy-${show.id}`}
+                          key={`quick-buddy-${show.id}-${ownerName}-${idx}`}
                           onClick={() => handleSelectBuddyShow({ show, ownerName })}
-                          className={`shrink-0 w-36 bg-[#0F1115] hover:bg-[#1A1D24] p-2.5 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between space-y-2 shadow-sm ${
+                          className={`shrink-0 w-36 p-2.5 rounded-2xl border transition-all cursor-pointer group flex flex-col justify-between space-y-2 shadow-sm ${
+                            theme === 'dark'
+                              ? 'bg-[#0F1115] hover:bg-[#1A1D24] border-purple-500/20 hover:border-purple-500/50'
+                              : 'bg-white hover:bg-purple-50/50 border-purple-200 hover:border-purple-400'
+                          } ${
                             onboardingStep === 3
                               ? 'border-purple-400/80 hover:border-purple-400 ring-2 ring-purple-400/60 scale-[1.02]'
-                              : 'border-purple-500/20 hover:border-purple-500/50'
+                              : ''
                           }`}
                         >
                           <div className="relative h-20 rounded-xl overflow-hidden bg-slate-800">
@@ -714,8 +732,8 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                             </span>
                           </div>
                           <div>
-                            <h5 className="text-xs font-bold text-white truncate">{show.title}</h5>
-                            <p className="text-[10px] text-slate-400 truncate">{show.streamingService} • ★{show.userScore || 9.0}</p>
+                            <h5 className={`text-xs font-bold truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{show.title}</h5>
+                            <p className={`text-[10px] truncate ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>{show.streamingService} • ★{show.userScore || 9.0}</p>
                           </div>
                           {isAdded ? (
                             <button
@@ -744,9 +762,11 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                 </div>
               )}
 
-              <div className="rounded-2xl bg-[#0F1115]/50 border border-white/5 p-4 space-y-2.5">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">Why search TMDB?</h4>
-                <ul className="text-xs text-slate-500 space-y-1.5 list-disc pl-4 leading-relaxed">
+              <div className={`rounded-2xl border p-4 space-y-2.5 ${
+                theme === 'dark' ? 'bg-[#0F1115]/50 border-white/5' : 'bg-slate-50 border-slate-200'
+              }`}>
+                <h4 className={`text-xs font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>Why search TMDB?</h4>
+                <ul className={`text-xs space-y-1.5 list-disc pl-4 leading-relaxed ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                   <li>Detects Rotten Tomatoes/rating scores automatically.</li>
                   <li>Determines where to stream (HBO, Netflix, etc.).</li>
                   <li>Retrieves upcoming episode titles, seasons, and scheduled dates.</li>
@@ -770,7 +790,9 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
               </div>
 
               {/* Search & Sort Bar (Clean Single-Row Mobile & Desktop Layout) */}
-              <div className="flex items-center gap-2 p-2 sm:p-2.5 bg-[#0F1115] rounded-2xl border border-white/10 shadow-inner">
+              <div className={`flex items-center gap-2 p-2 sm:p-2.5 rounded-2xl border shadow-inner ${
+                theme === 'dark' ? 'bg-[#0F1115] border-white/10' : 'bg-slate-100 border-slate-200'
+              }`}>
                 {/* Search Input - Flex 1 */}
                 <div className="relative flex-1 min-w-0">
                   <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -779,7 +801,11 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                     value={buddySearch}
                     onChange={(e) => setBuddySearch(e.target.value)}
                     placeholder="Search title, genre, buddy..."
-                    className="w-full bg-[#151821] text-xs font-medium text-slate-100 pl-8 sm:pl-9 pr-7 py-2 rounded-xl border border-white/10 focus:outline-none focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/30 transition placeholder-slate-400 shadow-sm"
+                    className={`w-full text-xs font-medium pl-8 sm:pl-9 pr-7 py-2 rounded-xl border focus:outline-none focus:border-purple-500/70 focus:ring-1 focus:ring-purple-500/30 transition shadow-sm ${
+                      theme === 'dark'
+                        ? 'bg-[#151821] text-slate-100 placeholder-slate-400 border-white/10'
+                        : 'bg-white text-slate-900 placeholder-slate-400 border-slate-300'
+                    }`}
                   />
                   {buddySearch && (
                     <button
@@ -793,33 +819,43 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                 </div>
 
                 {/* Sort Selector - Compact Inline */}
-                <div className="flex items-center gap-1.5 bg-[#151821] px-2.5 sm:px-3 py-2 rounded-xl border border-white/10 text-xs text-slate-200 shrink-0">
+                <div className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl border text-xs shrink-0 ${
+                  theme === 'dark' ? 'bg-[#151821] border-white/10 text-slate-200' : 'bg-white border-slate-300 text-slate-800'
+                }`}>
                   <SlidersHorizontal className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                   <span className="text-slate-400 font-semibold text-[11px] hidden md:inline">Sort:</span>
                   <select
                     value={buddySort}
                     onChange={(e) => setBuddySort(e.target.value as any)}
-                    className="bg-transparent text-xs text-slate-100 font-bold focus:outline-none cursor-pointer"
+                    className="bg-transparent text-xs font-bold focus:outline-none cursor-pointer"
                   >
-                    <option value="rating" className="bg-[#151821] text-slate-200">Rating ★</option>
-                    <option value="title" className="bg-[#151821] text-slate-200">Title A–Z</option>
-                    <option value="service" className="bg-[#151821] text-slate-200">Service</option>
+                    <option value="rating" className={theme === 'dark' ? "bg-[#151821] text-slate-200" : "bg-white text-slate-800"}>Rating ★</option>
+                    <option value="title" className={theme === 'dark' ? "bg-[#151821] text-slate-200" : "bg-white text-slate-800"}>Title A–Z</option>
+                    <option value="service" className={theme === 'dark' ? "bg-[#151821] text-slate-200" : "bg-white text-slate-800"}>Service</option>
                   </select>
                 </div>
               </div>
 
               {/* Watch Buddy Connections Horizontal Slide Ribbon */}
               {buddyNames.length > 0 && (
-                <div className="relative bg-[#0F1115] p-2 rounded-2xl border border-white/10 overflow-hidden shadow-inner">
-                  {/* Dark Gradient Overlay on right with pulsing arrow indicator showing connections slide horizontally */}
-                  <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#0F1115] via-[#0F1115]/90 to-transparent pointer-events-none z-10 flex items-center justify-end pr-2">
+                <div className={`relative p-2 rounded-2xl border overflow-hidden shadow-inner ${
+                  theme === 'dark' ? 'bg-[#0F1115] border-white/10' : 'bg-slate-100 border-slate-200'
+                }`}>
+                  {/* Gradient Overlay on right with pulsing arrow indicator */}
+                  <div className={`absolute right-0 top-0 bottom-0 w-16 pointer-events-none z-10 flex items-center justify-end pr-2 ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-l from-[#0F1115] via-[#0F1115]/90 to-transparent'
+                      : 'bg-gradient-to-l from-slate-100 via-slate-100/90 to-transparent'
+                  }`}>
                     <div className="w-6 h-6 rounded-full bg-purple-500/25 border border-purple-500/40 flex items-center justify-center text-purple-200 shadow-md animate-pulse">
                       <ChevronRight className="w-4 h-4" />
                     </div>
                   </div>
 
                   <div className="flex items-center gap-2 overflow-x-auto scrollbar-none py-1 px-2 pr-16 snap-x scroll-smooth">
-                    <span className="text-[10px] uppercase font-black text-slate-400 tracking-wider shrink-0 flex items-center gap-1 mr-1">
+                    <span className={`text-[10px] uppercase font-black tracking-wider shrink-0 flex items-center gap-1 mr-1 ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
                       <Users className="w-3.5 h-3.5 text-purple-400" />
                       <span>Binge Buddies:</span>
                     </span>
@@ -831,12 +867,16 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                       className={`shrink-0 snap-start px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                         buddyFilter === 'all'
                           ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-950/50 ring-1 ring-purple-400/40'
-                          : 'bg-[#151821] border-white/10 text-slate-300 hover:border-purple-500/40 hover:text-white'
+                          : theme === 'dark'
+                            ? 'bg-[#151821] border-white/10 text-slate-300 hover:border-purple-500/40 hover:text-white'
+                            : 'bg-white border-slate-300 text-slate-700 hover:border-purple-500/50 hover:text-slate-900 shadow-sm'
                       }`}
                     >
                       <span>All Picks</span>
                       <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                        buddyFilter === 'all' ? 'bg-purple-900/80 text-white' : 'bg-white/10 text-slate-400'
+                        buddyFilter === 'all'
+                          ? 'bg-purple-900/80 text-white'
+                          : theme === 'dark' ? 'bg-white/10 text-slate-400' : 'bg-slate-100 text-slate-600'
                       }`}>
                         {availableBuddyShows.length}
                       </span>
@@ -861,7 +901,9 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                           className={`shrink-0 snap-start px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer flex items-center gap-2 ${
                             isSelected
                               ? 'bg-purple-600 text-white border-purple-400 shadow-md shadow-purple-950/50 ring-1 ring-purple-400/40'
-                              : 'bg-[#151821] border-white/10 text-slate-300 hover:border-purple-500/40 hover:text-white'
+                              : theme === 'dark'
+                                ? 'bg-[#151821] border-white/10 text-slate-300 hover:border-purple-500/40 hover:text-white'
+                                : 'bg-white border-slate-300 text-slate-700 hover:border-purple-500/50 hover:text-slate-900 shadow-sm'
                           }`}
                         >
                           <div className="relative shrink-0">
@@ -881,7 +923,9 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                           </div>
                           <span>{name}</span>
                           <span className={`px-1.5 py-0.5 rounded-md text-[10px] font-black ${
-                            isSelected ? 'bg-purple-900/80 text-white' : 'bg-white/10 text-slate-400'
+                            isSelected
+                              ? 'bg-purple-900/80 text-white'
+                              : theme === 'dark' ? 'bg-white/10 text-slate-400' : 'bg-slate-100 text-slate-600'
                           }`}>
                             {count}
                           </span>
@@ -912,11 +956,11 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {filteredBuddyShows.map(({ show, ownerName }) => {
-                    const isAdded = addedShowTitles.has(show.title.toLowerCase().trim());
+                  {filteredBuddyShows.map(({ show, ownerName }, idx) => {
+                    const isAdded = addedShowTitles.has(normalizeShowTitle(show.title));
                     return (
                       <div
-                        key={`modal-buddy-list-${show.id}`}
+                        key={`modal-buddy-list-${show.id}-${ownerName}-${idx}`}
                         onClick={() => handleSelectBuddyShow({ show, ownerName })}
                         className="p-3.5 sm:p-4 rounded-2xl bg-[#0F1115] hover:bg-[#181B22] border border-purple-500/20 hover:border-purple-500/50 transition-all cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 group shadow-md"
                       >
@@ -1227,21 +1271,53 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                   </>
                 )}
 
+                {/* Buddy Review Banner (Reference only) */}
+                {selectedBuddyOwner && (previewShow.userNotes || previewShow.userScore != null) && (
+                  <div className="p-3 bg-purple-950/20 border border-purple-500/20 rounded-2xl space-y-1 my-1">
+                    <div className="flex items-center justify-between text-xs text-purple-300 font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-purple-400" />
+                        {selectedBuddyOwner}'s Review & Rating
+                      </span>
+                      {previewShow.userScore != null && (
+                        <span className="text-amber-400 font-black">★ {previewShow.userScore}/10</span>
+                      )}
+                    </div>
+                    {previewShow.userNotes && (
+                      <p className="text-xs text-slate-300 italic leading-relaxed">
+                        "{previewShow.userNotes}"
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Score slider */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex justify-between items-center text-xs">
                     <label className="text-slate-500 font-medium">Your Custom Rating (optional)</label>
-                    <span className="text-amber-400 font-bold">{userScore ? `${userScore}/10` : 'Not Rated'}</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-amber-400 font-bold">{userScore ? `${userScore}/10` : 'Not Rated'}</span>
+                      {userScore != null && (
+                        <button
+                          type="button"
+                          onClick={() => setUserScore(null)}
+                          className="text-[10px] text-slate-400 hover:text-amber-400 transition-colors underline cursor-pointer"
+                        >
+                          Reset
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-1.5 py-1">
                     {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
                       <button
                         key={star}
                         type="button"
-                        onClick={() => setUserScore(star)}
-                        className={`transition-colors p-1 ${
+                        onClick={() => setUserScore(prev => prev === star ? null : star)}
+                        className={`transition-colors p-1 cursor-pointer ${
                           star <= (userScore || 0) ? 'text-amber-400 scale-110' : 'text-neutral-700 hover:text-neutral-500'
                         }`}
+                        title={userScore === star ? "Click again to reset rating" : `Rate ${star}/10`}
                       >
                         <Star className="w-5 h-5 fill-current" />
                       </button>
@@ -1270,7 +1346,7 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
             {previewShow ? (
               <div className="space-y-3">
                 {/* Full-width primary Add to Watchlist action */}
-                {addedShowTitles.has((previewShow.title || query).toLowerCase().trim()) ? (
+                {addedShowTitles.has(normalizeShowTitle(previewShow.title || query)) ? (
                   <button
                     type="button"
                     disabled

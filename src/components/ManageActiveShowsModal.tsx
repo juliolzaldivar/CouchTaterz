@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { TvShow, StreamingService } from '../types';
+import { getShowBannerImage } from '../utils/showBanners';
 import { X, Trash2, Calendar, Tv, Check, Save, HelpCircle, Film, RefreshCw } from 'lucide-react';
 import { motion } from 'motion/react';
 import { SERVICE_COLORS } from './ShowCard';
@@ -14,6 +15,8 @@ interface ManageActiveShowsModalProps {
   onUpdateShow: (updatedShow: TvShow) => void;
   onDeleteShow: (id: string) => void;
   onClose: () => void;
+  isOpen?: boolean;
+  theme?: 'dark' | 'light';
 }
 
 export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
@@ -21,6 +24,7 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
   onUpdateShow,
   onDeleteShow,
   onClose,
+  theme = 'dark',
 }) => {
   // Filter active shows: nextEpisode exists and not concluded
   const activeShows = shows.filter((s) => s.nextEpisode && !s.concluded);
@@ -75,7 +79,7 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
   };
 
   const streamingServices: StreamingService[] = [
-    'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Other'
+    'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Starz', 'Other'
   ];
 
   return (
@@ -84,23 +88,31 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-3xl rounded-2xl sm:rounded-3xl bg-[#16181D] border border-white/10 text-slate-100 shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:max-h-[85vh]"
+        className={`relative w-full max-w-3xl rounded-2xl sm:rounded-3xl border shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-max(1.5rem,env(safe-area-inset-top)+1rem))] sm:max-h-[85vh] ${
+          theme === 'dark' ? 'bg-[#16181D] border-white/10 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+        }`}
         id="manage-active-modal"
       >
         {/* Header */}
-        <div className="p-6 border-b border-white/5 flex items-center justify-between bg-[#1A1D23]">
+        <div className={`p-6 border-b flex items-center justify-between ${
+          theme === 'dark' ? 'bg-[#1A1D23] border-white/5' : 'bg-slate-50 border-slate-200'
+        }`}>
           <div className="flex items-center gap-2.5">
-            <div className="p-2 bg-blue-600/15 rounded-xl border border-blue-500/20 text-blue-400">
+            <div className={`p-2 rounded-xl border ${
+              theme === 'dark' ? 'bg-blue-600/15 border-blue-500/20 text-blue-400' : 'bg-blue-50 border-blue-200 text-blue-600'
+            }`}>
               <Film className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-black tracking-tight uppercase">Manage Watching Series</h3>
-              <p className="text-xs text-slate-500 font-medium">Edit status, release dates, or delete tracked shows</p>
+              <h3 className={`text-base font-black tracking-tight uppercase ${theme === 'dark' ? 'text-slate-100' : 'text-slate-900'}`}>Manage Watching Series</h3>
+              <p className={`text-xs font-medium ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>Edit status, release dates, or delete tracked shows</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white transition"
+            className={`p-2 rounded-xl transition ${
+              theme === 'dark' ? 'bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900'
+            }`}
             title="Close"
           >
             <X className="w-4 h-4" />
@@ -111,9 +123,9 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
         <div className="p-6 overflow-y-auto flex-1 space-y-4">
           {activeShows.length === 0 ? (
             <div className="p-12 text-center space-y-3">
-              <Tv className="w-10 h-10 text-slate-600 mx-auto animate-pulse" />
-              <h4 className="text-sm font-semibold text-slate-300">No Watching Countdown Shows</h4>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
+              <Tv className={`w-10 h-10 mx-auto animate-pulse ${theme === 'dark' ? 'text-slate-600' : 'text-slate-400'}`} />
+              <h4 className={`text-sm font-semibold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-800'}`}>No Watching Countdown Shows</h4>
+              <p className={`text-xs max-w-md mx-auto ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                 All your tracked shows are concluded or don't have scheduled upcoming episodes. Add more shows, or enrich existing ones with future seasons!
               </p>
             </div>
@@ -126,14 +138,18 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
                 return (
                   <div
                     key={`${show.id}-${idx}`}
-                    className="p-4 rounded-2xl bg-[#1E2128] border border-white/5 space-y-4 transition hover:border-white/10"
+                    className={`p-4 rounded-2xl border space-y-4 transition ${
+                      theme === 'dark' 
+                        ? 'bg-[#1E2128] border-white/5 hover:border-white/10' 
+                        : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                    }`}
                   >
                     {/* Top Row: Info & Quick Action buttons */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                       {/* Left Block: Image & Show Details */}
                       <div className="flex items-center gap-3">
                         <img
-                          src={show.bannerImage}
+                          src={getShowBannerImage(show)}
                           alt={show.title}
                           className="w-16 h-10 rounded-lg object-cover bg-slate-800 border border-white/5 shrink-0"
                           style={{ objectPosition: show.bannerPosition || 'center 25%' }}

@@ -64,10 +64,53 @@
         },
         "avatar": {
           "type": "string"
+        },
+        "lastLoginAt": {
+          "type": "string"
+        },
+        "lastActiveAt": {
+          "type": "string"
+        },
+        "totalTimeSpentSeconds": {
+          "type": "number"
+        },
+        "sessionCount": {
+          "type": "number"
         }
       },
       "required": [
         "id"
+      ]
+    },
+    "user_activity": {
+      "title": "User Activity",
+      "description": "User login history, last active timestamp, and cumulative time spent tracking",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "lastLoginAt": {
+          "type": "string"
+        },
+        "lastActiveAt": {
+          "type": "string"
+        },
+        "totalTimeSpentSeconds": {
+          "type": "number"
+        },
+        "sessionCount": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "userId"
       ]
     }
   }

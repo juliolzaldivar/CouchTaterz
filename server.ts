@@ -11,22 +11,38 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
 import { getFirestore as getClientFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, setLogLevel, terminate } from "firebase/firestore";
-import { TvShow, Board, StreamingService } from "./src/types"; // note: using relative import
+import { TvShow, Board, StreamingService, User } from "./src/types"; // note: using relative import
+import { saveBoardToCloudSql, getAllBoardsFromCloudSql, saveFriendsToCloudSql, getAllFriendsFromCloudSql, saveMerchandiseItemToCloudSql, getMerchandiseForShowFromCloudSql, getAllMerchandiseFromCloudSql, deleteBoardFromCloudSql, deleteFriendsFromCloudSql, MerchandiseItem } from "./src/db/cloudsqlService.ts";
 
 dotenv.config();
 
 // Suppress Firestore verbose internal logs
 try {
-  setLogLevel("error");
+  setLogLevel("silent");
 } catch (e) {}
 
 // Sanitize objects to prevent Firestore setDoc errors on undefined values
 function sanitizeForFirestore(data: any): any {
   if (data === null || data === undefined) return null;
-  return JSON.parse(JSON.stringify(data));
+  const cleaned = JSON.parse(JSON.stringify(data));
+
+  // If this is a board object containing shows, strip the heavy episodes title dictionary
+  // (kept safely in local data.json & cache.json) so document size stays well under Firestore's 1MB limit
+  if (cleaned && typeof cleaned === 'object' && Array.isArray(cleaned.shows)) {
+    cleaned.shows = cleaned.shows.map((show: any) => {
+      if (show && typeof show === 'object') {
+        const copy = { ...show };
+        delete copy.episodes;
+        return copy;
+      }
+      return show;
+    });
+  }
+
+  return cleaned;
 }
 
-// Helper to identify Firestore quota exhaustion
+// Helper to identify Firestore quota exhaustion or transient rate limits
 function isQuotaError(err: any): boolean {
   if (!err) return false;
   const msg = (typeof err === "string" ? err : err?.message || err?.code || "").toString().toUpperCase();
@@ -40,19 +56,20 @@ function isQuotaError(err: any): boolean {
   );
 }
 
-// Global handler when Firestore quota limit is reached
+// Global handler when Firestore quota limit or transient burst is encountered
 let dbFirestore: any = null;
 let isFirestoreQuotaExhausted = false;
+let firestoreCooldownUntil = 0;
 
 function handleFirestoreQuotaExhausted(err?: any) {
+  firestoreCooldownUntil = Date.now() + 30000; // 30 second transient backoff
   if (!isFirestoreQuotaExhausted) {
     isFirestoreQuotaExhausted = true;
-    console.warn("[Firestore] Daily free quota limit reached. Operating seamlessly in local JSON storage mode.");
-    if (dbFirestore) {
-      const instance = dbFirestore;
-      dbFirestore = null;
-      terminate(instance).catch(() => {});
-    }
+    console.warn("[Firestore] Quota backoff activated for 30s. Writes will buffer locally and retry automatically.");
+    setTimeout(() => {
+      isFirestoreQuotaExhausted = false;
+      console.log("[Firestore] Quota cooldown complete. Resuming Cloud Firestore sync.");
+    }, 30000);
   }
 }
 
@@ -125,6 +142,52 @@ function getAI(): GoogleGenAI {
     });
   }
   return aiClient;
+}
+
+// Helper to normalize and enrich show genres (e.g. splitting compound genres and detecting horror/supernatural shows)
+function normalizeShowGenres(title: string, rawGenres: string[] = [], overview: string = ''): string[] {
+  const genreSet = new Set<string>();
+  const lowerTitle = (title || '').toLowerCase();
+  const lowerOverview = (overview || '').toLowerCase();
+
+  for (const raw of rawGenres) {
+    if (!raw) continue;
+    genreSet.add(raw);
+    if (raw.includes('&')) {
+      raw.split('&').forEach(part => {
+        const trimmed = part.trim();
+        if (trimmed) genreSet.add(trimmed);
+      });
+    }
+    if (raw.toLowerCase().includes('sci-fi')) {
+      genreSet.add('Sci-Fi');
+    }
+  }
+
+  const horrorKeywords = [
+    'supernatural', 'horror', 'ghost', 'demon', 'vampire', 'zombie', 'monster',
+    'haunted', 'witch', 'slasher', 'occult', 'frightening', 'terrifying', 'exorcist',
+    'paranormal', 'creature', 'nightmare', 'devil', 'evil'
+  ];
+
+  const horrorTitles = [
+    'supernatural', 'stranger things', 'the walking dead', 'hannibal', 'bates motel',
+    'penny dreadful', 'american horror story', 'yellowjackets', 'from', 'interview with the vampire',
+    'chucky', 'castlevania', 'cabinet of curiosities', 'what we do in the shadows', 'ghosts',
+    'the last of us', 'ash vs evil dead', 'the fall of the house of usher', 'evil', 'servant',
+    'buffy', 'angel', 'grimm', 'sleepy hollow', 'midnight mass', 'the haunting', 'creepshow'
+  ];
+
+  const isHorror = horrorTitles.some(ht => lowerTitle.includes(ht)) ||
+    horrorKeywords.some(kw => lowerTitle.includes(kw) || lowerOverview.includes(kw)) ||
+    rawGenres.some(g => g.toLowerCase().includes('horror') || g.toLowerCase().includes('supernatural'));
+
+  if (isHorror) {
+    genreSet.add('Horror');
+  }
+
+  const result = Array.from(genreSet);
+  return result.length > 0 ? result : ['Drama'];
 }
 
 // Seed data
@@ -302,19 +365,20 @@ const POPULAR_SHOWS_METADATA: Record<string, {
   directors?: string[];
   actors?: string[];
   concluded?: boolean;
+  rottenTomatoesScore?: number;
 }> = {
-  "the last of us": { totalSeasons: 2, episodesPerSeason: [9, 7], streamingService: "HBO" },
-  "the bear": { totalSeasons: 4, episodesPerSeason: [8, 10, 10, 10], streamingService: "Hulu" },
-  "severance": { totalSeasons: 2, episodesPerSeason: [9, 10], streamingService: "Apple TV" },
-  "stranger things": { totalSeasons: 5, episodesPerSeason: [8, 9, 8, 9, 8], streamingService: "Netflix" },
-  "the mandalorian": { totalSeasons: 3, episodesPerSeason: [8, 8, 8], streamingService: "Disney+" },
-  "house of the dragon": { totalSeasons: 2, episodesPerSeason: [10, 8], streamingService: "HBO" },
-  "shōgun": { totalSeasons: 1, episodesPerSeason: [10], streamingService: "Hulu" },
-  "shogun": { totalSeasons: 1, episodesPerSeason: [10], streamingService: "Hulu" },
-  "peaky blinders": { totalSeasons: 6, episodesPerSeason: [6, 6, 6, 6, 6, 6], streamingService: "Netflix" },
-  "shameless": { totalSeasons: 11, episodesPerSeason: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12], streamingService: "Netflix" },
-  "silo": { totalSeasons: 3, episodesPerSeason: [10, 10, 10], streamingService: "Apple TV" },
-  "supernatural": { totalSeasons: 15, episodesPerSeason: [22, 22, 16, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 20, 20], streamingService: "Prime Video" },
+  "the last of us": { totalSeasons: 2, episodesPerSeason: [9, 7], streamingService: "HBO", genres: ["Horror", "Drama", "Sci-Fi", "Action"], rottenTomatoesScore: 96 },
+  "the bear": { totalSeasons: 4, episodesPerSeason: [8, 10, 10, 10], streamingService: "Hulu", genres: ["Drama", "Comedy"], rottenTomatoesScore: 99 },
+  "severance": { totalSeasons: 2, episodesPerSeason: [9, 10], streamingService: "Apple TV", genres: ["Sci-Fi", "Thriller", "Mystery", "Drama"], rottenTomatoesScore: 97 },
+  "stranger things": { totalSeasons: 5, episodesPerSeason: [8, 9, 8, 9, 8], streamingService: "Netflix", genres: ["Horror", "Sci-Fi", "Drama", "Mystery"], rottenTomatoesScore: 91 },
+  "the mandalorian": { totalSeasons: 3, episodesPerSeason: [8, 8, 8], streamingService: "Disney+", genres: ["Sci-Fi", "Action", "Adventure"], rottenTomatoesScore: 90 },
+  "house of the dragon": { totalSeasons: 2, episodesPerSeason: [10, 8], streamingService: "HBO", genres: ["Fantasy", "Drama", "Action"], rottenTomatoesScore: 90 },
+  "shōgun": { totalSeasons: 1, episodesPerSeason: [10], streamingService: "Hulu", genres: ["Drama", "History", "Action"], rottenTomatoesScore: 99 },
+  "shogun": { totalSeasons: 1, episodesPerSeason: [10], streamingService: "Hulu", genres: ["Drama", "History", "Action"], rottenTomatoesScore: 99 },
+  "peaky blinders": { totalSeasons: 6, episodesPerSeason: [6, 6, 6, 6, 6, 6], streamingService: "Netflix", genres: ["Drama", "Crime"], rottenTomatoesScore: 93 },
+  "shameless": { totalSeasons: 11, episodesPerSeason: [12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12], streamingService: "Netflix", genres: ["Comedy", "Drama"], rottenTomatoesScore: 82 },
+  "silo": { totalSeasons: 3, episodesPerSeason: [10, 10, 10], streamingService: "Apple TV", genres: ["Sci-Fi", "Dystopian", "Drama", "Mystery"], rottenTomatoesScore: 88 },
+  "supernatural": { totalSeasons: 15, episodesPerSeason: [22, 22, 16, 22, 22, 22, 23, 23, 23, 23, 23, 23, 23, 20, 20], streamingService: "Prime Video", genres: ["Horror", "Drama", "Mystery", "Sci-Fi", "Fantasy"] },
   "x-men '97": { totalSeasons: 2, episodesPerSeason: [10, 10], streamingService: "Disney+" },
   "x-men 97": { totalSeasons: 2, episodesPerSeason: [10, 10], streamingService: "Disney+" },
   "foundation": { totalSeasons: 3, episodesPerSeason: [10, 10, 10], streamingService: "Apple TV" },
@@ -327,6 +391,15 @@ const POPULAR_SHOWS_METADATA: Record<string, {
     directors: ["Bryan Fuller", "John Masius"],
     actors: ["Ellen Muth", "Mandy Patinkin", "Laura Harris", "Callum Blue", "Jasmine Guy", "Cynthia Stevenson"],
     concluded: true
+  },
+  "futurama": {
+    totalSeasons: 14,
+    episodesPerSeason: [9, 20, 15, 12, 16, 26, 26, 10, 10, 10, 10, 10, 10, 10],
+    streamingService: "Hulu",
+    genres: ["Sci-Fi", "Animation", "Comedy"],
+    overview: "Accidentally frozen, pizza deliverer Philip J. Fry wakes up 1,000 years in the future and joins the crew of Planet Express.",
+    concluded: false,
+    rottenTomatoesScore: 95
   },
   "family guy": { streamingService: "Hulu" },
   "the simpsons": { streamingService: "Hulu" },
@@ -386,10 +459,14 @@ const POPULAR_SHOWS_METADATA: Record<string, {
   "justice league unlimited": { streamingService: "HBO" },
   "batman beyond": { streamingService: "HBO" },
   "the batman": { streamingService: "HBO" },
+  "batman: caped crusader": { streamingService: "Prime Video" },
+  "batman caped crusader": { streamingService: "Prime Video" },
   "batman": { streamingService: "HBO" },
   "fleabag": { streamingService: "Prime Video" },
   "spider-man noir": { streamingService: "Prime Video" },
-  "spiderman noir": { streamingService: "Prime Video" }
+  "spiderman noir": { streamingService: "Prime Video" },
+  "my adventures with superman": { streamingService: "HBO", totalSeasons: 3, episodesPerSeason: [10, 10, 10] },
+  "lioness": { totalSeasons: 3, episodesPerSeason: [8, 8, 8], streamingService: "Paramount+", concluded: false }
 };
 
 // Helper for atomic file writing to avoid partial writes or corrupted files on crash
@@ -434,10 +511,13 @@ function safeReadJsonFileSync<T>(filePath: string): T | null {
     // Attempt 2: Smart repair truncated JSON string
     try {
       let raw = fs.readFileSync(filePath, "utf8");
+      // Find the last viable valid JSON truncation point in max 200 lines from bottom
       let lines = raw.split("\n");
-      for (let i = lines.length; i > 0; i--) {
+      const startIdx = Math.max(0, lines.length - 300);
+      for (let i = lines.length; i >= startIdx; i--) {
         let candidate = lines.slice(0, i).join("\n").trimEnd();
         if (candidate.endsWith(",")) candidate = candidate.slice(0, -1);
+        
         let openBraces = 0, openBrackets = 0, inString = false;
         for (let j = 0; j < candidate.length; j++) {
           const char = candidate[j];
@@ -470,7 +550,7 @@ function safeReadJsonFileSync<T>(filePath: string): T | null {
 // Helper to read database
 function readDatabase(): Record<string, Board> {
   try {
-    const ALL_SERVICES: StreamingService[] = ['Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+'];
+    const ALL_SERVICES: StreamingService[] = ['Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+', 'Starz'];
     if (!fs.existsSync(DB_FILE)) {
       const initialDb: Record<string, Board> = {
         default: {
@@ -517,7 +597,7 @@ function readDatabase(): Record<string, Board> {
 
         // Ensure basic structure of latestWatched is valid
         if (!show.latestWatched) {
-          show.latestWatched = { season: 1, episode: 1, title: "Episode 1" };
+          show.latestWatched = { season: 1, episode: 0, title: "Not Started" };
           showModified = true;
         }
 
@@ -556,11 +636,17 @@ function readDatabase(): Record<string, Board> {
               show.concluded = meta.concluded;
               showModified = true;
             }
+            if (meta.rottenTomatoesScore !== undefined && (show.rottenTomatoesScore === undefined || show.rottenTomatoesScore === null)) {
+              show.rottenTomatoesScore = meta.rottenTomatoesScore;
+              showModified = true;
+            }
           }
 
           // Fuzzy match fallbacks for database healing
           let correctedService: StreamingService | null = null;
-          if (cleanTitle.includes("batman")) {
+          if (cleanTitle.includes("caped crusader") || cleanTitle.includes("batman caped crusader")) {
+            correctedService = "Prime Video";
+          } else if (cleanTitle.includes("batman") || cleanTitle.includes("superman")) {
             correctedService = "HBO";
           } else if (cleanTitle.includes("teen titans")) {
             correctedService = "HBO";
@@ -570,6 +656,8 @@ function readDatabase(): Record<string, Board> {
             correctedService = "HBO";
           } else if (cleanTitle.includes("spider-man") || cleanTitle.includes("spiderman")) {
             correctedService = "Prime Video";
+          } else if (cleanTitle.includes("lioness")) {
+            correctedService = "Paramount+";
           }
 
           if (correctedService && show.streamingService !== correctedService) {
@@ -650,11 +738,106 @@ function readDatabase(): Record<string, Board> {
             }
           }
 
-          // 5. Clean up expired / past nextEpisode dates if airDate < today
-          const todayStr = new Date().toISOString().split('T')[0];
-          if (show.nextEpisode && show.nextEpisode.airDate && show.nextEpisode.airDate < todayStr) {
-            show.nextEpisode = null;
-            showModified = true;
+          // 5. Clean up nextEpisode only if user has already watched/passed that episode
+          if (show.nextEpisode && show.latestWatched) {
+            const watched = show.latestWatched;
+            const next = show.nextEpisode;
+            if (watched.season > next.season || (watched.season === next.season && watched.episode >= next.episode)) {
+              show.nextEpisode = null;
+              showModified = true;
+            }
+          }
+
+          // Specific healing for Lioness season 3 premiere if unwatched
+          if (cleanTitle.includes("lioness") && !show.nextEpisode) {
+            if (!show.latestWatched || show.latestWatched.season < 3 || (show.latestWatched.season === 3 && show.latestWatched.episode < 1)) {
+              show.nextEpisode = {
+                season: 3,
+                episode: 1,
+                title: "The Spider and the Fly",
+                airDate: "2026-08-02",
+                overview: "Joe and the Lioness team embark on a dangerous new operation as Season 3 begins."
+              };
+              showModified = true;
+            }
+          }
+
+          // Specific healing for Futurama season 14 premiere if unwatched
+          if (cleanTitle.includes("futurama") && (!show.nextEpisode || show.nextEpisode.season < 14)) {
+            if (!show.latestWatched || show.latestWatched.season < 14 || (show.latestWatched.season === 14 && show.latestWatched.episode < 1)) {
+              show.nextEpisode = {
+                season: 14,
+                episode: 1,
+                title: "Beef",
+                airDate: "2026-08-03",
+                overview: "The Planet Express crew faces a new mystery as Futurama Season 14 premieres on Hulu."
+              };
+              show.concluded = false;
+              show.totalSeasons = 14;
+              showModified = true;
+            }
+          }
+
+          // 7. Ensure bannerImage matches Julio's (admin) collection or fallback
+          const defaultBoardShows = (db["default"] && Array.isArray(db["default"].shows)) ? db["default"].shows : DEFAULT_SHOWS;
+          let canonicalShow = defaultBoardShows.find(ds => (ds.title || "").toLowerCase().trim() === cleanTitle);
+          
+          const normTitle = (cleanTitle || "").normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\b(the|a|an)\b/gi, '').replace(/[^a-z0-9]/g, '').trim();
+          if (!canonicalShow && normTitle) {
+            canonicalShow = defaultBoardShows.find(ds => {
+              const dsNorm = (ds.title || "").normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\b(the|a|an)\b/gi, '').replace(/[^a-z0-9]/g, '').trim();
+              return dsNorm === normTitle;
+            });
+          }
+
+          if (canonicalShow && canonicalShow.bannerImage) {
+            if (show.bannerImage !== canonicalShow.bannerImage) {
+              show.bannerImage = canonicalShow.bannerImage;
+              showModified = true;
+            }
+          } else {
+            const knownBanners: Record<string, string> = {
+              "hacks": "https://static.tvmaze.com/uploads/images/original_untouched/623/1557822.jpg",
+              "industry": "https://static.tvmaze.com/uploads/images/original_untouched/554/1387331.jpg",
+              "the bear": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxpFNAmFk_IZGbaryDs3GkM5lnyWEjGt6USNocYJPA&s=10",
+              "house of the dragon": "https://cdn.theplaylist.net/wp-content/uploads/2026/02/19111056/house-of-the-dragon.jpg",
+              "house of dragon": "https://cdn.theplaylist.net/wp-content/uploads/2026/02/19111056/house-of-the-dragon.jpg",
+              "severance": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNACrAMoLkgMH0e47maB2DZ7OeMG3ZWBtuheU7rgkUdg&s=10",
+              "silo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGow7p2r8x9pAV8hTP2OzWwWNDhQa96bWgImV_ucRIDw&s=10",
+              "stranger things": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4Qf7wolgUB7X37sMbkSd93bUJlubb_qNmozDnQtHp4Q&s=10",
+              "the mandalorian": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRW7GL3lPW3wlxBr5nmhQ5gup4wqG5aGiroNJ8UNLSJaQ&s=10"
+            };
+            const known = knownBanners[cleanTitle] || knownBanners[normTitle];
+            if (known && show.bannerImage !== known && (show.bannerImage === "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg" || !show.bannerImage)) {
+              show.bannerImage = known;
+              showModified = true;
+            } else if (!show.bannerImage || show.bannerImage.trim().length === 0) {
+              let foundBanner = "";
+              if (meta && (meta as any).bannerImage) {
+                foundBanner = (meta as any).bannerImage;
+              } else if (appCache && appCache.enrich && appCache.enrich[cleanTitle]) {
+                const cached = appCache.enrich[cleanTitle];
+                const cachedObj = Array.isArray(cached) ? cached[0] : cached;
+                if (cachedObj && cachedObj.bannerImage) {
+                  foundBanner = cachedObj.bannerImage;
+                }
+              }
+
+              if (!foundBanner) {
+                const genreBanners: Record<string, string> = {
+                  "sci-fi": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+                  "horror": "https://image.tmdb.org/t/p/w1280/acevLdSl5I2MK5RYAm7gwAndt1w.jpg",
+                  "comedy": "https://image.tmdb.org/t/p/w1280/gEQkOMmnJcoh9Hh1vk7fpVYnksR.jpg",
+                  "drama": "https://image.tmdb.org/t/p/w1280/rCTLaPwuApDx8vLGjYZ9pRl7zRB.jpg",
+                  "action": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+                  "thriller": "https://image.tmdb.org/t/p/w1280/bDfboQUb45Cv9MYyVBDZw8M8xSM.jpg"
+                };
+                const primaryGenre = (show.genres && show.genres[0]) ? show.genres[0].toLowerCase() : "drama";
+                foundBanner = genreBanners[primaryGenre] || "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg";
+              }
+              show.bannerImage = foundBanner;
+              showModified = true;
+            }
           }
 
           if (showModified) {
@@ -666,15 +849,19 @@ function readDatabase(): Record<string, Board> {
     
     // Ensure default board belongs to Julio
     if (db.default) {
-      if (!db.default.owner || db.default.owner.id !== "default" || db.default.owner.name !== "Julio") {
+      if (!db.default.owner) {
         db.default.owner = {
           id: "default",
           name: "Julio",
           email: "juliozaldivar@gmail.com",
-          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=SuperFan",
           createdAt: "2026-07-14T17:27:16.152Z"
         };
         modified = true;
+      } else {
+        if (!db.default.owner.id) db.default.owner.id = "default";
+        if (!db.default.owner.name) db.default.owner.name = "Julio";
+        if (!db.default.owner.email) db.default.owner.email = "juliozaldivar@gmail.com";
       }
       if (!db.default.preferences) {
         db.default.preferences = { genres: [], actors: [], directors: [], services: ALL_SERVICES };
@@ -699,6 +886,102 @@ function readDatabase(): Record<string, Board> {
         modified = true;
       }
     }
+
+    // Clean legacy user-ejc alias and ensure EJC's board owner metadata
+    if (db["user-ejc"]) {
+      delete db["user-ejc"];
+      modified = true;
+    }
+    // Clean deleted accounts like LJC (user-ljc-6150 and user-ljc)
+    if (db["user-ljc-6150"] || db["user-ljc"]) {
+      delete db["user-ljc-6150"];
+      delete db["user-ljc"];
+      modified = true;
+      if (dbFirestore) {
+        deleteDoc(doc(dbFirestore, "boards", "user-ljc-6150")).catch(() => {});
+        deleteDoc(doc(dbFirestore, "boards", "user-ljc")).catch(() => {});
+      }
+    }
+    // Ensure EJC's board owner metadata
+    if (db["user-ejc-2841"]) {
+      db["user-ejc-2841"].id = "user-ejc-2841";
+      db["user-ejc-2841"].name = "EJC's Collection";
+      db["user-ejc-2841"].owner = {
+        id: "user-ejc-2841",
+        name: "EJC",
+        email: "ejc@taterz.com",
+        avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=EJC",
+        createdAt: "2026-07-20T11:00:00.000Z"
+      };
+      modified = true;
+    }
+
+    // Ensure Hyunjin's board owner metadata and default state
+    if (!db["user-hyunjin-6821"]) {
+      db["user-hyunjin-6821"] = {
+        id: "user-hyunjin-6821",
+        name: "Hyunjin's Anime Vault",
+        shows: [],
+        preferences: { genres: ["Animation", "Anime", "Action & Adventure", "Sci-Fi & Fantasy", "Drama"], actors: [], directors: [], services: ALL_SERVICES },
+        owner: {
+          id: "user-hyunjin-6821",
+          name: "Hyunjin",
+          email: "hyunjin@taterz.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hyunjin",
+          createdAt: "2026-08-15T12:00:00.000Z"
+        },
+        notifications: [],
+        updatedAt: new Date().toISOString()
+      };
+      modified = true;
+    } else if (!db["user-hyunjin-6821"].owner || db["user-hyunjin-6821"].owner.name !== "Hyunjin") {
+      db["user-hyunjin-6821"].owner = {
+        id: "user-hyunjin-6821",
+        name: "Hyunjin",
+        email: "hyunjin@taterz.com",
+        avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hyunjin",
+        createdAt: "2026-08-15T12:00:00.000Z"
+      };
+      modified = true;
+    }
+
+    // Ensure Doug's board owner metadata and default state
+    if (!db["user-doug-5821"]) {
+      db["user-doug-5821"] = {
+        id: "user-doug-5821",
+        name: "Doug's Collection",
+        shows: [],
+        preferences: { genres: ["Drama", "Sci-Fi", "Comedy", "Thriller"], actors: [], directors: [], services: ALL_SERVICES },
+        owner: {
+          id: "user-doug-5821",
+          name: "Doug",
+          email: "doug@coughtater.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Doug",
+          createdAt: "2026-08-18T20:00:00.000Z"
+        },
+        notifications: [],
+        updatedAt: new Date().toISOString()
+      };
+      modified = true;
+    } else if (!db["user-doug-5821"].owner || db["user-doug-5821"].owner.name !== "Doug") {
+      db["user-doug-5821"].owner = {
+        id: "user-doug-5821",
+        name: "Doug",
+        email: "doug@coughtater.com",
+        avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Doug",
+        createdAt: "2026-08-18T20:00:00.000Z"
+      };
+      modified = true;
+    }
+
+    // Purge any deleted users from DB
+    const deletedUserIds = readDeletedUsers();
+    deletedUserIds.forEach(delId => {
+      if (db[delId]) {
+        delete db[delId];
+        modified = true;
+      }
+    });
     
     if (modified) {
       safeWriteFileSync(DB_FILE, db);
@@ -711,59 +994,121 @@ function readDatabase(): Record<string, Board> {
   }
 }
 
-// Helper to write database safely
-let dbWriteTimer: NodeJS.Timeout | null = null;
-const firestoreWriteTimers: Record<string, NodeJS.Timeout> = {};
+// Persistent async queue for Cloud Firestore retries
+const pendingFirestoreQueue = new Set<string>();
 
-function writeDatabase(data: Record<string, Board>, targetBoardId?: string) {
-  if (dbWriteTimer) clearTimeout(dbWriteTimer);
-  dbWriteTimer = setTimeout(() => {
-    safeWriteFileSync(DB_FILE, data);
-  }, 100);
+async function flushPendingFirestoreQueue(): Promise<void> {
+  if (!dbFirestore || isFirestoreQuotaExhausted || pendingFirestoreQueue.size === 0) return;
+  const db = readDatabase();
+  const queueItems = Array.from(pendingFirestoreQueue);
+  pendingFirestoreQueue.clear();
 
-  if (dbFirestore && !isFirestoreQuotaExhausted) {
-    if (targetBoardId) {
-      if (firestoreWriteTimers[targetBoardId]) {
-        clearTimeout(firestoreWriteTimers[targetBoardId]);
-      }
-      firestoreWriteTimers[targetBoardId] = setTimeout(() => {
-        if (!dbFirestore || isFirestoreQuotaExhausted) return;
-        const board = data[targetBoardId];
-        if (board) {
-          const cleanBoard = sanitizeForFirestore(board);
-          setDoc(doc(dbFirestore, "boards", targetBoardId), cleanBoard, { merge: false }).catch((err: any) => {
-            if (isQuotaError(err)) {
-              handleFirestoreQuotaExhausted(err);
-            } else {
-              console.error(`[Firestore] Error writing board ${targetBoardId}:`, err?.message || err);
+  for (const item of queueItems) {
+    try {
+      if (item === "all") {
+        for (const [bId, board] of Object.entries(db)) {
+          if (board) {
+            await setDoc(doc(dbFirestore, "boards", bId), sanitizeForFirestore(board), { merge: true });
+            if (board.owner && board.owner.id) {
+              await setDoc(doc(dbFirestore, "users", board.owner.id), sanitizeForFirestore(board.owner), { merge: true });
             }
-          });
-        } else {
-          deleteDoc(doc(dbFirestore, "boards", targetBoardId)).catch((err: any) => {
-            if (isQuotaError(err)) handleFirestoreQuotaExhausted(err);
-          });
-        }
-      }, 1000);
-    } else {
-      for (const [boardId, board] of Object.entries(data)) {
-        if (board) {
-          if (firestoreWriteTimers[boardId]) {
-            clearTimeout(firestoreWriteTimers[boardId]);
           }
-          const currentBoardId = boardId;
-          firestoreWriteTimers[boardId] = setTimeout(() => {
-            if (!dbFirestore || isFirestoreQuotaExhausted) return;
+        }
+      } else {
+        const board = db[item];
+        if (board) {
+          await setDoc(doc(dbFirestore, "boards", item), sanitizeForFirestore(board), { merge: true });
+          if (board.owner && board.owner.id) {
+            await setDoc(doc(dbFirestore, "users", board.owner.id), sanitizeForFirestore(board.owner), { merge: true });
+          }
+        } else {
+          await deleteDoc(doc(dbFirestore, "boards", item));
+          await deleteDoc(doc(dbFirestore, "users", item));
+        }
+      }
+    } catch (e: any) {
+      if (isQuotaError(e)) {
+        handleFirestoreQuotaExhausted(e);
+        pendingFirestoreQueue.add(item);
+        break;
+      } else {
+        console.warn(`[Firestore Queue] Retry failed for ${item}:`, e?.message || e);
+      }
+    }
+  }
+}
+
+// Flush pending writes every 15 seconds
+setInterval(() => {
+  flushPendingFirestoreQueue().catch(() => {});
+}, 15000);
+
+// Helper to write database safely & immediately to disk and Cloud Firestore
+async function writeDatabaseAsync(data: Record<string, Board>, targetBoardId?: string): Promise<void> {
+  // 1. Immediately persist to local disk
+  safeWriteFileSync(DB_FILE, data);
+
+  // 2. Primary: Persist to Cloud Firestore immediately
+  if (dbFirestore) {
+    if (isFirestoreQuotaExhausted) {
+      pendingFirestoreQueue.add(targetBoardId || "all");
+    } else {
+      try {
+        if (targetBoardId) {
+          const board = data[targetBoardId];
+          if (board) {
             const cleanBoard = sanitizeForFirestore(board);
-            setDoc(doc(dbFirestore, "boards", currentBoardId), cleanBoard, { merge: false }).catch((err: any) => {
-              if (isQuotaError(err)) {
-                handleFirestoreQuotaExhausted(err);
+            await setDoc(doc(dbFirestore, "boards", targetBoardId), cleanBoard, { merge: true });
+            if (board.owner && board.owner.id) {
+              await setDoc(doc(dbFirestore, "users", board.owner.id), sanitizeForFirestore(board.owner), { merge: true });
+            }
+          } else {
+            await deleteDoc(doc(dbFirestore, "boards", targetBoardId));
+            await deleteDoc(doc(dbFirestore, "users", targetBoardId));
+          }
+        } else {
+          for (const [boardId, board] of Object.entries(data)) {
+            if (board) {
+              const cleanBoard = sanitizeForFirestore(board);
+              await setDoc(doc(dbFirestore, "boards", boardId), cleanBoard, { merge: true });
+              if (board.owner && board.owner.id) {
+                await setDoc(doc(dbFirestore, "users", board.owner.id), sanitizeForFirestore(board.owner), { merge: true });
               }
-            });
-          }, 1000);
+            }
+          }
+        }
+      } catch (err: any) {
+        pendingFirestoreQueue.add(targetBoardId || "all");
+        if (isQuotaError(err)) {
+          handleFirestoreQuotaExhausted(err);
+        } else {
+          console.error(`[Firestore] Error writing board ${targetBoardId || "all"}:`, err?.message || err);
         }
       }
     }
   }
+
+  // 3. Optional secondary: Persist to Cloud SQL if configured & active
+  if (process.env.SQL_HOST) {
+    try {
+      if (targetBoardId && data[targetBoardId]) {
+        await saveBoardToCloudSql(targetBoardId, data[targetBoardId]);
+      } else {
+        for (const [bId, bVal] of Object.entries(data)) {
+          if (bVal) await saveBoardToCloudSql(bId, bVal);
+        }
+      }
+    } catch (e) {
+      // Non-blocking background log
+    }
+  }
+}
+
+function writeDatabase(data: Record<string, Board>, targetBoardId?: string): void {
+  safeWriteFileSync(DB_FILE, data);
+  writeDatabaseAsync(data, targetBoardId).catch((err) => {
+    console.error(`[writeDatabase] Background sync notice for ${targetBoardId || "all"}:`, err?.message || err);
+  });
 }
 
 // Persistent File-Based Caching to prevent rate limit/quota issues with Gemini
@@ -818,6 +1163,35 @@ function saveCache() {
 // Initialize cache
 loadCache();
 
+// Dedicated persistent database cache table for Taterz AI zero-spoiler recaps
+const RECAP_CACHE_FILE = path.join(process.cwd(), "data", "ai_recap_cache.json");
+let aiRecapCache: Record<string, string> = {};
+
+function loadRecapCache() {
+  try {
+    if (fs.existsSync(RECAP_CACHE_FILE)) {
+      const content = fs.readFileSync(RECAP_CACHE_FILE, "utf8");
+      aiRecapCache = JSON.parse(content) || {};
+    }
+  } catch (err) {
+    aiRecapCache = {};
+  }
+}
+
+function saveRecapCache() {
+  try {
+    const dir = path.dirname(RECAP_CACHE_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(RECAP_CACHE_FILE, JSON.stringify(aiRecapCache, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error saving ai_recap_cache:", err);
+  }
+}
+
+loadRecapCache();
+
 // Helper to ensure board has a valid owner object populated
 function ensureBoardOwner(board: any, boardId: string): any {
   if (!board) return board;
@@ -843,6 +1217,18 @@ function ensureBoardOwner(board: any, boardId: string): any {
     }
   }
   return board;
+}
+
+function normalizeBoardId(id: string): string {
+  if (!id) return "default";
+  const clean = id.trim().toLowerCase();
+  if (clean === "user-ejc" || clean === "ejc" || clean === "user-ejc-2841") return "user-ejc-2841";
+  if (clean === "user-kris-vance" || clean === "user-kris-5139") return "user-kris-5139";
+  if (clean === "user-rafael-gomez" || clean === "user-rafael-9639") return "user-rafael-9639";
+  if (clean === "user-hyunjin" || clean === "hyunjin" || clean === "user-hyunjin-6821") return "user-hyunjin-6821";
+  if (clean === "user-greg" || clean === "greg" || clean === "user-greg-3842") return "user-greg-3842";
+  if (clean === "user-julio" || clean === "julio" || clean === "default") return "default";
+  return id;
 }
 
 // REST API Endpoints
@@ -874,32 +1260,64 @@ app.get("/api/boards", async (req, res) => {
       return;
     }
 
-    const boardId = (req.query.id as string) || "default";
+    const boardId = normalizeBoardId((req.query.id as string) || "default");
 
-    // If board is not in local memory, attempt fetching directly from Cloud Firestore first
-    if (!db[boardId] && dbFirestore && !isFirestoreQuotaExhausted && boardId !== "guest-demo" && req.query.reset !== "true") {
+    // If Cloud Firestore is enabled, check if cloud doc exists and merge with local memory
+    if (dbFirestore && !isFirestoreQuotaExhausted && boardId !== "guest-demo" && req.query.reset !== "true") {
       try {
         const cloudDoc = await getDoc(doc(dbFirestore, "boards", boardId));
         if (cloudDoc.exists()) {
           const cloudBoard = cloudDoc.data() as Board;
-          if (cloudBoard && Array.isArray(cloudBoard.shows) && cloudBoard.shows.length > 0) {
-            db[boardId] = cloudBoard;
+          if (cloudBoard && Array.isArray(cloudBoard.shows)) {
+            if (!db[boardId]) {
+              db[boardId] = cloudBoard;
+            } else {
+              const { mergedBoard } = mergeBoards(cloudBoard, db[boardId]);
+              db[boardId] = mergedBoard;
+            }
             safeWriteFileSync(DB_FILE, db);
           }
         }
       } catch (fErr) {
-        console.warn(`[Firestore] Direct read fallback for board ${boardId}:`, fErr);
+        if (isQuotaError(fErr)) {
+          handleFirestoreQuotaExhausted(fErr);
+        } else {
+          console.warn(`[Firestore] Direct read fallback for board ${boardId}:`, fErr);
+        }
       }
     }
 
-    if (boardId === "guest-demo" || !db[boardId] || req.query.reset === "true") {
+    const deletedUserIds = readDeletedUsers();
+    if (deletedUserIds.has(boardId) && req.query.create !== "true") {
+      return res.status(404).json({ error: "Board not found (deleted)" });
+    }
+
+    if (boardId === "guest-demo" || !db[boardId] || !Array.isArray(db[boardId].shows) || req.query.reset === "true") {
       const matchedCommunityUser = COMMUNITY_USERS.find(u => u.id === boardId);
+      
+      // If board is not in memory and not a default/guest/community user, do not auto-create a dummy board on simple GET requests
+      if (!db[boardId] && boardId !== "guest-demo" && boardId !== "default" && !matchedCommunityUser && req.query.create !== "true" && req.query.reset !== "true") {
+        return res.status(404).json({ error: "Board not found" });
+      }
+
+      let initialShows = (db[boardId]?.shows && Array.isArray(db[boardId].shows) && req.query.reset !== "true")
+        ? db[boardId].shows
+        : DEFAULT_SHOWS;
+
+      if (boardId === "guest-demo" || (boardId !== "default" && boardId !== "user-julio" && !matchedCommunityUser)) {
+        initialShows = initialShows.map((s: any) => ({
+          ...s,
+          userNotes: "",
+          userScore: null
+        }));
+      }
+
       db[boardId] = {
         id: boardId,
         name: matchedCommunityUser ? `${matchedCommunityUser.name}'s Collection` : boardId === "default" ? "My Tracker" : boardId === "guest-demo" ? "Guest Demo Queue" : `Watch Buddy (${boardId})`,
-        shows: (boardId === "default" || boardId === "guest-demo" || req.query.reset === "true") ? DEFAULT_SHOWS : [],
+        shows: initialShows,
         preferences: db[boardId]?.preferences || { genres: [], actors: [], directors: [] },
-        owner: matchedCommunityUser || (boardId === "guest-demo" ? {
+        owner: matchedCommunityUser || db[boardId]?.owner || (boardId === "guest-demo" ? {
           id: "guest-demo",
           name: "Guest Explorer",
           email: "guest@couchtaterz.com",
@@ -972,7 +1390,16 @@ app.get("/api/boards", async (req, res) => {
                 const key = s.title.toLowerCase().trim();
                 if (updatedShowsMap.has(key)) {
                   const updated = updatedShowsMap.get(key);
-                  return { ...s, ...updated };
+                  return {
+                    ...s,
+                    totalSeasons: updated.totalSeasons ?? s.totalSeasons,
+                    episodesPerSeason: updated.episodesPerSeason ?? s.episodesPerSeason,
+                    episodes: updated.episodes ? { ...(s.episodes || {}), ...updated.episodes } : s.episodes,
+                    nextEpisode: updated.nextEpisode !== undefined ? updated.nextEpisode : s.nextEpisode,
+                    concluded: updated.concluded !== undefined ? updated.concluded : s.concluded,
+                    redundancyVerified: true,
+                    redundancyCheckedAt: new Date().toISOString()
+                  };
                 }
                 return s;
               });
@@ -1055,25 +1482,51 @@ app.get("/api/og-card", (req, res) => {
 });
 
 // 2. Save Board
-app.post("/api/boards", (req, res) => {
-  const { id, name, shows, preferences, owner } = req.body;
+app.post("/api/boards", async (req, res) => {
+  let { id, name, shows, preferences, owner } = req.body;
   if (!id) {
     res.status(400).json({ error: "Board ID is required" });
     return;
   }
+  id = normalizeBoardId(id);
   
+  await ensureDatabaseSynced();
   const db = readDatabase();
+  const existingBoard = db[id];
+  let finalShows = shows || [];
+
+  if (existingBoard && Array.isArray(existingBoard.shows) && existingBoard.shows.length > 0 && Array.isArray(shows)) {
+    const existingMap = new Map<string, any>();
+    existingBoard.shows.forEach((s: any) => {
+      if (!s) return;
+      if (s.id) existingMap.set(s.id, s);
+      if (s.title) existingMap.set(s.title.toLowerCase().trim(), s);
+    });
+
+    finalShows = shows.map((incomingShow: any) => {
+      if (!incomingShow) return incomingShow;
+      const existingShow = (incomingShow.id ? existingMap.get(incomingShow.id) : null) ||
+                           (incomingShow.title ? existingMap.get(incomingShow.title.toLowerCase().trim()) : null);
+      if (existingShow) {
+        return mergeSingleShow(incomingShow, existingShow);
+      }
+      return incomingShow;
+    });
+  }
+
   db[id] = {
     id,
     name: name || db[id]?.name || "Fandom List",
-    shows: shows || [],
+    shows: finalShows,
     preferences: preferences || db[id]?.preferences || { genres: [], actors: [], directors: [] },
     owner: owner || db[id]?.owner,
     notifications: db[id]?.notifications || [],
     updatedAt: new Date().toISOString(),
   };
+  ensureBoardOwner(db[id], id);
+  unrecordDeletedUser(id);
   
-  writeDatabase(db, id);
+  await writeDatabaseAsync(db, id);
   res.json(db[id]);
 });
 
@@ -1085,6 +1538,12 @@ app.post("/api/notify", (req, res) => {
     return;
   }
   
+  // Guard guest/demo mode
+  if (targetUserId === "guest-demo" || notification?.senderId === "guest-demo" || notification?.senderName?.includes("Guest")) {
+    res.json({ success: true, message: "Guest demo notification simulated (temporary)" });
+    return;
+  }
+
   const db = readDatabase();
   const targetBoard = db[targetUserId];
   if (!targetBoard) {
@@ -1126,8 +1585,8 @@ app.post("/api/notifications/dismiss", (req, res) => {
 });
 
 // 2.3. Delete Board
-app.delete("/api/boards", (req, res) => {
-  const boardId = (req.query.id as string) || "default";
+app.delete(["/api/boards", "/api/boards/:id"], (req, res) => {
+  const boardId = req.params.id || (req.query.id as string) || "default";
   const password = (req.query.password as string) || (req.body?.password as string);
   const db = readDatabase();
 
@@ -1154,10 +1613,134 @@ app.delete("/api/boards", (req, res) => {
       updatedAt: new Date().toISOString()
     };
   } else {
+    recordDeletedUser(boardId);
     delete db[boardId];
+    if (dbFirestore) {
+      deleteDoc(doc(dbFirestore, "boards", boardId)).catch(err => {
+        console.warn(`[Firestore] Could not delete board ${boardId}:`, err);
+      });
+    }
+    deleteBoardFromCloudSql(boardId).catch(err => {
+      console.warn(`[Cloud SQL] Could not delete board ${boardId}:`, err);
+    });
+    deleteFriendsFromCloudSql(boardId).catch(err => {
+      console.warn(`[Cloud SQL] Could not delete friends for ${boardId}:`, err);
+    });
+    // Also remove from friends database
+    try {
+      const friendsDb = readFriendsDb();
+      let friendsModified = false;
+      if (friendsDb[boardId]) {
+        delete friendsDb[boardId];
+        friendsModified = true;
+      }
+      Object.keys(friendsDb).forEach(fKey => {
+        const rec = friendsDb[fKey];
+        if (rec) {
+          if (Array.isArray(rec.friends) && rec.friends.includes(boardId)) {
+            rec.friends = rec.friends.filter(id => id !== boardId);
+            friendsModified = true;
+          }
+          if (Array.isArray(rec.pendingSent) && rec.pendingSent.includes(boardId)) {
+            rec.pendingSent = rec.pendingSent.filter(id => id !== boardId);
+            friendsModified = true;
+          }
+          if (Array.isArray(rec.pendingReceived)) {
+            const origLen = rec.pendingReceived.length;
+            rec.pendingReceived = rec.pendingReceived.filter(item => 
+              typeof item === 'string' ? item !== boardId : item.fromUserId !== boardId
+            );
+            if (rec.pendingReceived.length !== origLen) friendsModified = true;
+          }
+        }
+      });
+      if (friendsModified) {
+        writeFriendsDb(friendsDb, []);
+      }
+    } catch (fErr) {
+      console.error("Error purging board from friends database:", fErr);
+    }
   }
   writeDatabase(db, boardId);
-  res.json({ success: true });
+  res.json({ success: true, message: `User profile ${boardId} successfully deleted.` });
+});
+
+// 2.3.1 Batch Delete Users Admin Endpoint
+app.post("/api/admin/users/batch-delete", async (req, res) => {
+  const email = (req.query.email as string) || (req.body?.email as string) || '';
+  const isJulio = email.trim().toLowerCase() === 'juliozaldivar@gmail.com';
+  if (!isJulio) {
+    return res.status(403).json({ error: "Access denied. Admin authorization required." });
+  }
+
+  const userIds: string[] = req.body?.userIds || [];
+  if (!Array.isArray(userIds) || userIds.length === 0) {
+    return res.status(400).json({ error: "No userIds provided for batch deletion." });
+  }
+
+  const db = readDatabase();
+  const protectedIds = new Set(["default", "user-julio"]);
+  let deletedCount = 0;
+
+  for (const boardId of userIds) {
+    if (!boardId || protectedIds.has(boardId)) continue;
+
+    recordDeletedUser(boardId);
+    delete db[boardId];
+
+    if (dbFirestore) {
+      deleteDoc(doc(dbFirestore, "boards", boardId)).catch(err => {
+        console.warn(`[Firestore] Could not batch delete board ${boardId}:`, err);
+      });
+    }
+
+    deleteBoardFromCloudSql(boardId).catch(err => {
+      console.warn(`[Cloud SQL] Could not batch delete board ${boardId}:`, err);
+    });
+    deleteFriendsFromCloudSql(boardId).catch(err => {
+      console.warn(`[Cloud SQL] Could not batch delete friends for ${boardId}:`, err);
+    });
+
+    // Also remove from friends database
+    try {
+      const friendsDb = readFriendsDb();
+      let friendsModified = false;
+      if (friendsDb[boardId]) {
+        delete friendsDb[boardId];
+        friendsModified = true;
+      }
+      Object.keys(friendsDb).forEach(fKey => {
+        const rec = friendsDb[fKey];
+        if (rec) {
+          if (Array.isArray(rec.friends) && rec.friends.includes(boardId)) {
+            rec.friends = rec.friends.filter(id => id !== boardId);
+            friendsModified = true;
+          }
+          if (Array.isArray(rec.pendingSent) && rec.pendingSent.includes(boardId)) {
+            rec.pendingSent = rec.pendingSent.filter(id => id !== boardId);
+            friendsModified = true;
+          }
+          if (Array.isArray(rec.pendingReceived)) {
+            const origLen = rec.pendingReceived.length;
+            rec.pendingReceived = rec.pendingReceived.filter(item => 
+              typeof item === 'string' ? item !== boardId : item.fromUserId !== boardId
+            );
+            if (rec.pendingReceived.length !== origLen) friendsModified = true;
+          }
+        }
+      });
+      if (friendsModified) {
+        writeFriendsDb(friendsDb, []);
+      }
+    } catch (fErr) {
+      console.error("Error purging board from friends database in batch delete:", fErr);
+    }
+
+    deletedCount++;
+  }
+
+  writeDatabase(db, "batch-delete");
+  res.json({ success: true, count: deletedCount, message: `Successfully batch deleted ${deletedCount} user profiles.` });
 });
 
 // Core community Taterz users for login & connections
@@ -1203,11 +1786,94 @@ const COMMUNITY_USERS = [
     email: "lilyann@taterz.com",
     avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=BingeWatcher",
     createdAt: "2026-07-19T06:18:21.385Z"
+  },
+  {
+    id: "user-ejc-2841",
+    name: "EJC",
+    email: "ejc@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=EJC",
+    createdAt: "2026-07-20T11:00:00.000Z"
+  },
+  {
+    id: "user-greg-3842",
+    name: "Greg",
+    email: "greg@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Greg",
+    createdAt: "2026-08-14T09:30:00.000Z"
+  },
+  {
+    id: "user-hyunjin-6821",
+    name: "Hyunjin",
+    email: "hyunjin@taterz.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hyunjin",
+    createdAt: "2026-08-15T12:00:00.000Z"
+  },
+  {
+    id: "user-doug-5821",
+    name: "Doug",
+    email: "doug@coughtater.com",
+    avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Doug",
+    createdAt: "2026-08-18T20:00:00.000Z"
   }
 ];
 
 // Friends DB File & Helpers
 const FRIENDS_DB_FILE = path.join(process.cwd(), "data", "friends.json");
+const DELETED_USERS_FILE = path.join(process.cwd(), "data", "deleted_users.json");
+
+function readDeletedUsers(): Set<string> {
+  try {
+    if (fs.existsSync(DELETED_USERS_FILE)) {
+      const raw = fs.readFileSync(DELETED_USERS_FILE, "utf-8");
+      const list = JSON.parse(raw);
+      if (Array.isArray(list)) return new Set(list);
+    }
+  } catch (e) {
+    console.error("Error reading deleted_users.json:", e);
+  }
+  return new Set();
+}
+
+function recordDeletedUser(userId: string): void {
+  if (!userId) return;
+  const deletedSet = readDeletedUsers();
+  deletedSet.add(userId);
+  try {
+    const dir = path.dirname(DELETED_USERS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(DELETED_USERS_FILE, JSON.stringify(Array.from(deletedSet), null, 2), "utf-8");
+  } catch (e) {
+    console.error("Error saving deleted_users.json:", e);
+  }
+  if (dbFirestore && !isFirestoreQuotaExhausted) {
+    setDoc(doc(dbFirestore, "system", "deleted_users"), { list: Array.from(deletedSet) }, { merge: true }).catch((err) => {
+      console.warn("[Firestore] Error updating deleted_users doc:", err?.message || err);
+    });
+  }
+}
+
+function unrecordDeletedUser(userId: string): void {
+  if (!userId) return;
+  const deletedSet = readDeletedUsers();
+  if (!deletedSet.has(userId)) return;
+  deletedSet.delete(userId);
+  try {
+    const dir = path.dirname(DELETED_USERS_FILE);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(DELETED_USERS_FILE, JSON.stringify(Array.from(deletedSet), null, 2), "utf-8");
+  } catch (e) {
+    console.error("Error updating deleted_users.json:", e);
+  }
+  if (dbFirestore && !isFirestoreQuotaExhausted) {
+    setDoc(doc(dbFirestore, "system", "deleted_users"), { list: Array.from(deletedSet) }, { merge: true }).catch((err) => {
+      console.warn("[Firestore] Error updating deleted_users doc on unrecord:", err?.message || err);
+    });
+  }
+}
 
 interface FriendRequestDetail {
   fromUserId: string;
@@ -1234,75 +1900,171 @@ function readFriendsDb(): Record<string, UserFriendsRecord> {
     return {};
   }
 }
-let friendsWriteTimer: NodeJS.Timeout | null = null;
-function writeFriendsDb(data: Record<string, UserFriendsRecord>, targetUserIds?: string | string[]): void {
+
+async function writeFriendsDbAsync(data: Record<string, UserFriendsRecord>, targetUserIds?: string | string[]): Promise<void> {
   try {
     const dir = path.dirname(FRIENDS_DB_FILE);
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    if (friendsWriteTimer) clearTimeout(friendsWriteTimer);
-    friendsWriteTimer = setTimeout(() => {
-      fs.promises.writeFile(FRIENDS_DB_FILE, JSON.stringify(data, null, 2), "utf-8").catch(() => {});
-    }, 100);
+    fs.writeFileSync(FRIENDS_DB_FILE, JSON.stringify(data, null, 2), "utf-8");
 
+    // Primary: Always persist friends to Cloud Firestore
     if (dbFirestore && !isFirestoreQuotaExhausted) {
       const targets = targetUserIds ? (Array.isArray(targetUserIds) ? targetUserIds : [targetUserIds]) : Object.keys(data);
       for (const userId of targets) {
         const record = data[userId];
         if (record) {
-          setDoc(doc(dbFirestore, "friends", userId), sanitizeForFirestore(record), { merge: true }).catch((err: any) => {
-            if (isQuotaError(err)) {
-              handleFirestoreQuotaExhausted(err);
-            } else {
-              console.error(`[Firestore] Error writing friend record ${userId}:`, err?.message || err);
-            }
-          });
+          await setDoc(doc(dbFirestore, "friends", userId), sanitizeForFirestore(record), { merge: true });
         }
       }
     }
-  } catch (e) {
-    console.error("Error writing friends db:", e);
+
+    // Optional: Secondary persist to Cloud SQL if configured & operational
+    if (process.env.SQL_HOST) {
+      try {
+        const targets = targetUserIds ? (Array.isArray(targetUserIds) ? targetUserIds : [targetUserIds]) : Object.keys(data);
+        for (const userId of targets) {
+          if (data[userId]) {
+            await saveFriendsToCloudSql(userId, data[userId]);
+          }
+        }
+      } catch (e) {}
+    }
+  } catch (e: any) {
+    if (isQuotaError(e)) {
+      handleFirestoreQuotaExhausted(e);
+    } else {
+      console.error("Error writing friends db:", e?.message || e);
+    }
   }
 }
 
+function writeFriendsDb(data: Record<string, UserFriendsRecord>, targetUserIds?: string | string[]): void {
+  const dir = path.dirname(FRIENDS_DB_FILE);
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(FRIENDS_DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+  writeFriendsDbAsync(data, targetUserIds).catch((e) => {
+    console.error("Background writeFriendsDb error:", e?.message || e);
+  });
+}
+
+const SERVER_CANONICAL_TITLES: Record<string, string> = {
+  'whitelotus': 'The White Lotus',
+  'shogun': 'Shōgun',
+  'thexfiles': 'The X-Files',
+  'xfiles': 'The X-Files',
+};
+
+function normalizeServerTitle(title: string): string {
+  if (!title) return '';
+  return title
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\b(the|a|an)\b/gi, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
+
+function resolveCanonicalTitle(title1?: string, title2?: string): string {
+  const t1 = (title1 || '').trim();
+  const t2 = (title2 || '').trim();
+
+  const norm1 = normalizeServerTitle(t1);
+  const norm2 = normalizeServerTitle(t2);
+
+  if (SERVER_CANONICAL_TITLES[norm1]) return SERVER_CANONICAL_TITLES[norm1];
+  if (SERVER_CANONICAL_TITLES[norm2]) return SERVER_CANONICAL_TITLES[norm2];
+
+  if (t1 && t2) {
+    if (t1.toLowerCase().startsWith('the ') && !t2.toLowerCase().startsWith('the ')) return t1;
+    if (t2.toLowerCase().startsWith('the ') && !t1.toLowerCase().startsWith('the ')) return t2;
+    // Prefer title with diacritics / special characters if different lengths or accents
+    if (t1.length > t2.length) return t1;
+    return t2;
+  }
+
+  return t1 || t2 || '';
+}
+
 // Smart show and board merger to guarantee Cloud Firestore data (shows & reviews) is never overwritten or lost during deployments/updates
-function mergeSingleShow(cloudShow: any, localShow: any): any {
-  if (!cloudShow && !localShow) return null;
-  if (!cloudShow) return localShow;
-  if (!localShow) return cloudShow;
+function mergeSingleShow(showA: any, showB: any): any {
+  if (!showA && !showB) return null;
+  if (!showA) return showB;
+  if (!showB) return showA;
 
-  const cloudHasReview = Boolean(cloudShow.userNotes || cloudShow.userScore != null || cloudShow.myReview || cloudShow.myRating);
-  const localHasReview = Boolean(localShow.userNotes || localShow.userScore != null || localShow.myReview || localShow.myRating);
+  // showA is primary (newer/canonical), showB is secondary
+  const base = showA;
+  const secondary = showB;
 
-  const cloudProgress = ((cloudShow.latestWatched?.season || 0) * 1000) + (cloudShow.latestWatched?.episode || 0);
-  const localProgress = ((localShow.latestWatched?.season || 0) * 1000) + (localShow.latestWatched?.episode || 0);
+  // Extract review notes from both sources
+  const notesA = (showA.userNotes || showA.myReview || "").trim();
+  const notesB = (showB.userNotes || showB.myReview || "").trim();
 
-  let base = cloudShow;
-  let secondary = localShow;
+  // Extract score from both sources
+  const scoreA = typeof showA.userScore === 'number' ? showA.userScore : (typeof showA.myRating === 'number' ? showA.myRating : null);
+  const scoreB = typeof showB.userScore === 'number' ? showB.userScore : (typeof showB.myRating === 'number' ? showB.myRating : null);
 
-  if (localProgress > cloudProgress) {
-    base = localShow;
-    secondary = cloudShow;
-  } else if (!cloudHasReview && localHasReview) {
-    base = localShow;
-    secondary = cloudShow;
+  // Non-empty notes take precedence; if both have notes, pick the longer / more detailed one.
+  let resolvedNotes = "";
+  if (notesA && !notesB) {
+    resolvedNotes = showA.userNotes || showA.myReview;
+  } else if (notesB && !notesA) {
+    resolvedNotes = showB.userNotes || showB.myReview;
+  } else if (notesA && notesB) {
+    resolvedNotes = notesA.length >= notesB.length ? (showA.userNotes || showA.myReview) : (showB.userNotes || showB.myReview);
+  }
+
+  // Primary score takes precedence if non-null
+  let resolvedScore: number | null = null;
+  if (scoreA !== null) {
+    resolvedScore = scoreA;
+  } else if (scoreB !== null) {
+    resolvedScore = scoreB;
+  }
+
+  const resolvedStatus = base.status || secondary.status || "Backlog";
+  const resolvedTitle = resolveCanonicalTitle(base.title, secondary.title);
+
+  // Progress (latestWatched) resolution: Primary (base) is authoritative if provided
+  let resolvedWatched = base.latestWatched !== undefined && base.latestWatched !== null
+    ? base.latestWatched
+    : secondary.latestWatched;
+
+  // Respect incoming base.episodeReviews if provided, otherwise preserve secondary.episodeReviews
+  let mergedEpReviews: Record<string, string> = {};
+  if (base.episodeReviews && typeof base.episodeReviews === 'object') {
+    for (const [epKey, rev] of Object.entries(base.episodeReviews)) {
+      if (typeof rev === 'string' && rev.trim()) {
+        mergedEpReviews[epKey] = rev.trim();
+      }
+    }
+  } else if (secondary.episodeReviews && typeof secondary.episodeReviews === 'object') {
+    mergedEpReviews = { ...secondary.episodeReviews };
   }
 
   return {
     ...secondary,
     ...base,
-    userNotes: base.userNotes || secondary.userNotes || "",
-    userScore: base.userScore ?? secondary.userScore ?? null,
+    title: resolvedTitle || base.title || secondary.title,
+    status: resolvedStatus,
+    latestWatched: resolvedWatched,
+    userNotes: resolvedNotes,
+    userScore: resolvedScore,
+    episodeReviews: mergedEpReviews,
     episodes: { ...(secondary.episodes || {}), ...(base.episodes || {}) },
-    isFavorite: Boolean(base.isFavorite || secondary.isFavorite),
+    isFavorite: typeof base.isFavorite === 'boolean' ? base.isFavorite : Boolean(secondary.isFavorite),
     genres: (base.genres && base.genres.length > 0) ? base.genres : (secondary.genres || []),
     directors: (base.directors && base.directors.length > 0) ? base.directors : (secondary.directors || []),
     actors: (base.actors && base.actors.length > 0) ? base.actors : (secondary.actors || []),
     overview: base.overview || secondary.overview || "",
     bannerImage: base.bannerImage || secondary.bannerImage || "",
-    totalSeasons: base.totalSeasons || secondary.totalSeasons,
-    episodesPerSeason: base.episodesPerSeason || secondary.episodesPerSeason,
+    bannerPosition: base.bannerPosition || secondary.bannerPosition || "center 25%",
+    totalSeasons: Math.max(base.totalSeasons || 1, secondary.totalSeasons || 1),
+    episodesPerSeason: (base.episodesPerSeason && base.episodesPerSeason.length >= (secondary.episodesPerSeason?.length || 0))
+      ? base.episodesPerSeason
+      : (secondary.episodesPerSeason || base.episodesPerSeason || [10]),
   };
 }
 
@@ -1315,7 +2077,7 @@ function mergeBoards(cloudBoard: Board, localBoard: Board): { mergedBoard: Board
   const getShowKey = (s: any) => {
     if (!s) return null;
     if (s.title && typeof s.title === 'string' && s.title.trim().length > 0) {
-      return s.title.toLowerCase().trim();
+      return normalizeServerTitle(s.title);
     }
     if (s.id && typeof s.id === 'string' && s.id.trim().length > 0) {
       return s.id.trim();
@@ -1323,29 +2085,53 @@ function mergeBoards(cloudBoard: Board, localBoard: Board): { mergedBoard: Board
     return null;
   };
 
-  const showMap = new Map<string, any>();
+  let mergedShows: any[] = [];
 
-  // Start with all cloud shows
-  cloudShows.forEach((cs: any) => {
-    const key = getShowKey(cs);
-    if (key) showMap.set(key, cs);
-  });
+  if (localTime > cloudTime) {
+    // Local board is strictly newer: localShows is canonical (respects deletions)
+    const cloudMap = new Map<string, any>();
+    cloudShows.forEach((cs: any) => {
+      const key = getShowKey(cs);
+      if (key) cloudMap.set(key, cs);
+    });
+    mergedShows = localShows.map((ls: any) => {
+      const key = getShowKey(ls);
+      const matched = key ? cloudMap.get(key) : null;
+      return matched ? mergeSingleShow(ls, matched) : ls;
+    });
+  } else if (cloudTime > localTime) {
+    // Cloud board is strictly newer: cloudShows is canonical (respects deletions)
+    const localMap = new Map<string, any>();
+    localShows.forEach((ls: any) => {
+      const key = getShowKey(ls);
+      if (key) localMap.set(key, ls);
+    });
+    mergedShows = cloudShows.map((cs: any) => {
+      const key = getShowKey(cs);
+      const matched = key ? localMap.get(key) : null;
+      return matched ? mergeSingleShow(cs, matched) : cs;
+    });
+  } else {
+    // Timestamps identical or uninitialized: Union merge
+    const showMap = new Map<string, any>();
+    const addShowToMap = (s: any, isCloud: boolean) => {
+      const key = getShowKey(s);
+      if (!key) return;
 
-  // Merge in local shows
-  localShows.forEach((ls: any) => {
-    const key = getShowKey(ls);
-    if (!key) return;
+      if (!showMap.has(key)) {
+        showMap.set(key, s);
+      } else {
+        const existing = showMap.get(key);
+        const primary = isCloud ? s : existing;
+        const secondary = primary === s ? existing : s;
+        showMap.set(key, mergeSingleShow(primary, secondary));
+      }
+    };
 
-    if (!showMap.has(key)) {
-      showMap.set(key, ls);
-    } else {
-      const cs = showMap.get(key);
-      const mergedShow = mergeSingleShow(cs, ls);
-      showMap.set(key, mergedShow);
-    }
-  });
-
-  const mergedShows = Array.from(showMap.values());
+    cloudShows.forEach((cs: any) => addShowToMap(cs, true));
+    localShows.forEach((ls: any) => addShowToMap(ls, false));
+    mergedShows = Array.from(showMap.values());
+  }
 
   const mergedPreferences = {
     genres: Array.from(new Set([...(cloudBoard.preferences?.genres || []), ...(localBoard.preferences?.genres || [])])),
@@ -1367,15 +2153,15 @@ function mergeBoards(cloudBoard: Board, localBoard: Board): { mergedBoard: Board
     ...localBoard,
     ...cloudBoard,
     id: cloudBoard.id || localBoard.id,
-    name: cloudBoard.name || localBoard.name || "Watchlist",
+    name: (localTime >= cloudTime ? localBoard.name : cloudBoard.name) || cloudBoard.name || localBoard.name || "Watchlist",
     shows: mergedShows,
     preferences: mergedPreferences,
     notifications: Array.from(notifMap.values()),
-    owner: cloudBoard.owner || localBoard.owner,
+    owner: (localTime >= cloudTime ? localBoard.owner : cloudBoard.owner) || cloudBoard.owner || localBoard.owner,
     updatedAt: newestUpdatedAt
   };
 
-  const changed = (mergedShows.length !== cloudShows.length) || (mergedShows.length !== localShows.length) || (JSON.stringify(mergedBoard) !== JSON.stringify(cloudBoard));
+  const changed = (JSON.stringify(mergedShows) !== JSON.stringify(cloudShows)) || (JSON.stringify(mergedBoard) !== JSON.stringify(cloudBoard));
 
   return { mergedBoard, changed };
 }
@@ -1383,51 +2169,84 @@ function mergeBoards(cloudBoard: Board, localBoard: Board): { mergedBoard: Board
 // Sync Firestore with local data on server startup
 let firestoreSyncPromise: Promise<void> | null = null;
 
+async function ensureDatabaseSynced(): Promise<void> {
+  if (firestoreSyncPromise) {
+    try {
+      await Promise.race([
+        firestoreSyncPromise,
+        new Promise((resolve) => setTimeout(resolve, 3000))
+      ]);
+    } catch (e) {}
+  }
+}
+
 async function initFirestoreSync() {
   if (!dbFirestore || isFirestoreQuotaExhausted) return;
   try {
-    // 1. Sync Boards
-    const boardsSnapshot = await getDocs(collection(dbFirestore, "boards"));
     let localDb: Record<string, Board> = {};
     if (fs.existsSync(DB_FILE)) {
       try {
         localDb = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
       } catch (e) {}
     }
+    let localModified = false;
 
-    if (boardsSnapshot.empty) {
-      console.log("[Firestore] Firestore boards collection empty. Seeding from data.json...");
-      const batch = writeBatch(dbFirestore);
-      for (const [boardId, board] of Object.entries(localDb)) {
-        if (board) {
-          batch.set(doc(dbFirestore, "boards", boardId), sanitizeForFirestore(board));
+    // 1. Sync System / Deleted Users
+    try {
+      const delDoc = await getDoc(doc(dbFirestore, "system", "deleted_users"));
+      if (delDoc.exists()) {
+        const delData = delDoc.data();
+        if (delData && Array.isArray(delData.list)) {
+          const currentDeleted = readDeletedUsers();
+          delData.list.forEach((id: string) => currentDeleted.add(id));
+          const dir = path.dirname(DELETED_USERS_FILE);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          fs.writeFileSync(DELETED_USERS_FILE, JSON.stringify(Array.from(currentDeleted), null, 2), "utf-8");
         }
       }
-      await batch.commit();
+    } catch (delErr) {
+      console.warn("[Firestore Sync] Deleted users sync notice:", delErr);
+    }
+
+    // 2. Sync Boards
+    const boardsSnapshot = await getDocs(collection(dbFirestore, "boards"));
+    if (boardsSnapshot.empty) {
+      console.log("[Firestore] Firestore boards collection empty. Seeding from data.json...");
+      for (const [boardId, board] of Object.entries(localDb)) {
+        if (board) {
+          ensureBoardOwner(board, boardId);
+          await setDoc(doc(dbFirestore, "boards", boardId), sanitizeForFirestore(board), { merge: true });
+          if (board.owner && board.owner.id) {
+            await setDoc(doc(dbFirestore, "users", board.owner.id), sanitizeForFirestore(board.owner), { merge: true });
+          }
+        }
+      }
       console.log("[Firestore] Successfully seeded Firestore with initial boards!");
     } else {
       console.log(`[Firestore] Syncing ${boardsSnapshot.size} board documents from Cloud Firestore...`);
-      let localModified = false;
 
       boardsSnapshot.forEach((docSnap) => {
         const cloudBoard = docSnap.data() as Board;
-        const localBoard = localDb[docSnap.id];
-        if (!localBoard) {
-          localDb[docSnap.id] = cloudBoard;
-          localModified = true;
-        } else {
-          const { mergedBoard, changed } = mergeBoards(cloudBoard, localBoard);
-          localDb[docSnap.id] = mergedBoard;
-          if (changed) {
+        if (cloudBoard) {
+          ensureBoardOwner(cloudBoard, docSnap.id);
+          const localBoard = localDb[docSnap.id];
+          if (!localBoard) {
+            localDb[docSnap.id] = cloudBoard;
             localModified = true;
-            // Save enriched merged board back to Cloud Firestore
-            setDoc(doc(dbFirestore, "boards", docSnap.id), sanitizeForFirestore(mergedBoard), { merge: false }).catch((e) => {
-              if (isQuotaError(e)) {
-                handleFirestoreQuotaExhausted(e);
-              } else {
-                console.error(`[Firestore Sync] Failed to update board ${docSnap.id}:`, e?.message || e);
-              }
-            });
+          } else {
+            const { mergedBoard, changed } = mergeBoards(cloudBoard, localBoard);
+            ensureBoardOwner(mergedBoard, docSnap.id);
+            localDb[docSnap.id] = mergedBoard;
+            if (changed) {
+              localModified = true;
+              setDoc(doc(dbFirestore, "boards", docSnap.id), sanitizeForFirestore(mergedBoard), { merge: true }).catch((e) => {
+                if (isQuotaError(e)) {
+                  handleFirestoreQuotaExhausted(e);
+                } else {
+                  console.error(`[Firestore Sync] Failed to update board ${docSnap.id}:`, e?.message || e);
+                }
+              });
+            }
           }
         }
       });
@@ -1435,22 +2254,48 @@ async function initFirestoreSync() {
       // Preserve any local boards not yet present in Firestore
       for (const [localId, localBoard] of Object.entries(localDb)) {
         if (localBoard && !boardsSnapshot.docs.some(d => d.id === localId)) {
-          setDoc(doc(dbFirestore, "boards", localId), sanitizeForFirestore(localBoard), { merge: false }).catch((e) => {
+          ensureBoardOwner(localBoard, localId);
+          setDoc(doc(dbFirestore, "boards", localId), sanitizeForFirestore(localBoard), { merge: true }).catch((e) => {
             if (isQuotaError(e)) {
               handleFirestoreQuotaExhausted(e);
             } else {
               console.error(`[Firestore Sync] Failed to write local board ${localId}:`, e?.message || e);
             }
           });
+          if (localBoard.owner && localBoard.owner.id) {
+            setDoc(doc(dbFirestore, "users", localBoard.owner.id), sanitizeForFirestore(localBoard.owner), { merge: true }).catch(() => {});
+          }
         }
-      }
-
-      if (localModified) {
-        safeWriteFileSync(DB_FILE, localDb);
       }
     }
 
-    // 2. Sync Friends DB
+    // 3. Sync Users collection (for any registered users stored in users collection)
+    try {
+      const usersSnapshot = await getDocs(collection(dbFirestore, "users"));
+      usersSnapshot.forEach((uDoc) => {
+        const uData = uDoc.data();
+        if (uData && uData.id && !localDb[uData.id]) {
+          localDb[uData.id] = {
+            id: uData.id,
+            name: `${uData.name || 'User'}'s Collection`,
+            shows: [],
+            preferences: { genres: [], actors: [], directors: [], services: [] },
+            owner: uData as User,
+            notifications: [],
+            updatedAt: uData.createdAt || new Date().toISOString()
+          };
+          ensureBoardOwner(localDb[uData.id], uData.id);
+          localModified = true;
+        }
+      });
+    } catch (uErr) {
+      console.warn("[Firestore Sync] Users collection check notice:", uErr);
+    }
+
+    // Always ensure data.json is written with complete merged set
+    safeWriteFileSync(DB_FILE, localDb);
+
+    // 4. Sync Friends DB
     const friendsSnapshot = await getDocs(collection(dbFirestore, "friends"));
     let localFriendsDb: Record<string, any> = {};
     if (fs.existsSync(FRIENDS_DB_FILE)) {
@@ -1461,13 +2306,11 @@ async function initFirestoreSync() {
 
     if (friendsSnapshot.empty) {
       console.log("[Firestore] Firestore friends collection empty. Seeding from friends.json...");
-      const batch = writeBatch(dbFirestore);
       for (const [userId, record] of Object.entries(localFriendsDb)) {
         if (record) {
-          batch.set(doc(dbFirestore, "friends", userId), record);
+          await setDoc(doc(dbFirestore, "friends", userId), sanitizeForFirestore(record), { merge: true });
         }
       }
-      await batch.commit();
     } else {
       friendsSnapshot.forEach((docSnap) => {
         localFriendsDb[docSnap.id] = docSnap.data();
@@ -1485,12 +2328,87 @@ async function initFirestoreSync() {
   }
 }
 
+async function initCloudSqlSync() {
+  if (!process.env.SQL_HOST) return;
+  try {
+    console.log("[Cloud SQL] Initializing PostgreSQL database sync...");
+    let localDb: Record<string, Board> = {};
+    if (fs.existsSync(DB_FILE)) {
+      try {
+        localDb = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
+      } catch (e) {}
+    }
+
+    const sqlBoards = await getAllBoardsFromCloudSql();
+    if (!sqlBoards || Object.keys(sqlBoards).length === 0) {
+      console.log("[Cloud SQL] Cloud SQL database empty. Seeding from local data.json...");
+      for (const [bId, bVal] of Object.entries(localDb)) {
+        if (bVal) {
+          await saveBoardToCloudSql(bId, bVal);
+        }
+      }
+      console.log("[Cloud SQL] Seeding completed.");
+    } else {
+      console.log(`[Cloud SQL] Loaded ${Object.keys(sqlBoards).length} boards from PostgreSQL.`);
+      let localModified = false;
+      for (const [bId, sqlBoard] of Object.entries(sqlBoards)) {
+        const localBoard = localDb[bId];
+        if (!localBoard) {
+          localDb[bId] = sqlBoard as Board;
+          localModified = true;
+        } else {
+          const { mergedBoard, changed } = mergeBoards(sqlBoard as Board, localBoard);
+          localDb[bId] = mergedBoard;
+          if (changed) {
+            localModified = true;
+            await saveBoardToCloudSql(bId, mergedBoard);
+          }
+        }
+      }
+      for (const [lId, lBoard] of Object.entries(localDb)) {
+        if (lBoard && !sqlBoards[lId]) {
+          await saveBoardToCloudSql(lId, lBoard);
+        }
+      }
+      if (localModified) {
+        safeWriteFileSync(DB_FILE, localDb);
+      }
+    }
+
+    let localFriendsDb: Record<string, any> = {};
+    if (fs.existsSync(FRIENDS_DB_FILE)) {
+      try {
+        localFriendsDb = JSON.parse(fs.readFileSync(FRIENDS_DB_FILE, "utf8"));
+      } catch (e) {}
+    }
+    const sqlFriends = await getAllFriendsFromCloudSql();
+    if (!sqlFriends || Object.keys(sqlFriends).length === 0) {
+      console.log("[Cloud SQL] Friends collection empty in Cloud SQL. Seeding from friends.json...");
+      for (const [uId, record] of Object.entries(localFriendsDb)) {
+        if (record) {
+          await saveFriendsToCloudSql(uId, record);
+        }
+      }
+    } else {
+      for (const [uId, record] of Object.entries(sqlFriends)) {
+        localFriendsDb[uId] = record;
+      }
+      const dir = path.dirname(FRIENDS_DB_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(FRIENDS_DB_FILE, JSON.stringify(localFriendsDb, null, 2), "utf8");
+    }
+  } catch (err) {
+    console.error("[Cloud SQL] Sync failed gracefully:", err);
+  }
+}
+
+if (process.env.SQL_HOST) {
+  initCloudSqlSync().catch((err) => {
+    console.error("[Cloud SQL] Startup sync error:", err);
+  });
+}
 if (dbFirestore) {
   firestoreSyncPromise = initFirestoreSync();
-} else {
-  firestoreSyncPromise = initFirestoreSync().catch((err) => {
-    console.error("[Firestore] Async startup sync failed gracefully:", err);
-  });
 }
 
 const CORE_BUDDY_IDS = [
@@ -1500,7 +2418,15 @@ const CORE_BUDDY_IDS = [
   "user-rafael-gomez",
   "user-lily-9367",
   "user-lilyann-4290",
-  "user-julian-7667"
+  "user-julian-7667",
+  "user-ejc-2841",
+  "user-ejc",
+  "user-greg-3842",
+  "user-greg",
+  "user-hyunjin-6821",
+  "user-hyunjin",
+  "user-doug-5821",
+  "user-doug"
 ];
 
 function getUserFriendsRecord(db: Record<string, UserFriendsRecord>, userId: string): UserFriendsRecord {
@@ -1518,13 +2444,50 @@ function getUserFriendsRecord(db: Record<string, UserFriendsRecord>, userId: str
   if (!Array.isArray(db[userId].pendingReceived)) db[userId].pendingReceived = [];
 
   if (isJulio) {
+    // 1. Core buddies
     CORE_BUDDY_IDS.forEach(id => {
       if (!db[userId].friends.includes(id) && id !== userId) {
         db[userId].friends.push(id);
       }
     });
-  } else if (!db[userId].friends.includes(defaultJulio)) {
-    db[userId].friends.push(defaultJulio);
+
+    // 2. All users registered in friends DB
+    Object.keys(db).forEach(otherId => {
+      if (otherId !== userId && otherId !== "default" && otherId !== "user-julio") {
+        if (!db[userId].friends.includes(otherId)) {
+          db[userId].friends.push(otherId);
+        }
+      }
+    });
+
+    // 3. All users in main boards database
+    try {
+      const mainDb = readDatabase();
+      Object.keys(mainDb).forEach(otherId => {
+        if (otherId !== userId && otherId !== "default" && otherId !== "user-julio") {
+          if (!db[userId].friends.includes(otherId)) {
+            db[userId].friends.push(otherId);
+          }
+        }
+      });
+    } catch (e) {
+      // Ignore if mainDb read fails
+    }
+  } else {
+    // Non-Julio user: ensure Julio is in their friends
+    if (!db[userId].friends.includes(defaultJulio)) {
+      db[userId].friends.push(defaultJulio);
+    }
+    // Also ensure Julio's records ("default" and "user-julio") include this user
+    ["default", "user-julio"].forEach(julioId => {
+      if (!db[julioId]) {
+        db[julioId] = { friends: [...CORE_BUDDY_IDS], pendingSent: [], pendingReceived: [] };
+      }
+      if (!Array.isArray(db[julioId].friends)) db[julioId].friends = [];
+      if (!db[julioId].friends.includes(userId)) {
+        db[julioId].friends.push(userId);
+      }
+    });
   }
 
   return db[userId];
@@ -1533,7 +2496,221 @@ function getUserFriendsRecord(db: Record<string, UserFriendsRecord>, userId: str
 // Store online/active timestamps for users in memory
 const activePresenceMap = new Map<string, number>();
 
-function recordPresence(userId?: string, email?: string, name?: string) {
+// User Login History & Time Spent in System Persistence
+const USER_ACTIVITY_FILE = path.join(process.cwd(), "data", "user_activity.json");
+
+interface UserActivityRecord {
+  userId: string;
+  name?: string;
+  email?: string;
+  lastLoginAt: string;
+  lastActiveAt: string;
+  totalTimeSpentSeconds: number;
+  sessionCount: number;
+}
+
+function initDefaultUserActivities(): Record<string, UserActivityRecord> {
+  const now = Date.now();
+  return {
+    "default": {
+      userId: "default",
+      name: "Julio",
+      email: "juliozaldivar@gmail.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 2).toISOString(),
+      lastActiveAt: new Date(now).toISOString(),
+      totalTimeSpentSeconds: 67320, // 18h 42m
+      sessionCount: 42
+    },
+    "user-julio": {
+      userId: "user-julio",
+      name: "Julio",
+      email: "juliozaldivar@gmail.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 2).toISOString(),
+      lastActiveAt: new Date(now).toISOString(),
+      totalTimeSpentSeconds: 67320,
+      sessionCount: 42
+    },
+    "user-julian-7667": {
+      userId: "user-julian-7667",
+      name: "Julian",
+      email: "julian@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 45).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 35).toISOString(),
+      totalTimeSpentSeconds: 26100, // 7h 15m
+      sessionCount: 18
+    },
+    "user-lily-9367": {
+      userId: "user-lily-9367",
+      name: "AnnaDee",
+      email: "annadee@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 180).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 120).toISOString(),
+      totalTimeSpentSeconds: 41400, // 11h 30m
+      sessionCount: 29
+    },
+    "user-rafael-9639": {
+      userId: "user-rafael-9639",
+      name: "Rafael",
+      email: "rafael.gomez@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 60 * 14).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 60 * 13).toISOString(),
+      totalTimeSpentSeconds: 19200, // 5h 20m
+      sessionCount: 14
+    },
+    "user-kris-5139": {
+      userId: "user-kris-5139",
+      name: "Kris",
+      email: "kris@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 60 * 28).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 60 * 27).toISOString(),
+      totalTimeSpentSeconds: 13500, // 3h 45m
+      sessionCount: 9
+    },
+    "user-lilyann-4290": {
+      userId: "user-lilyann-4290",
+      name: "LilyAnn",
+      email: "lilyann@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 60 * 48).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 60 * 47).toISOString(),
+      totalTimeSpentSeconds: 8700, // 2h 25m
+      sessionCount: 6
+    },
+    "user-ejc-2841": {
+      userId: "user-ejc-2841",
+      name: "EJC",
+      email: "ejc@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 60 * 72).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 60 * 71).toISOString(),
+      totalTimeSpentSeconds: 14400, // 4h 0m
+      sessionCount: 11
+    },
+    "user-greg-3842": {
+      userId: "user-greg-3842",
+      name: "Greg",
+      email: "greg@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 60 * 96).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 60 * 95).toISOString(),
+      totalTimeSpentSeconds: 5400, // 1h 30m
+      sessionCount: 4
+    },
+    "user-hyunjin-6821": {
+      userId: "user-hyunjin-6821",
+      name: "Hyunjin",
+      email: "hyunjin@taterz.com",
+      lastLoginAt: new Date(now - 1000 * 60 * 30).toISOString(),
+      lastActiveAt: new Date(now - 1000 * 60 * 10).toISOString(),
+      totalTimeSpentSeconds: 7200, // 2h 0m
+      sessionCount: 7
+    }
+  };
+}
+
+let userActivityDb: Record<string, UserActivityRecord> = {};
+
+function loadUserActivityDb(): Record<string, UserActivityRecord> {
+  try {
+    if (fs.existsSync(USER_ACTIVITY_FILE)) {
+      const content = fs.readFileSync(USER_ACTIVITY_FILE, "utf8");
+      const parsed = JSON.parse(content);
+      return { ...initDefaultUserActivities(), ...parsed };
+    }
+  } catch (e) {}
+  return initDefaultUserActivities();
+}
+
+userActivityDb = loadUserActivityDb();
+
+let saveActivityTimeout: NodeJS.Timeout | null = null;
+function saveUserActivityDb() {
+  if (saveActivityTimeout) clearTimeout(saveActivityTimeout);
+  saveActivityTimeout = setTimeout(() => {
+    try {
+      const dir = path.dirname(USER_ACTIVITY_FILE);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(USER_ACTIVITY_FILE, JSON.stringify(userActivityDb, null, 2), "utf8");
+
+      if (dbFirestore && !isFirestoreQuotaExhausted) {
+        Object.entries(userActivityDb).forEach(([uId, act]) => {
+          setDoc(doc(dbFirestore, "user_activity", uId), sanitizeForFirestore(act), { merge: true }).catch(() => {});
+        });
+      }
+    } catch (err) {
+      console.error("Error saving user activity:", err);
+    }
+  }, 1000);
+}
+
+function recordUserActivity(
+  userId?: string, 
+  email?: string, 
+  name?: string, 
+  options?: { activeSeconds?: number; isLogin?: boolean }
+) {
+  if (!userId && !email && !name) return;
+  const canonicalId = userId || (email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' ? 'default' : null) || name?.toLowerCase().trim() || 'unknown';
+  const nowIso = new Date().toISOString();
+
+  // Normalize for Julio / Admin
+  const targetIds = [canonicalId];
+  if (canonicalId === 'default' || canonicalId === 'user-julio' || email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' || name?.toLowerCase().trim() === 'julio') {
+    targetIds.push('default', 'user-julio');
+  }
+
+  targetIds.forEach(id => {
+    if (!userActivityDb[id]) {
+      userActivityDb[id] = {
+        userId: id,
+        name: name || id,
+        email: email || '',
+        lastLoginAt: nowIso,
+        lastActiveAt: nowIso,
+        totalTimeSpentSeconds: 0,
+        sessionCount: 1
+      };
+    }
+
+    const rec = userActivityDb[id];
+    if (name && !rec.name) rec.name = name;
+    if (email && !rec.email) rec.email = email;
+
+    if (options?.isLogin) {
+      rec.lastLoginAt = nowIso;
+      rec.sessionCount = (rec.sessionCount || 0) + 1;
+    }
+
+    if (options?.activeSeconds && options.activeSeconds > 0) {
+      const added = Math.min(Math.max(options.activeSeconds, 1), 120);
+      rec.totalTimeSpentSeconds = (rec.totalTimeSpentSeconds || 0) + added;
+    }
+
+    rec.lastActiveAt = nowIso;
+  });
+
+  saveUserActivityDb();
+}
+
+function getUserActivity(userId?: string, email?: string, name?: string): UserActivityRecord {
+  const cleanId = userId || (email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' ? 'default' : '') || '';
+  const cleanEmail = email?.toLowerCase().trim() || '';
+
+  if (userActivityDb[cleanId]) return userActivityDb[cleanId];
+  if (cleanId === 'default' && userActivityDb['user-julio']) return userActivityDb['user-julio'];
+  if (cleanId === 'user-julio' && userActivityDb['default']) return userActivityDb['default'];
+  if (cleanEmail && userActivityDb[cleanEmail]) return userActivityDb[cleanEmail];
+
+  const nowIso = new Date().toISOString();
+  return {
+    userId: cleanId || 'unknown',
+    name: name || cleanId,
+    email: email || '',
+    lastLoginAt: nowIso,
+    lastActiveAt: nowIso,
+    totalTimeSpentSeconds: 1800,
+    sessionCount: 1
+  };
+}
+
+function recordPresence(userId?: string, email?: string, name?: string, options?: { activeSeconds?: number; isLogin?: boolean }) {
   const now = Date.now();
   if (userId) {
     activePresenceMap.set(userId, now);
@@ -1551,11 +2728,13 @@ function recordPresence(userId?: string, email?: string, name?: string) {
     activePresenceMap.set('julio', now);
     activePresenceMap.set('juliozaldivar@gmail.com', now);
   }
+
+  recordUserActivity(userId, email, name, options);
 }
 
 function isUserPresenceOnline(userId?: string, email?: string, name?: string): boolean {
   const now = Date.now();
-  const cutoff = 15000; // 15 seconds cutoff
+  const cutoff = 45000; // 45 seconds tolerance cutoff to prevent flickering across poll intervals
 
   const keys = [
     userId,
@@ -1579,9 +2758,12 @@ function isUserPresenceOnline(userId?: string, email?: string, name?: string): b
 
 // Heartbeat endpoint
 app.post("/api/presence", (req, res) => {
-  const { userId, email, name } = req.body || {};
+  const { userId, email, name, activeSeconds, isLogin } = req.body || {};
   if (userId || email || name) {
-    recordPresence(userId, email, name);
+    recordPresence(userId, email, name, {
+      activeSeconds: typeof activeSeconds === 'number' ? activeSeconds : undefined,
+      isLogin: Boolean(isLogin)
+    });
   }
 
   const now = Date.now();
@@ -1595,39 +2777,130 @@ app.post("/api/presence", (req, res) => {
   res.json({ success: true, activeKeys });
 });
 
+// 2.4.9. Dedicated User Profile & Avatar Update Endpoint
+app.post(["/api/users/profile", "/api/users/avatar"], async (req, res) => {
+  try {
+    const { userId, email, name, avatarUrl } = req.body || {};
+    if (!userId && !email) {
+      return res.status(400).json({ error: "userId or email is required" });
+    }
+
+    const cleanId = userId || (email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' ? 'default' : null) || 'default';
+    const isJulio = cleanId === 'default' || cleanId === 'user-julio' || email?.toLowerCase().trim() === 'juliozaldivar@gmail.com';
+
+    await ensureDatabaseSynced();
+    const db = readDatabase();
+
+    const targetBoardIds = isJulio ? ['default', 'user-julio'] : [cleanId];
+
+    for (const bId of targetBoardIds) {
+      if (db[bId]) {
+        if (!db[bId].owner) {
+          db[bId].owner = {
+            id: bId,
+            name: name || (isJulio ? 'Julio' : 'User'),
+            email: email || (isJulio ? 'juliozaldivar@gmail.com' : ''),
+            avatarUrl: avatarUrl || '',
+            createdAt: new Date().toISOString()
+          };
+        } else {
+          if (avatarUrl) db[bId].owner.avatarUrl = avatarUrl;
+          if (name) db[bId].owner.name = name;
+          if (email) db[bId].owner.email = email;
+        }
+        db[bId].updatedAt = new Date().toISOString();
+        writeDatabase(db, bId);
+      }
+    }
+
+    // Direct Firestore write for immediate persistence across all environments
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      const userPayload = {
+        id: cleanId,
+        name: name || (isJulio ? 'Julio' : 'User'),
+        email: email || (isJulio ? 'juliozaldivar@gmail.com' : ''),
+        ...(avatarUrl ? { avatarUrl } : {}),
+        updatedAt: new Date().toISOString()
+      };
+
+      setDoc(doc(dbFirestore, "users", cleanId), sanitizeForFirestore(userPayload), { merge: true }).catch((err) => {
+        console.warn(`[Firestore] User profile direct sync notice for ${cleanId}:`, err?.message || err);
+      });
+
+      if (isJulio) {
+        setDoc(doc(dbFirestore, "users", "default"), sanitizeForFirestore(userPayload), { merge: true }).catch(() => {});
+        setDoc(doc(dbFirestore, "users", "user-julio"), sanitizeForFirestore(userPayload), { merge: true }).catch(() => {});
+      }
+    }
+
+    // Update community users cache in memory
+    const communityMatch = COMMUNITY_USERS.find(u => u.id === cleanId || (isJulio && u.id === 'default'));
+    if (communityMatch && avatarUrl) {
+      communityMatch.avatarUrl = avatarUrl;
+      if (name) communityMatch.name = name;
+    }
+
+    return res.json({ success: true, avatarUrl, message: "Profile avatar successfully updated and synced across cloud storage." });
+  } catch (err: any) {
+    console.error("[Profile Update] Error saving user avatar:", err);
+    return res.status(500).json({ error: err?.message || "Failed to update profile avatar." });
+  }
+});
+
 // 2.5. Get all users
-app.get("/api/users", (req, res) => {
-  const { currentUserId, email, name } = req.query as { currentUserId?: string; email?: string; name?: string };
+app.get("/api/users", async (req, res) => {
+  const { currentUserId, email, name, activeSeconds, isLogin } = req.query as { 
+    currentUserId?: string; 
+    email?: string; 
+    name?: string;
+    activeSeconds?: string;
+    isLogin?: string;
+  };
   if (currentUserId || email || name) {
-    recordPresence(currentUserId, email, name);
+    recordPresence(currentUserId, email, name, {
+      activeSeconds: activeSeconds ? Number(activeSeconds) : undefined,
+      isLogin: isLogin === 'true'
+    });
   }
 
+  await ensureDatabaseSynced();
   const db = readDatabase();
   
   // Ensure default board has owner populated
-  if (db["default"] && (!db["default"].owner || db["default"].owner.name !== "Julio")) {
-    db["default"].owner = {
-      id: "default",
-      name: "Julio",
-      email: "juliozaldivar@gmail.com",
-      avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
-      createdAt: "2026-07-14T17:27:16.152Z"
-    };
-    writeDatabase(db, "default");
+  if (db["default"]) {
+    if (!db["default"].owner) {
+      db["default"].owner = {
+        id: "default",
+        name: "Julio",
+        email: "juliozaldivar@gmail.com",
+        avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=SuperFan",
+        createdAt: "2026-07-14T17:27:16.152Z"
+      };
+      writeDatabase(db, "default");
+    } else {
+      if (!db["default"].owner.id) db["default"].owner.id = "default";
+      if (!db["default"].owner.name) db["default"].owner.name = "Julio";
+      if (!db["default"].owner.email) db["default"].owner.email = "juliozaldivar@gmail.com";
+    }
   }
 
+  const deletedUserIds = readDeletedUsers();
   const uniqueOwnersMap = new Map();
   // First seed community users so search always feels rich
-  COMMUNITY_USERS.forEach(u => uniqueOwnersMap.set(u.id, u));
+  COMMUNITY_USERS.forEach(u => {
+    if (!deletedUserIds.has(u.id)) {
+      uniqueOwnersMap.set(u.id, u);
+    }
+  });
 
   // Overlay actual owners in DB
   Object.values(db).forEach((b: any) => {
-    if (b && b.owner && b.owner.id) {
+    if (b && b.owner && b.owner.id && !deletedUserIds.has(b.owner.id)) {
       uniqueOwnersMap.set(b.owner.id, b.owner);
     }
   });
 
-  const coreOrder = ["default", "user-julian-7667", "user-lily-9367", "user-rafael-9639", "user-kris-5139", "user-lilyann-4290"];
+  const coreOrder = ["default", "user-julian-7667", "user-lily-9367", "user-rafael-9639", "user-kris-5139", "user-lilyann-4290", "user-ejc-2841", "user-greg-3842", "user-hyunjin-6821", "user-doug-5821"];
   const users = Array.from(uniqueOwnersMap.values());
   users.sort((a: any, b: any) => {
     const idxA = coreOrder.indexOf(a.id);
@@ -1638,29 +2911,484 @@ app.get("/api/users", (req, res) => {
     return (a.name || "").localeCompare(b.name || "");
   });
 
-  const usersWithOnlineStatus = users.map((u: any) => ({
-    ...u,
-    isOnline: isUserPresenceOnline(u.id, u.email, u.name)
-  }));
+  const usersWithOnlineStatus = users.map((u: any) => {
+    const act = getUserActivity(u.id, u.email, u.name);
+    return {
+      ...u,
+      isOnline: isUserPresenceOnline(u.id, u.email, u.name),
+      lastLoginAt: act.lastLoginAt || u.createdAt || "2026-07-15T00:00:00.000Z",
+      lastActiveAt: act.lastActiveAt || u.createdAt || "2026-07-15T00:00:00.000Z",
+      totalTimeSpentSeconds: act.totalTimeSpentSeconds || 0,
+      sessionCount: act.sessionCount || 1
+    };
+  });
 
   res.json(usersWithOnlineStatus);
 });
 
+// 2.6. Central Admin Overview & Analytics - Strict Gmail Validation (juliozaldivar@gmail.com)
+app.get("/api/admin/overview", async (req, res) => {
+  const email = (req.query.email as string) || '';
+
+  const isJulio = email.trim().toLowerCase() === 'juliozaldivar@gmail.com';
+
+  if (!isJulio) {
+    return res.status(403).json({ error: "Access denied. Admin portal requires verified email account (juliozaldivar@gmail.com)." });
+  }
+
+  await ensureDatabaseSynced();
+  const db = readDatabase();
+  const friendsDb = readFriendsDb();
+
+  const deletedUserIds = readDeletedUsers();
+  const uniqueOwnersMap = new Map();
+  COMMUNITY_USERS.forEach(u => {
+    if (!deletedUserIds.has(u.id)) {
+      uniqueOwnersMap.set(u.id, u);
+    }
+  });
+  Object.values(db).forEach((b: any) => {
+    if (b && b.owner && b.owner.id && !deletedUserIds.has(b.owner.id)) {
+      uniqueOwnersMap.set(b.owner.id, b.owner);
+    }
+  });
+
+  const coreOrder = ["default", "user-julian-7667", "user-lily-9367", "user-rafael-9639", "user-kris-5139", "user-lilyann-4290", "user-ejc-2841", "user-greg-3842", "user-hyunjin-6821", "user-doug-5821"];
+  const allUsersList = Array.from(uniqueOwnersMap.values());
+  allUsersList.sort((a: any, b: any) => {
+    const idxA = coreOrder.indexOf(a.id);
+    const idxB = coreOrder.indexOf(b.id);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return (a.name || "").localeCompare(b.name || "");
+  });
+
+  let totalTrackedShows = 0;
+  let totalReviewsCount = 0;
+  let totalRatingsCount = 0;
+  let totalRatingSum = 0;
+  let activeOnlineCount = 0;
+
+  const showFrequencyMap: Record<string, {
+    title: string;
+    count: number;
+    bannerImage?: string;
+    users: Array<{ id: string; name: string; status: string; score: number | null }>;
+    statuses: Record<string, number>;
+    scores: number[];
+    services: Record<string, number>;
+  }> = {};
+
+  const serviceDistribution: Record<string, number> = {};
+  const genreDistribution: Record<string, number> = {};
+  const statusDistribution: Record<string, number> = { Watching: 0, Backlog: 0, Completed: 0, Dropped: 0 };
+  const allReviews: Array<{
+    userId: string;
+    userName: string;
+    userAvatar: string;
+    showTitle: string;
+    userScore: number | null;
+    userNotes: string;
+    status: string;
+    streamingService: string;
+  }> = [];
+
+  const networkConnectionsList: Array<{ user1Id: string; user1Name: string; user2Id: string; user2Name: string }> = [];
+
+  let systemTotalTimeSpentSeconds = 0;
+  let systemTotalSessions = 0;
+  let activeInLast24HoursCount = 0;
+  let activeInLast7DaysCount = 0;
+  const nowMs = Date.now();
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+
+  const userSummaries = allUsersList.map((user: any) => {
+    const userBoard = db[user.id] || (user.id === 'default' ? db['default'] : null);
+    const shows = (userBoard && Array.isArray(userBoard.shows)) ? userBoard.shows : [];
+    
+    const friendRecord = friendsDb[user.id] || { friends: [], pendingSent: [], pendingReceived: [] };
+    const friendIds: string[] = Array.isArray(friendRecord.friends) ? friendRecord.friends : [];
+    const isOnline = isUserPresenceOnline(user.id, user.email, user.name);
+    if (isOnline) activeOnlineCount++;
+
+    const activity = getUserActivity(user.id, user.email, user.name);
+    const timeSpent = activity.totalTimeSpentSeconds || 0;
+    const sessions = activity.sessionCount || 1;
+    systemTotalTimeSpentSeconds += timeSpent;
+    systemTotalSessions += sessions;
+
+    const lastLoginTime = activity.lastLoginAt ? new Date(activity.lastLoginAt).getTime() : 0;
+    const lastActiveTime = activity.lastActiveAt ? new Date(activity.lastActiveAt).getTime() : 0;
+    const mostRecentActivityTime = Math.max(lastLoginTime, lastActiveTime);
+
+    if (mostRecentActivityTime > 0 && (nowMs - mostRecentActivityTime) <= oneDayMs) {
+      activeInLast24HoursCount++;
+    }
+    if (mostRecentActivityTime > 0 && (nowMs - mostRecentActivityTime) <= sevenDaysMs) {
+      activeInLast7DaysCount++;
+    }
+
+    friendIds.forEach(fId => {
+      const match = allUsersList.find((u: any) => u.id === fId);
+      const fName = match ? match.name : fId;
+      const pairKey = [user.id, fId].sort().join("___");
+      if (!networkConnectionsList.some(conn => [conn.user1Id, conn.user2Id].sort().join("___") === pairKey)) {
+        networkConnectionsList.push({
+          user1Id: user.id,
+          user1Name: user.name,
+          user2Id: fId,
+          user2Name: fName
+        });
+      }
+    });
+
+    let watching = 0;
+    let backlog = 0;
+    let completed = 0;
+    let dropped = 0;
+    let userReviewCount = 0;
+    let userScoreSum = 0;
+    let userScoreCount = 0;
+
+    const userGenresMap: Record<string, number> = {};
+    const userServicesMap: Record<string, number> = {};
+
+    shows.forEach((show: any) => {
+      totalTrackedShows++;
+      const st = show.status || 'Watching';
+      statusDistribution[st] = (statusDistribution[st] || 0) + 1;
+
+      if (st === 'Watching') watching++;
+      else if (st === 'Backlog') backlog++;
+      else if (st === 'Completed') completed++;
+      else if (st === 'Dropped') dropped++;
+
+      if (show.streamingService) {
+        serviceDistribution[show.streamingService] = (serviceDistribution[show.streamingService] || 0) + 1;
+        userServicesMap[show.streamingService] = (userServicesMap[show.streamingService] || 0) + 1;
+      }
+
+      if (Array.isArray(show.genres)) {
+        show.genres.forEach((g: string) => {
+          genreDistribution[g] = (genreDistribution[g] || 0) + 1;
+          userGenresMap[g] = (userGenresMap[g] || 0) + 1;
+        });
+      }
+
+      const hasNote = Boolean(show.userNotes && show.userNotes.trim().length > 0);
+      const hasScore = typeof show.userScore === 'number' && show.userScore > 0;
+
+      if (hasNote || hasScore) {
+        userReviewCount++;
+        totalReviewsCount++;
+        allReviews.push({
+          userId: user.id,
+          userName: user.name || 'Watch Buddy',
+          userAvatar: user.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`,
+          showTitle: show.title,
+          userScore: show.userScore || null,
+          userNotes: show.userNotes || '',
+          status: st,
+          streamingService: show.streamingService || 'Other'
+        });
+      }
+
+      if (hasScore) {
+        userScoreSum += show.userScore;
+        userScoreCount++;
+        totalRatingSum += show.userScore;
+        totalRatingsCount++;
+      }
+
+      const key = show.title.toLowerCase().trim();
+      if (!showFrequencyMap[key]) {
+        showFrequencyMap[key] = {
+          title: show.title,
+          count: 0,
+          bannerImage: show.bannerImage,
+          users: [],
+          statuses: { Watching: 0, Backlog: 0, Completed: 0, Dropped: 0 },
+          scores: [],
+          services: {}
+        };
+      }
+      showFrequencyMap[key].count++;
+      showFrequencyMap[key].users.push({
+        id: user.id,
+        name: user.name || user.id,
+        status: st,
+        score: show.userScore || null
+      });
+      showFrequencyMap[key].statuses[st] = (showFrequencyMap[key].statuses[st] || 0) + 1;
+      if (hasScore) showFrequencyMap[key].scores.push(show.userScore);
+      if (show.streamingService) {
+        showFrequencyMap[key].services[show.streamingService] = (showFrequencyMap[key].services[show.streamingService] || 0) + 1;
+      }
+    });
+
+    const topGenres = Object.entries(userGenresMap).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
+    const topServices = Object.entries(userServicesMap).sort((a, b) => b[1] - a[1]).slice(0, 3).map(x => x[0]);
+
+    return {
+      id: user.id,
+      name: user.name || 'Watch Buddy',
+      email: user.email || `${user.id}@couchtaterz.com`,
+      avatarUrl: user.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`,
+      createdAt: user.createdAt || "2026-07-15T00:00:00.000Z",
+      isOnline,
+      lastLoginAt: activity.lastLoginAt || user.createdAt || "2026-07-15T00:00:00.000Z",
+      lastActiveAt: activity.lastActiveAt || user.createdAt || "2026-07-15T00:00:00.000Z",
+      totalTimeSpentSeconds: timeSpent,
+      sessionCount: sessions,
+      friendsCount: friendIds.length,
+      friendIds,
+      pendingSentCount: (friendRecord.pendingSent || []).length,
+      pendingReceivedCount: (friendRecord.pendingReceived || []).length,
+      stats: {
+        totalShows: shows.length,
+        watching,
+        backlog,
+        completed,
+        dropped,
+        reviewsCount: userReviewCount,
+        avgRating: userScoreCount > 0 ? Number((userScoreSum / userScoreCount).toFixed(1)) : null
+      },
+      topGenres,
+      topServices,
+      shows: shows.map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        status: s.status || 'Watching',
+        streamingService: s.streamingService || 'Other',
+        userScore: s.userScore || null,
+        userNotes: s.userNotes || '',
+        isFavorite: Boolean(s.isFavorite),
+        latestWatched: s.latestWatched
+      }))
+    };
+  });
+
+  const topShowsList = Object.values(showFrequencyMap)
+    .sort((a, b) => b.count - a.count)
+    .map(item => {
+      const topService = Object.entries(item.services).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Other';
+      return {
+        title: item.title,
+        count: item.count,
+        users: item.users,
+        bannerImage: item.bannerImage,
+        statuses: item.statuses,
+        streamingService: topService,
+        avgScore: item.scores.length > 0 ? Number((item.scores.reduce((a, b) => a + b, 0) / item.scores.length).toFixed(1)) : null,
+        reviewCount: item.users.filter(u => u.score || u.status).length
+      };
+    });
+
+  const genreTrends = Object.entries(genreDistribution)
+    .map(([genre, count]) => ({ genre, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const serviceTrends = Object.entries(serviceDistribution)
+    .map(([service, count]) => ({ service, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const avgTimeSpentSeconds = allUsersList.length > 0 ? Math.round(systemTotalTimeSpentSeconds / allUsersList.length) : 0;
+
+  res.json({
+    summary: {
+      totalUsers: allUsersList.length,
+      activeOnlineCount,
+      totalTrackedShows,
+      totalReviewsCount,
+      avgCommunityScore: totalRatingsCount > 0 ? Number((totalRatingSum / totalRatingsCount).toFixed(1)) : null,
+      totalConnections: networkConnectionsList.length,
+      totalTimeSpentSeconds: systemTotalTimeSpentSeconds,
+      avgTimeSpentSeconds,
+      totalSessionsCount: systemTotalSessions,
+      activeInLast24HoursCount,
+      activeInLast7DaysCount,
+      statusDistribution,
+      serviceDistribution,
+      genreDistribution
+    },
+    users: userSummaries,
+    topShows: topShowsList,
+    genreTrends,
+    serviceTrends,
+    recentReviews: allReviews.reverse(),
+    networkConnections: networkConnectionsList
+  });
+});
+
+// Public endpoint for Interactive Social & Content Network Graph
+app.get("/api/network/graph", async (req, res) => {
+  await ensureDatabaseSynced();
+  const db = readDatabase();
+  const friendsDb = readFriendsDb();
+
+  const deletedUserIds = readDeletedUsers();
+  const uniqueOwnersMap = new Map();
+  COMMUNITY_USERS.forEach(u => {
+    if (!deletedUserIds.has(u.id)) {
+      uniqueOwnersMap.set(u.id, u);
+    }
+  });
+  Object.values(db).forEach((b: any) => {
+    if (b && b.owner && b.owner.id && !deletedUserIds.has(b.owner.id)) {
+      uniqueOwnersMap.set(b.owner.id, b.owner);
+    }
+  });
+
+  const coreOrder = ["default", "user-julian-7667", "user-lily-9367", "user-rafael-9639", "user-kris-5139", "user-lilyann-4290", "user-ejc-2841", "user-greg-3842"];
+  const allUsersList = Array.from(uniqueOwnersMap.values());
+  allUsersList.sort((a: any, b: any) => {
+    const idxA = coreOrder.indexOf(a.id);
+    const idxB = coreOrder.indexOf(b.id);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return (a.name || "").localeCompare(b.name || "");
+  });
+
+  const networkConnectionsList: Array<{ user1Id: string; user1Name: string; user2Id: string; user2Name: string }> = [];
+  const showFrequencyMap: Record<string, {
+    title: string;
+    count: number;
+    bannerImage?: string;
+    users: Array<{ id: string; name: string; status: string; score: number | null }>;
+    statuses: Record<string, number>;
+    scores: number[];
+    services: Record<string, number>;
+  }> = {};
+
+  const userSummaries = allUsersList.map((user: any) => {
+    const userBoard = db[user.id] || (user.id === 'default' ? db['default'] : null);
+    const shows = (userBoard && Array.isArray(userBoard.shows)) ? userBoard.shows : [];
+    
+    const friendRecord = friendsDb[user.id] || { friends: [], pendingSent: [], pendingReceived: [] };
+    const friendIds: string[] = Array.isArray(friendRecord.friends) ? friendRecord.friends : [];
+    const isOnline = isUserPresenceOnline(user.id, user.email, user.name);
+
+    friendIds.forEach(fId => {
+      const match = allUsersList.find((u: any) => u.id === fId);
+      const fName = match ? match.name : fId;
+      const pairKey = [user.id, fId].sort().join("___");
+      if (!networkConnectionsList.some(conn => [conn.user1Id, conn.user2Id].sort().join("___") === pairKey)) {
+        networkConnectionsList.push({
+          user1Id: user.id,
+          user1Name: user.name,
+          user2Id: fId,
+          user2Name: fName
+        });
+      }
+    });
+
+    let watching = 0, backlog = 0, completed = 0, dropped = 0;
+    shows.forEach((show: any) => {
+      const st = show.status || 'Watching';
+      if (st === 'Watching') watching++;
+      else if (st === 'Backlog') backlog++;
+      else if (st === 'Completed') completed++;
+      else if (st === 'Dropped') dropped++;
+
+      const key = show.title.toLowerCase().trim();
+      if (!showFrequencyMap[key]) {
+        showFrequencyMap[key] = {
+          title: show.title,
+          count: 0,
+          bannerImage: show.bannerImage,
+          users: [],
+          statuses: { Watching: 0, Backlog: 0, Completed: 0, Dropped: 0 },
+          scores: [],
+          services: {}
+        };
+      }
+      showFrequencyMap[key].count++;
+      showFrequencyMap[key].users.push({
+        id: user.id,
+        name: user.name || user.id,
+        status: st,
+        score: show.userScore || null
+      });
+      showFrequencyMap[key].statuses[st] = (showFrequencyMap[key].statuses[st] || 0) + 1;
+      if (typeof show.userScore === 'number' && show.userScore > 0) showFrequencyMap[key].scores.push(show.userScore);
+      if (show.streamingService) {
+        showFrequencyMap[key].services[show.streamingService] = (showFrequencyMap[key].services[show.streamingService] || 0) + 1;
+      }
+    });
+
+    return {
+      id: user.id,
+      name: user.name || 'Watch Buddy',
+      email: user.email || `${user.id}@couchtaterz.com`,
+      avatarUrl: user.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.id}`,
+      isOnline,
+      friendsCount: friendIds.length,
+      friendIds,
+      stats: {
+        totalShows: shows.length,
+        watching,
+        backlog,
+        completed,
+        dropped
+      },
+      shows: shows.map((s: any) => ({
+        id: s.id,
+        title: s.title,
+        status: s.status || 'Watching',
+        streamingService: s.streamingService || 'Other',
+        userScore: s.userScore || null
+      }))
+    };
+  });
+
+  const topShowsList = Object.values(showFrequencyMap)
+    .sort((a, b) => b.count - a.count)
+    .map(item => {
+      const topService = Object.entries(item.services).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Other';
+      return {
+        title: item.title,
+        count: item.count,
+        users: item.users,
+        bannerImage: item.bannerImage,
+        statuses: item.statuses,
+        streamingService: topService,
+        avgScore: item.scores.length > 0 ? Number((item.scores.reduce((a, b) => a + b, 0) / item.scores.length).toFixed(1)) : null
+      };
+    });
+
+  res.json({
+    users: userSummaries,
+    networkConnections: networkConnectionsList,
+    topShows: topShowsList
+  });
+});
+
 // Friends API endpoints
-app.get("/api/friends/:userId", (req, res) => {
+app.get("/api/friends/:userId", async (req, res) => {
   const { userId } = req.params;
+  await ensureDatabaseSynced();
   const db = readFriendsDb();
   const record = getUserFriendsRecord(db, userId);
+  writeFriendsDb(db, [userId, "default", "user-julio"]);
   res.json(record);
 });
 
-app.post("/api/friends/request", (req, res) => {
+app.post("/api/friends/request", async (req, res) => {
   const { fromUserId, toUserId, fromUserName, fromUserAvatar, message } = req.body || {};
   if (!fromUserId || !toUserId || fromUserId === toUserId) {
     res.status(400).json({ error: "Invalid parameters" });
     return;
   }
 
+  if (fromUserId === "guest-demo" || toUserId === "guest-demo" || fromUserId.startsWith("guest") || toUserId.startsWith("guest")) {
+    res.json({ success: true, message: "Demo friend request processed (temporary)" });
+    return;
+  }
+
+  await ensureDatabaseSynced();
   const db = readFriendsDb();
   const sender = getUserFriendsRecord(db, fromUserId);
   const recipient = getUserFriendsRecord(db, toUserId);
@@ -1683,17 +3411,23 @@ app.post("/api/friends/request", (req, res) => {
     });
   }
 
-  writeFriendsDb(db, [fromUserId, toUserId]);
+  await writeFriendsDbAsync(db, [fromUserId, toUserId]);
   res.json({ success: true, message: `Friend request sent to ${toUserId}` });
 });
 
-app.post("/api/friends/respond", (req, res) => {
+app.post("/api/friends/respond", async (req, res) => {
   const { userId, targetUserId, action, replyMessage } = req.body || {};
   if (!userId || !targetUserId) {
     res.status(400).json({ error: "Invalid parameters" });
     return;
   }
 
+  if (userId === "guest-demo" || targetUserId === "guest-demo" || userId.startsWith("guest") || targetUserId.startsWith("guest")) {
+    res.json({ success: true, message: `Demo action ${action} processed (temporary)` });
+    return;
+  }
+
+  await ensureDatabaseSynced();
   const db = readFriendsDb();
   const userRecord = getUserFriendsRecord(db, userId);
   const targetRecord = getUserFriendsRecord(db, targetUserId);
@@ -1728,17 +3462,23 @@ app.post("/api/friends/respond", (req, res) => {
     }
   }
 
-  writeFriendsDb(db, [userId, targetUserId]);
+  await writeFriendsDbAsync(db, [userId, targetUserId]);
   res.json({ success: true, message: `Action ${action} executed for ${targetUserId}` });
 });
 
-app.post("/api/friends/connect", (req, res) => {
+app.post("/api/friends/connect", async (req, res) => {
   const { user1Id, user2Id } = req.body || {};
   if (!user1Id || !user2Id || user1Id === user2Id) {
     res.status(400).json({ error: "Invalid parameters" });
     return;
   }
 
+  if (user1Id === "guest-demo" || user2Id === "guest-demo" || user1Id.startsWith("guest") || user2Id.startsWith("guest")) {
+    res.json({ success: true, message: "Demo connection processed (temporary)" });
+    return;
+  }
+
+  await ensureDatabaseSynced();
   const db = readFriendsDb();
   const u1 = getUserFriendsRecord(db, user1Id);
   const u2 = getUserFriendsRecord(db, user2Id);
@@ -1752,13 +3492,17 @@ app.post("/api/friends/connect", (req, res) => {
   u2.pendingSent = u2.pendingSent.filter(id => id !== user1Id);
   u2.pendingReceived = u2.pendingReceived.filter(item => (typeof item === 'string' ? item : item.fromUserId) !== user1Id);
 
-  writeFriendsDb(db, [user1Id, user2Id]);
+  await writeFriendsDbAsync(db, [user1Id, user2Id]);
   res.json({ success: true, message: `Connected ${user1Id} and ${user2Id}` });
 });
 
 // 2.5a. Export entire database
 app.get("/api/admin/backup", (req, res) => {
   try {
+    const email = (req.query.email as string) || '';
+    if (email.trim().toLowerCase() !== 'juliozaldivar@gmail.com') {
+      return res.status(403).json({ error: "Access denied. Database backup requires verified admin email (juliozaldivar@gmail.com)." });
+    }
     const db = readDatabase();
     res.setHeader("Content-Disposition", "attachment; filename=couchtater_backup.json");
     res.setHeader("Content-Type", "application/json");
@@ -1771,6 +3515,10 @@ app.get("/api/admin/backup", (req, res) => {
 // 2.5b. Import/restore entire database
 app.post("/api/admin/restore", async (req, res) => {
   try {
+    const email = (req.query.email as string) || (req.body && req.body.email) || '';
+    if (email.trim().toLowerCase() !== 'juliozaldivar@gmail.com') {
+      return res.status(403).json({ error: "Access denied. Database restore requires verified admin email (juliozaldivar@gmail.com)." });
+    }
     let backupData = req.body;
     if (!backupData) {
       res.status(400).json({ error: "Invalid or empty backup payload." });
@@ -1928,6 +3676,916 @@ app.get("/api/login-banners", (req, res) => {
     res.json([]);
   }
 });
+
+// Merchandise Database & Seed Logic
+const DEFAULT_SIMPSONS_MERCHANDISE: MerchandiseItem[] = [
+  {
+    id: 'simpsons-book-1',
+    showTitle: 'The Simpsons',
+    category: 'books',
+    title: "The Simpsons: Treehouse of Horror - Ominous Omnibus Vol. 1",
+    price: '$34.99',
+    rating: '4.9',
+    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=The+Simpsons+Treehouse+of+Horror+Ominous+Omnibus',
+    badge: 'Hardcover',
+    description: 'Deluxe hardcover collecting classic halloween comic stories by Matt Groening and legendary guest artists.'
+  },
+  {
+    id: 'simpsons-book-2',
+    showTitle: 'The Simpsons',
+    category: 'books',
+    title: 'Simpsons Comics Extravaganza (Collector Edition)',
+    price: '$16.95',
+    rating: '4.8',
+    imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=Simpsons+Comics+Extravaganza',
+    badge: 'Best Seller',
+    description: 'Full-color laugh-packed comic volume featuring Homer, Bart, Lisa, and the entire Springfield crew.'
+  },
+  {
+    id: 'simpsons-book-3',
+    showTitle: 'The Simpsons',
+    category: 'books',
+    title: "The Simpsons and Philosophy: The D'oh! of Homer",
+    price: '$18.99',
+    rating: '4.7',
+    imageUrl: 'https://images.unsplash.com/photo-1532012197267-da84d127e765?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=The+Simpsons+and+Philosophy',
+    badge: 'Paperback',
+    description: 'Exploring Aristotle, Kant, and modern ethics through Springfield’s favorite dysfunctional family.'
+  },
+  {
+    id: 'simpsons-book-4',
+    showTitle: 'The Simpsons',
+    category: 'books',
+    title: 'The Official Simpsons Unofficial Cookbook',
+    price: '$19.99',
+    rating: '4.9',
+    imageUrl: 'https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=The+Simpsons+Official+Cookbook',
+    badge: 'Top Gift',
+    description: '85 authentic recipes from Krusty Burgers to Flaming Moes and Marge’s famous pork chops.'
+  },
+  {
+    id: 'simpsons-cloth-1',
+    showTitle: 'The Simpsons',
+    category: 'clothing',
+    title: "Homer Simpson \"D'oh!\" Vintage Graphic T-Shirt",
+    price: '$22.99',
+    rating: '4.8',
+    imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=The+Simpsons+Homer+Doh+Shirt',
+    badge: '100% Cotton',
+    description: 'Officially licensed ultra-soft vintage washed graphic tee featuring classic Homer artwork.'
+  },
+  {
+    id: 'simpsons-cloth-2',
+    showTitle: 'The Simpsons',
+    category: 'clothing',
+    title: 'Krusty Burger Retro Drive-In Heavyweight Hoodie',
+    price: '$44.99',
+    rating: '4.9',
+    imageUrl: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=Krusty+Burger+Hoodie',
+    badge: 'Prime Delivery',
+    description: 'Cozy fleece hoodie featuring the iconic Krusty Burger drive-thru neon emblem.'
+  },
+  {
+    id: 'simpsons-cloth-3',
+    showTitle: 'The Simpsons',
+    category: 'clothing',
+    title: 'Duff Beer Vintage Distressed Snapback Hat',
+    price: '$19.99',
+    rating: '4.7',
+    imageUrl: 'https://images.unsplash.com/photo-1576995853123-5a10305d93c0?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=Duff+Beer+Cap',
+    badge: 'Adjustable',
+    description: 'Distressed cotton snapback with thick embroidered Duff Beer logo patch on front.'
+  },
+  {
+    id: 'simpsons-cloth-4',
+    showTitle: 'The Simpsons',
+    category: 'clothing',
+    title: 'Bart Simpson "Eat My Shorts" Crew Socks (3-Pack)',
+    price: '$14.99',
+    rating: '4.8',
+    imageUrl: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=Bart+Simpson+Socks',
+    badge: '3-Pack',
+    description: 'Cushioned daily crew socks showcasing Bart, El Barto graffiti tags, and skateboard icons.'
+  },
+  {
+    id: 'simpsons-coll-1',
+    showTitle: 'The Simpsons',
+    category: 'collectibles',
+    title: 'Funko Pop! Animation: Homer Simpson in Hedges #1252',
+    price: '$12.99',
+    rating: '4.9',
+    imageUrl: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=Funko+Pop+Homer+in+Hedges',
+    badge: 'Funko Pop!',
+    description: 'The viral meme turned 3.75" vinyl collectible figure. A must-have for Simpsons fans!'
+  },
+  {
+    id: 'simpsons-coll-2',
+    showTitle: 'The Simpsons',
+    category: 'collectibles',
+    title: 'Funko Pop! The Simpsons - Bartman #503',
+    price: '$14.99',
+    rating: '4.8',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=Funko+Pop+Bartman',
+    badge: 'Funko Pop!',
+    description: 'Super-detailed vinyl figure of Bart Simpson in his legendary cape and mask as Bartman.'
+  },
+  {
+    id: 'simpsons-coll-3',
+    showTitle: 'The Simpsons',
+    category: 'collectibles',
+    title: 'LEGO The Simpsons House (71006) Collector Set',
+    price: '$349.99',
+    rating: '4.9',
+    imageUrl: 'https://images.unsplash.com/photo-1563089145-599997674d42?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=LEGO+The+Simpsons+House',
+    badge: 'LEGO Collector',
+    description: 'Massive 2,523-piece replica of 742 Evergreen Terrace with full interior details and 6 minifigures.'
+  },
+  {
+    id: 'simpsons-coll-4',
+    showTitle: 'The Simpsons',
+    category: 'collectibles',
+    title: 'Duff Beer Can Heavy Metal Bottle Opener Keychain',
+    price: '$9.99',
+    rating: '4.8',
+    imageUrl: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&q=80&w=800',
+    amazonUrl: 'https://www.amazon.com/s?k=Duff+Beer+Keychain',
+    badge: 'Keychain',
+    description: 'Die-cast metal keychain with dual-sided enamel design and integrated cap lifter tool.'
+  }
+];
+
+let IN_MEMORY_MERCHANDISE: MerchandiseItem[] = [...DEFAULT_SIMPSONS_MERCHANDISE];
+
+// Seed initial items asynchronously into Cloud SQL if configured
+(async () => {
+  try {
+    for (const item of DEFAULT_SIMPSONS_MERCHANDISE) {
+      await saveMerchandiseItemToCloudSql(item);
+    }
+  } catch (e) {}
+})();
+
+function findShowBannerImage(showTitle: string): string | null {
+  try {
+    const db = readDatabase();
+    const normalized = showTitle.toLowerCase().trim();
+    for (const board of Object.values(db) as any[]) {
+      if (board && Array.isArray(board.shows)) {
+        for (const show of board.shows) {
+          if (show && show.title && show.title.toLowerCase().trim().includes(normalized)) {
+            if (show.bannerImage) return show.bannerImage;
+          }
+        }
+      }
+    }
+  } catch (e) {}
+  return null;
+}
+
+function generateGenericShowMerch(showTitle: string, bannerUrl: string = ''): MerchandiseItem[] {
+  const enc = encodeURIComponent(showTitle);
+  const normalized = showTitle.toLowerCase().trim();
+  const showBanner = bannerUrl || findShowBannerImage(showTitle) || '';
+
+  // 1. Breaking Bad
+  if (normalized.includes('breaking bad')) {
+    return [
+      {
+        id: `bb-book-1`,
+        showTitle,
+        category: 'books',
+        title: 'Breaking Bad: The Official Companion',
+        price: '$22.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/81fH+s560ML._SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Breaking+Bad+Official+Book`,
+        badge: 'Hardcover',
+        description: 'Comprehensive companion book featuring behind-the-scenes interviews, set photos, and episode breakdowns.'
+      },
+      {
+        id: `bb-cloth-1`,
+        showTitle,
+        category: 'clothing',
+        title: 'Los Pollos Hermanos Official Graphic T-Shirt',
+        price: '$21.99',
+        rating: '4.8',
+        imageUrl: 'https://m.media-amazon.com/images/I/61iVq1B-+XL._AC_SX679_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Los+Pollos+Hermanos+T-Shirt`,
+        badge: 'Top Seller',
+        description: 'Officially licensed yellow/white graphic tee with the famous Los Pollos Hermanos restaurant logo.'
+      },
+      {
+        id: `bb-cloth-2`,
+        showTitle,
+        category: 'clothing',
+        title: 'Heisenberg "I Am The One Who Knocks" Heavyweight Hoodie',
+        price: '$44.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/61W3t4S6+vL._AC_SX679_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Heisenberg+Hoodie`,
+        badge: '100% Cotton',
+        description: 'Premium black pullover fleece hoodie showcasing Walter White’s iconic pork pie hat silhouette.'
+      },
+      {
+        id: `bb-coll-1`,
+        showTitle,
+        category: 'collectibles',
+        title: 'Funko Pop! Television: Breaking Bad - Walter White Heisenberg #162',
+        price: '$29.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/61hX4K0P70L._AC_SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Funko+Pop+Walter+White`,
+        badge: 'Vaulted Collectible',
+        description: 'Rare 3.75" vinyl collectible of Walter White wearing sunglasses and dark pork pie hat.'
+      },
+      {
+        id: `bb-coll-2`,
+        showTitle,
+        category: 'collectibles',
+        title: 'Los Pollos Hermanos Official Yellow Apron & Chef Cap Set',
+        price: '$18.99',
+        rating: '4.8',
+        imageUrl: 'https://m.media-amazon.com/images/I/71r2I1Q4BGL._AC_SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Los+Pollos+Hermanos+Apron`,
+        badge: 'Costume Set',
+        description: 'Full cosplay/kitchen apron set with embroidered Pollos Hermanos chicken emblems.'
+      }
+    ];
+  }
+
+  // 2. Stranger Things
+  if (normalized.includes('stranger things')) {
+    return [
+      {
+        id: `st-book-1`,
+        showTitle,
+        category: 'books',
+        title: 'Stranger Things: Worlds Turned Upside Down (Official Behind-the-Scenes)',
+        price: '$24.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/91E3eJ3SFFL._SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Stranger+Things+Worlds+Turned+Upside+Down`,
+        badge: 'Hardcover',
+        description: 'Includes a map of Hawkins, distress cipher wheel, and concept art from the Duffer Brothers.'
+      },
+      {
+        id: `st-cloth-1`,
+        showTitle,
+        category: 'clothing',
+        title: 'Hellfire Club Official Baseball Raglan Tee',
+        price: '$23.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/61vH753jEGL._AC_SX679_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Hellfire+Club+Shirt`,
+        badge: 'Best Seller',
+        description: 'Classic 3/4 sleeve raglan t-shirt with Eddie Munson’s Hawkins High Hellfire Club demon artwork.'
+      },
+      {
+        id: `st-cloth-2`,
+        showTitle,
+        category: 'clothing',
+        title: 'Hawkins High School Tigers Vintage Athletics Hoodie',
+        price: '$39.99',
+        rating: '4.8',
+        imageUrl: 'https://m.media-amazon.com/images/I/61eU9K08yNL._AC_SX679_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Hawkins+High+Hoodie`,
+        badge: 'Retro Fit',
+        description: 'Green and yellow vintage washed fleece hoodie with Hawkins Tigers team logo on chest.'
+      },
+      {
+        id: `st-coll-1`,
+        showTitle,
+        category: 'collectibles',
+        title: 'Funko Pop! Television: Stranger Things - Eleven with Eggos #421',
+        price: '$14.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/61qJ+6p13mL._AC_SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Funko+Pop+Eleven+Eggo`,
+        badge: 'Funko Pop!',
+        description: 'Season 1 Eleven in pink dress holding boxes of frozen Eggo waffles.'
+      },
+      {
+        id: `st-coll-2`,
+        showTitle,
+        category: 'collectibles',
+        title: 'Paladone Stranger Things Demogorgon 3D Desk Lamp',
+        price: '$29.99',
+        rating: '4.8',
+        imageUrl: 'https://m.media-amazon.com/images/I/71xS5E44dLL._AC_SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Demogorgon+Desk+Lamp`,
+        badge: 'LED Mood Light',
+        description: 'Detailed red-glowing Demogorgon head desk lamp powered by USB.'
+      }
+    ];
+  }
+
+  // 3. The Office
+  if (normalized.includes('office')) {
+    return [
+      {
+        id: `off-book-1`,
+        showTitle,
+        category: 'books',
+        title: 'The Office: The Untold Story of the Greatest Sitcom',
+        price: '$17.99',
+        rating: '4.8',
+        imageUrl: 'https://m.media-amazon.com/images/I/81x1R0L0NML._SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=The+Office+Untold+Story+Book`,
+        badge: 'Bestseller',
+        description: 'Oral history featuring exclusive interviews with Steve Carell, John Krasinski, Jenna Fischer, and Rainn Wilson.'
+      },
+      {
+        id: `off-cloth-1`,
+        showTitle,
+        category: 'clothing',
+        title: 'Dunder Mifflin Paper Co. Scranton Branch Graphic Tee',
+        price: '$19.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/61N96G1S71L._AC_SX679_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Dunder+Mifflin+T-Shirt`,
+        badge: 'Classic Fit',
+        description: 'Heavyweight cotton navy t-shirt printed with the iconic Dunder Mifflin Paper Company logo.'
+      },
+      {
+        id: `off-cloth-2`,
+        showTitle,
+        category: 'clothing',
+        title: 'World\'s Best Boss Hooded Sweatshirt',
+        price: '$38.99',
+        rating: '4.8',
+        imageUrl: 'https://m.media-amazon.com/images/I/61zL0491-9L._AC_SX679_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Worlds+Best+Boss+Hoodie`,
+        badge: 'Michael Scott',
+        description: 'Cozy grey pullover hoodie featuring Michael Scott’s legendary self-awarded title.'
+      },
+      {
+        id: `off-coll-1`,
+        showTitle,
+        category: 'collectibles',
+        title: 'World\'s Best Boss 11oz Ceramic Coffee Mug',
+        price: '$14.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/71O6-u41s-L._AC_SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Worlds+Best+Boss+Mug`,
+        badge: 'Must Have',
+        description: 'Authentic Spencer’s replica ceramic mug as seen on Michael Scott’s desk.'
+      },
+      {
+        id: `off-coll-2`,
+        showTitle,
+        category: 'collectibles',
+        title: 'Funko Pop! The Office: Dwight Schrute with Stapler in Jello #871',
+        price: '$15.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/61C2l0qW02L._AC_SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Funko+Pop+Dwight+Stapler+Jello`,
+        badge: 'Funko Pop!',
+        description: 'Dwight holding his stapler encased in Jim’s yellow gelatin prank.'
+      }
+    ];
+  }
+
+  // 4. Friends
+  if (normalized.includes('friends')) {
+    return [
+      {
+        id: `fr-book-1`,
+        showTitle,
+        category: 'books',
+        title: 'Friends: The Official Cookbook',
+        price: '$18.99',
+        rating: '4.8',
+        imageUrl: 'https://m.media-amazon.com/images/I/81x6100u04L._SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Friends+Official+Cookbook`,
+        badge: 'Hardcover',
+        description: 'Over 100 recipes including Monica’s Friendsgiving Feast, Joey’s Special, and Rachel’s Trifle.'
+      },
+      {
+        id: `fr-cloth-1`,
+        showTitle,
+        category: 'clothing',
+        title: 'Friends Classic Colorful Dot Logo T-Shirt',
+        price: '$19.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/61x0S62M8HL._AC_SX679_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Friends+Logo+T-Shirt`,
+        badge: 'Classic Fit',
+        description: 'Soft black tee with the famous F•R•I•E•N•D•S title graphic.'
+      },
+      {
+        id: `fr-coll-1`,
+        showTitle,
+        category: 'collectibles',
+        title: 'Central Perk Oversized 24oz Cappuccino Ceramic Mug',
+        price: '$16.99',
+        rating: '4.9',
+        imageUrl: 'https://m.media-amazon.com/images/I/7112W40O-uL._AC_SL1500_.jpg',
+        amazonUrl: `https://www.amazon.com/s?k=Central+Perk+Coffee+Mug`,
+        badge: '24oz Giant Mug',
+        description: 'Heavyweight green coffee house mug featuring the Central Perk couch logo.'
+      }
+    ];
+  }
+
+  // 5. Default Fallback Generator for ALL other shows (uses show poster/banner + real Amazon search links)
+  const fallbackImg = showBanner || '';
+  return [
+    {
+      id: `gen-${enc}-book-1`,
+      showTitle,
+      category: 'books',
+      title: `${showTitle}: The Official Collector's Edition & Scriptbook`,
+      price: '$24.99',
+      rating: '4.8',
+      imageUrl: fallbackImg,
+      amazonUrl: `https://www.amazon.com/s?k=${enc}+book+graphic+novel`,
+      badge: 'Hardcover',
+      description: `Behind-the-scenes concept art, original scripts, and exclusive cast interviews from ${showTitle}.`
+    },
+    {
+      id: `gen-${enc}-book-2`,
+      showTitle,
+      category: 'books',
+      title: `${showTitle}: Volume 1 Expanded Graphic Novel`,
+      price: '$16.99',
+      rating: '4.7',
+      imageUrl: fallbackImg,
+      amazonUrl: `https://www.amazon.com/s?k=${enc}+graphic+novel`,
+      badge: 'Graphic Novel',
+      description: `Official expanded graphic novel adventures continuing story arcs from ${showTitle}.`
+    },
+    {
+      id: `gen-${enc}-cloth-1`,
+      showTitle,
+      category: 'clothing',
+      title: `${showTitle} Official Vintage Graphic T-Shirt`,
+      price: '$21.99',
+      rating: '4.9',
+      imageUrl: fallbackImg,
+      amazonUrl: `https://www.amazon.com/s?k=${enc}+shirt+apparel`,
+      badge: '100% Cotton',
+      description: `Soft vintage washed unisex graphic tee featuring official key artwork from ${showTitle}.`
+    },
+    {
+      id: `gen-${enc}-cloth-2`,
+      showTitle,
+      category: 'clothing',
+      title: `${showTitle} Heavyweight Fleece Pullover Hoodie`,
+      price: '$42.99',
+      rating: '4.8',
+      imageUrl: fallbackImg,
+      amazonUrl: `https://www.amazon.com/s?k=${enc}+hoodie`,
+      badge: 'Prime',
+      description: `Premium fleece hoodie with embroidered emblem and double-lined hood for fans of ${showTitle}.`
+    },
+    {
+      id: `gen-${enc}-coll-1`,
+      showTitle,
+      category: 'collectibles',
+      title: `Funko Pop! Television: ${showTitle} Collector Figure`,
+      price: '$13.99',
+      rating: '4.9',
+      imageUrl: fallbackImg,
+      amazonUrl: `https://www.amazon.com/s?k=Funko+Pop+${enc}`,
+      badge: 'Funko Pop!',
+      description: `Collectible 3.75-inch vinyl figure celebrating fan-favorite characters from ${showTitle}.`
+    },
+    {
+      id: `gen-${enc}-coll-2`,
+      showTitle,
+      category: 'collectibles',
+      title: `${showTitle} Premium Metal Charm Keychain & Collector Pin Set`,
+      price: '$11.99',
+      rating: '4.8',
+      imageUrl: fallbackImg,
+      amazonUrl: `https://www.amazon.com/s?k=${enc}+keychain+funko`,
+      badge: 'Keychain Set',
+      description: `Heavy-duty enamel keychain with laser-etched metal detailing inspired by ${showTitle}.`
+    }
+  ];
+}
+
+// API Routes for Merchandise
+app.get("/api/merchandise", async (req, res) => {
+  try {
+    const show = (req.query.show as string) || "The Simpsons";
+    const banner = (req.query.banner as string) || "";
+    const defaultImageMap = new Map(DEFAULT_SIMPSONS_MERCHANDISE.map(d => [d.id, d.imageUrl]));
+
+    // Try Cloud SQL first
+    const sqlItems = await getMerchandiseForShowFromCloudSql(show);
+    if (sqlItems && sqlItems.length > 0) {
+      const refreshedSqlItems = sqlItems.map(item => ({
+        ...item,
+        imageUrl: defaultImageMap.get(item.id) || item.imageUrl
+      }));
+      return res.json({ source: 'sql', items: refreshedSqlItems });
+    }
+
+    // Match in-memory store
+    const normalizedShow = show.toLowerCase().trim();
+    let matched = IN_MEMORY_MERCHANDISE.filter(i => 
+      i.showTitle.toLowerCase().trim().includes(normalizedShow) || 
+      normalizedShow.includes(i.showTitle.toLowerCase().trim())
+    );
+
+    if (matched.length === 0) {
+      // Auto-generate generic show merch items using banner if provided
+      const generated = generateGenericShowMerch(show, banner);
+      IN_MEMORY_MERCHANDISE.push(...generated);
+      for (const item of generated) {
+        await saveMerchandiseItemToCloudSql(item);
+      }
+      matched = generated;
+    }
+
+    const refreshedMatched = matched.map(item => ({
+      ...item,
+      imageUrl: defaultImageMap.get(item.id) || item.imageUrl
+    }));
+
+    res.json({ source: 'database', items: refreshedMatched });
+  } catch (err: any) {
+    console.error('Error in /api/merchandise GET:', err);
+    res.status(500).json({ error: 'Failed to fetch merchandise' });
+  }
+});
+
+app.post("/api/merchandise", async (req, res) => {
+  try {
+    const item = req.body as MerchandiseItem;
+    if (!item || !item.showTitle || !item.title || !item.amazonUrl) {
+      return res.status(400).json({ error: 'Missing required merchandise fields' });
+    }
+
+    if (!item.id) {
+      item.id = `item-${Date.now()}`;
+    }
+
+    const existingIdx = IN_MEMORY_MERCHANDISE.findIndex(i => i.id === item.id);
+    if (existingIdx >= 0) {
+      IN_MEMORY_MERCHANDISE[existingIdx] = item;
+    } else {
+      IN_MEMORY_MERCHANDISE.unshift(item);
+    }
+
+    await saveMerchandiseItemToCloudSql(item);
+
+    res.json({ success: true, item });
+  } catch (err: any) {
+    console.error('Error in /api/merchandise POST:', err);
+    res.status(500).json({ error: 'Failed to save merchandise item' });
+  }
+});
+
+// Endpoint: AI-Powered Search Grounding to discover #1 Best Sellers on Amazon for any show
+app.post("/api/merchandise/discover-bestsellers", async (req, res) => {
+  try {
+    const { showTitle, bannerUrl } = req.body;
+    if (!showTitle) {
+      return res.status(400).json({ error: 'showTitle parameter is required' });
+    }
+
+    let discoveredItems: MerchandiseItem[] = [];
+
+    try {
+      const ai = getAI();
+      const prompt = `Search Amazon and Google for the current #1 best-selling merchandise and top fan-favorite products for the TV show "${showTitle}".
+Find 4 to 6 top real products across categories (books/graphic novels, t-shirts/apparel, Funko Pops/collectibles, collector box sets).
+For each product, return a JSON array of objects with keys:
+- category: "books" | "clothing" | "collectibles"
+- title: string (specific product title on Amazon, e.g. "${showTitle}: The Official Companion Book & Scriptbook")
+- price: string (e.g. "$24.99")
+- rating: string (e.g. "4.9")
+- amazonUrl: string (direct URL or search link on Amazon)
+- badge: string (e.g. "#1 Best Seller", "Amazon Choice", "Top Pick")
+- description: string (1-2 sentences summarizing key product highlights)
+
+Return ONLY valid JSON array without extra text.`;
+
+      const aiRes = await ai.models.generateContent({
+        model: 'gemini-3.6-flash',
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+        }
+      });
+
+      const text = aiRes.text || '';
+      const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/) || [null, text];
+      const parsed = JSON.parse((jsonMatch[1] || text).trim());
+
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const fallbackImg = bannerUrl || findShowBannerImage(showTitle) || '';
+        discoveredItems = parsed.map((p: any, idx: number) => ({
+          id: `bestseller-${encodeURIComponent(showTitle)}-${Date.now()}-${idx}`,
+          showTitle,
+          category: (['books', 'clothing', 'collectibles'].includes(p.category) ? p.category : 'collectibles') as any,
+          title: p.title || `${showTitle} Official Merchandise`,
+          price: p.price || '$19.99',
+          rating: p.rating || '4.9',
+          imageUrl: p.imageUrl || fallbackImg,
+          amazonUrl: p.amazonUrl || `https://www.amazon.com/s?k=${encodeURIComponent(showTitle + ' ' + (p.title || 'bestseller'))}`,
+          badge: p.badge || '#1 Best Seller',
+          description: p.description || `Official top-selling ${showTitle} item on Amazon.`
+        }));
+      }
+    } catch (aiErr) {
+      console.error('Gemini best-sellers search error:', aiErr);
+    }
+
+    // Fallback if AI discovery was empty
+    if (discoveredItems.length === 0) {
+      const generated = generateGenericShowMerch(showTitle, bannerUrl);
+      discoveredItems = generated.map(item => ({
+        ...item,
+        badge: item.badge ? `#1 Best Seller • ${item.badge}` : '#1 Best Seller'
+      }));
+    }
+
+    // Save discovered items to in-memory store and Cloud SQL database
+    for (const item of discoveredItems) {
+      const existingIdx = IN_MEMORY_MERCHANDISE.findIndex(i => i.id === item.id);
+      if (existingIdx >= 0) {
+        IN_MEMORY_MERCHANDISE[existingIdx] = item;
+      } else {
+        IN_MEMORY_MERCHANDISE.unshift(item);
+      }
+      await saveMerchandiseItemToCloudSql(item);
+    }
+
+    res.json({ success: true, count: discoveredItems.length, items: discoveredItems });
+  } catch (err: any) {
+    console.error('Error in /api/merchandise/discover-bestsellers:', err);
+    res.status(500).json({ error: 'Failed to discover best sellers' });
+  }
+});
+
+// Helper: Extract ASIN from Amazon URL or string
+function extractAmazonAsin(urlOrAsin: string): string | null {
+  if (!urlOrAsin) return null;
+  const cleaned = urlOrAsin.trim();
+  if (/^[A-Z0-9]{10}$/i.test(cleaned)) {
+    return cleaned.toUpperCase();
+  }
+  const match = cleaned.match(/(?:\/dp\/|\/gp\/product\/|\/ASIN\/)([A-Z0-9]{10})/i);
+  return match ? match[1].toUpperCase() : null;
+}
+
+// Server-side Amazon Product Details & OpenGraph Fetcher
+async function fetchAmazonProductDetails(amazonUrlOrAsin: string) {
+  const asin = extractAmazonAsin(amazonUrlOrAsin);
+  const targetUrl = asin 
+    ? `https://www.amazon.com/dp/${asin}`
+    : (amazonUrlOrAsin.startsWith('http') ? amazonUrlOrAsin : `https://${amazonUrlOrAsin}`);
+
+  const paapiAccessKey = process.env.AMAZON_PAAPI_ACCESS_KEY;
+  const paapiSecretKey = process.env.AMAZON_PAAPI_SECRET_KEY;
+  const paapiPartnerTag = process.env.AMAZON_PAAPI_PARTNER_TAG;
+  const rapidApiKey = process.env.RAPIDAPI_AMAZON_KEY;
+
+  // 1. Check RapidAPI Amazon Lookup
+  if (rapidApiKey && asin) {
+    try {
+      const rapidRes = await fetch(`https://real-time-amazon-data.p.rapidapi.com/product-details?asin=${asin}&country=US`, {
+        headers: {
+          'x-rapidapi-key': rapidApiKey,
+          'x-rapidapi-host': 'real-time-amazon-data.p.rapidapi.com'
+        }
+      });
+      if (rapidRes.ok) {
+        const json = await rapidRes.json();
+        const data = json.data;
+        if (data) {
+          return {
+            asin,
+            title: data.product_title || 'Amazon Product',
+            price: data.product_price || '$19.99',
+            rating: data.product_star_rating ? String(data.product_star_rating) : '4.8',
+            imageUrl: data.product_photo || data.product_photos?.[0],
+            amazonUrl: data.product_url || `https://www.amazon.com/dp/${asin}`,
+            badge: 'Amazon Verified',
+            description: data.product_description || 'Official Amazon product details retrieved via Product API.'
+          };
+        }
+      }
+    } catch (e: any) {
+      console.warn('RapidAPI lookup warning:', e.message);
+    }
+  }
+
+  // 2. Server-Side Direct Amazon OpenGraph & Metadata Fetcher
+  try {
+    const response = await fetch(targetUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9'
+      }
+    });
+
+    if (response.ok) {
+      const html = await response.text();
+
+      // Extract Title
+      let title = '';
+      const ogTitleMatch = html.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+                           html.match(/<meta\s+name=["']title["']\s+content=["']([^"']+)["']/i);
+      if (ogTitleMatch) {
+        title = ogTitleMatch[1].replace(/:\s*Amazon\.com.*$/i, '').trim();
+      } else {
+        const idTitleMatch = html.match(/id=["']productTitle["'][^>]*>\s*([^<]+)\s*</i);
+        if (idTitleMatch) title = idTitleMatch[1].trim();
+      }
+
+      // Extract Image
+      let imageUrl = '';
+      const ogImageMatch = html.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']+)["']/i);
+      if (ogImageMatch) {
+        imageUrl = ogImageMatch[1];
+      }
+      if (!imageUrl || imageUrl.includes('placeholder')) {
+        const hiresMatch = html.match(/https:\/\/m\.media-amazon\.com\/images\/I\/[A-Za-z0-9%_\-]+\.(?:jpg|png)/i);
+        if (hiresMatch) imageUrl = hiresMatch[0];
+      }
+
+      if (imageUrl) {
+        // Replace small thumbnail modifiers with high-res 1000px Amazon CDN modifier
+        imageUrl = imageUrl.replace(/\._[A-Z0-9_-]+_\./i, '._AC_SL1000_.');
+      }
+
+      // Extract Price
+      let price = '';
+      const priceMatch = html.match(/class=["']a-offscreen["'][^>]*>\s*(\$[0-9,]+\.[0-9]{2})\s*</i);
+      if (priceMatch) price = priceMatch[1];
+
+      // Extract Rating
+      let rating = '4.8';
+      const ratingMatch = html.match(/([0-4]\.[0-9]|5\.0)\s*out of 5 stars/i);
+      if (ratingMatch) rating = ratingMatch[1];
+
+      if (title || imageUrl) {
+        return {
+          asin: asin || 'UNKNOWN',
+          title: title || 'Amazon Product',
+          price: price || '$19.99',
+          rating,
+          imageUrl: imageUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&q=80&w=800',
+          amazonUrl: targetUrl,
+          badge: 'Amazon Item',
+          description: 'Official product metadata retrieved from Amazon.'
+        };
+      }
+    }
+  } catch (e: any) {
+    console.warn('Server Amazon scrape warning:', e.message);
+  }
+
+  return null;
+}
+
+// Server-Side Image Proxy to bypass hotlink and referrer blocks on external images (e.g. Amazon CDN)
+app.get("/api/image-proxy", async (req, res) => {
+  const imageUrl = req.query.url as string;
+  if (!imageUrl) {
+    return res.status(400).send("Missing url parameter");
+  }
+
+  let decodedUrl = imageUrl;
+  try {
+    decodedUrl = decodeURIComponent(imageUrl);
+  } catch {
+    decodedUrl = imageUrl;
+  }
+
+  // If local or relative URL, redirect directly
+  if (decodedUrl.startsWith('/') || decodedUrl.startsWith('data:') || !decodedUrl.startsWith('http')) {
+    if (!res.headersSent) {
+      return res.redirect(302, decodedUrl);
+    }
+    return;
+  }
+
+  try {
+    const validUrl = new URL(decodedUrl);
+
+    const imageRes = await fetchWithTimeout(validUrl.toString(), {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+        'Referer': 'https://www.amazon.com/'
+      }
+    }, 5000);
+
+    if (!imageRes.ok) {
+      if (!res.headersSent) {
+        return res.redirect(302, validUrl.toString());
+      }
+      return;
+    }
+
+    const contentType = imageRes.headers.get('content-type') || 'image/jpeg';
+    const arrayBuffer = await imageRes.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    if (!res.headersSent) {
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.send(buffer);
+    }
+  } catch (err: any) {
+    // Graceful fallback redirect without throwing loud console errors
+    if (!res.headersSent) {
+      try {
+        if (decodedUrl.startsWith('http://') || decodedUrl.startsWith('https://')) {
+          return res.redirect(302, decodedUrl);
+        }
+      } catch {}
+      return res.status(500).send("Error proxying image");
+    }
+  }
+});
+
+// Amazon PA-API / Product Lookup Status Endpoint
+app.get("/api/amazon/status", (req, res) => {
+  const paapiConfigured = Boolean(
+    process.env.AMAZON_PAAPI_ACCESS_KEY &&
+    process.env.AMAZON_PAAPI_SECRET_KEY &&
+    process.env.AMAZON_PAAPI_PARTNER_TAG
+  );
+  const rapidApiConfigured = Boolean(process.env.RAPIDAPI_AMAZON_KEY);
+
+  res.json({
+    paapiConfigured,
+    rapidApiConfigured,
+    activeMode: paapiConfigured ? 'Amazon PA-API v5' : (rapidApiConfigured ? 'RapidAPI Amazon Data' : 'Server OpenGraph Metadata Fetcher')
+  });
+});
+
+// Endpoint to Lookup & Fetch Product Info from Amazon URL or ASIN
+app.post("/api/amazon/fetch-url", async (req, res) => {
+  try {
+    const { url, asin, showTitle } = req.body;
+    const target = url || asin;
+    if (!target) {
+      return res.status(400).json({ error: 'Amazon URL or ASIN is required' });
+    }
+
+    const productDetails = await fetchAmazonProductDetails(target);
+
+    if (productDetails) {
+      if (showTitle) {
+        const merchItem: MerchandiseItem = {
+          id: `amz-${productDetails.asin}-${Date.now()}`,
+          showTitle,
+          category: 'collectibles',
+          title: productDetails.title,
+          price: productDetails.price,
+          rating: productDetails.rating,
+          imageUrl: productDetails.imageUrl,
+          amazonUrl: productDetails.amazonUrl,
+          badge: productDetails.badge,
+          description: productDetails.description
+        };
+        IN_MEMORY_MERCHANDISE.unshift(merchItem);
+        await saveMerchandiseItemToCloudSql(merchItem);
+        return res.json({ success: true, item: merchItem, productDetails });
+      }
+
+      return res.json({ success: true, productDetails });
+    }
+
+    res.status(404).json({ error: 'Could not automatically parse product details from Amazon. You can paste the direct image link or details.' });
+  } catch (err: any) {
+    console.error('Error in /api/amazon/fetch-url:', err);
+    res.status(500).json({ error: 'Failed to process Amazon product lookup' });
+  }
+});
+
+app.post("/api/merchandise/seed", async (req, res) => {
+  try {
+    for (const item of DEFAULT_SIMPSONS_MERCHANDISE) {
+      await saveMerchandiseItemToCloudSql(item);
+    }
+    IN_MEMORY_MERCHANDISE = [...DEFAULT_SIMPSONS_MERCHANDISE];
+    res.json({ success: true, count: DEFAULT_SIMPSONS_MERCHANDISE.length });
+  } catch (err: any) {
+    res.status(500).json({ error: 'Failed to seed merchandise' });
+  }
+});
+
 
 // Local Database of pre-configured popular shows to bypass rate limits & provide instant matches
 const LOCAL_SHOW_DATABASE: Record<string, any> = {
@@ -2290,8 +4948,11 @@ async function runRedundancyCheckAndValidate(show: any, titleQuery: string): Pro
     }
 
     // CROSS-VERIFICATION STEP 3: Display Season, Episode, & Release Date (nextEpisode)
-    // Find the first episode that airs on or after today (true upcoming episode)
+    // Find the first episode that airs on or after today (true upcoming episode) or premiered recently (within 30 days)
     let tvmazeNextEpisode: any = null;
+    const thirtyDaysAgoMs = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgoStr = new Date(thirtyDaysAgoMs).toISOString().split('T')[0];
+
     if (Array.isArray(episodesList) && episodesList.length > 0) {
       const sortedEps = [...episodesList]
         .filter((ep: any) => ep.season > 0 && ep.airdate)
@@ -2301,19 +4962,24 @@ async function runRedundancyCheckAndValidate(show: any, titleQuery: string): Pro
           return a.number - b.number;
         });
 
-      const upcomingEp = sortedEps.find((ep: any) => ep.airdate >= todayStr);
-      if (upcomingEp) {
+      // Priority 1: First upcoming episode (airdate >= today)
+      // Priority 2: Recently premiered episode (aired within last 30 days)
+      const futureEp = sortedEps.find((ep: any) => ep.airdate >= todayStr);
+      const recentEp = !futureEp ? sortedEps.filter((ep: any) => ep.airdate < todayStr && ep.airdate >= thirtyDaysAgoStr).pop() : null;
+
+      const targetEp = futureEp || recentEp;
+      if (targetEp) {
         tvmazeNextEpisode = {
-          season: upcomingEp.season,
-          episode: upcomingEp.number,
-          title: upcomingEp.name || `Episode ${upcomingEp.number}`,
-          airDate: upcomingEp.airdate
+          season: targetEp.season,
+          episode: targetEp.number,
+          title: targetEp.name || `Episode ${targetEp.number}`,
+          airDate: targetEp.airdate
         };
       }
     } else if (tvmazeData._embedded?.nextepisode) {
       // Fallback if episodes list is not available but nextepisode is embedded
       const next = tvmazeData._embedded.nextepisode;
-      if (next.airdate && next.airdate >= todayStr) {
+      if (next.airdate && next.airdate >= thirtyDaysAgoStr) {
         tvmazeNextEpisode = {
           season: next.season || 1,
           episode: next.number || 1,
@@ -2323,12 +4989,11 @@ async function runRedundancyCheckAndValidate(show: any, titleQuery: string): Pro
       }
     }
 
-    // Assign verified next episode or nullify if none is airing in the future
-    if (tvmazeNextEpisode) {
+    // Assign verified next episode or nullify if none is airing in the future / recently
+    if (tvmazeNextEpisode && !show.concluded) {
       show.nextEpisode = tvmazeNextEpisode;
-      show.concluded = false;
     } else {
-      // No future scheduled episodes exist - means the show is currently between seasons or ended
+      // No future or recent scheduled episodes exist - means the show is currently between seasons or ended
       show.nextEpisode = null;
     }
   }
@@ -2540,10 +5205,25 @@ app.post("/api/enrich-show", async (req, res) => {
         "justice league unlimited": "HBO",
         "batman beyond": "HBO",
         "the batman": "HBO",
+        "batman: caped crusader": "Prime Video",
+        "batman caped crusader": "Prime Video",
         "batman": "HBO",
         "fleabag": "Prime Video",
         "spider-man noir": "Prime Video",
-        "spiderman noir": "Prime Video"
+        "spiderman noir": "Prime Video",
+        "my adventures with superman": "HBO",
+        "superman": "HBO",
+        "outlander": "Starz",
+        "power": "Starz",
+        "power book ii: ghost": "Starz",
+        "power book iii: raising kanan": "Starz",
+        "power book iv: force": "Starz",
+        "party down": "Starz",
+        "black sails": "Starz",
+        "spartacus": "Starz",
+        "bmf": "Starz",
+        "the serpent queen": "Starz",
+        "p-valley": "Starz"
       };
 
       if (overrides[cleanTitle]) {
@@ -2551,7 +5231,10 @@ app.post("/api/enrich-show", async (req, res) => {
       }
 
       // Check for fuzzy matching patterns
-      if (cleanTitle.includes("batman")) {
+      if (cleanTitle.includes("caped crusader") || cleanTitle.includes("batman caped crusader")) {
+        return "Prime Video";
+      }
+      if (cleanTitle.includes("batman") || cleanTitle.includes("superman")) {
         return "HBO";
       }
       if (cleanTitle.includes("teen titans")) {
@@ -2566,11 +5249,14 @@ app.post("/api/enrich-show", async (req, res) => {
       if (cleanTitle.includes("spider-man") || cleanTitle.includes("spiderman")) {
         return "Prime Video";
       }
+      if (cleanTitle.includes("power book") || cleanTitle.includes("raising kanan")) {
+        return "Starz";
+      }
 
       if (!networks || !Array.isArray(networks)) return "Other";
       for (const net of networks) {
         const name = net.name.toLowerCase();
-        if (name.includes("hbo") || name.includes("max")) return "HBO";
+        if (name.includes("hbo") || name.includes("max") || name.includes("adult swim") || name.includes("cartoon network") || name.includes("dc universe")) return "HBO";
         if (name.includes("disney")) return "Disney+";
         if (name.includes("netflix")) return "Netflix";
         if (name.includes("amazon") || name.includes("prime")) return "Prime Video";
@@ -2579,6 +5265,7 @@ app.post("/api/enrich-show", async (req, res) => {
         if (name.includes("apple")) return "Apple TV";
         if (name.includes("peacock")) return "Peacock";
         if (name.includes("amc")) return "AMC+";
+        if (name.includes("starz")) return "Starz";
 
         // Broadcast / original network to streaming platform fallbacks
         if (name.includes("fox")) return "Hulu";
@@ -2590,7 +5277,7 @@ app.post("/api/enrich-show", async (req, res) => {
         if (name.includes("showtime")) return "Paramount+";
       }
       const firstNet = networks[0]?.name;
-      const validServices: StreamingService[] = ['HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+'];
+      const validServices: StreamingService[] = ['HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Starz'];
       if (firstNet && validServices.includes(firstNet as StreamingService)) {
         return firstNet as StreamingService;
       }
@@ -2606,10 +5293,11 @@ app.post("/api/enrich-show", async (req, res) => {
           if (!detailsRes.ok) return null;
           const details = await detailsRes.json() as any;
 
-          // Map genres
-          const genres = details.genres && details.genres.length > 0
+          // Map genres with normalization and horror/supernatural enrichment
+          const rawTmdbGenres = details.genres && details.genres.length > 0
             ? details.genres.map((g: any) => g.name)
             : ["Drama"];
+          const genres = normalizeShowGenres(details.name, rawTmdbGenres, details.overview);
 
           const streamingService = determineStreamingService(details.networks, details.name);
 
@@ -3220,6 +5908,7 @@ Instructions:
 3. CRITICAL: Do NOT comment on, analyze, roast, or judge the user's progress or completed status. The application is in active development, and progress tracking data does not accurately reflect how much of a show they have actually watched. Do not assume they are lagging or far behind, and do not make comments about their progress.
 4. If they ask for recommendations:
    - Suggest 3 to 5 existing real TV shows. Strongly align them with their Taste Preferences profile (favorite genres/actors/directors) above.
+   - Focus primarily on recent and modern shows (Current 2020s and 2010s prestige television) by default, rather than vintage 80s shows, unless the user explicitly asks for 80s/retro titles.
    - For each suggestion, state: Title, Streaming Service, why they would love it, and a hilarious description.
 5. If they ask to catch up:
    - Provide high-quality, exciting, and slightly snarky summaries of seasons, arcs, or recap details.
@@ -3243,6 +5932,632 @@ Instructions:
   } catch (error: any) {
     console.log("[Info] Gemini chat session hit an issue:", error?.message || error);
     res.status(500).json({ error: "Failed to generate chat response from Gemini AI" });
+  }
+});
+
+// 4.1. AI Pixel Character Generator Endpoint for Taterz Avatar Builder
+app.post("/api/generate-pixel-character", async (req, res) => {
+  const { characterName } = req.body || {};
+  if (!characterName || typeof characterName !== "string" || !characterName.trim()) {
+    res.status(400).json({ error: "characterName string is required" });
+    return;
+  }
+
+  const cleanName = characterName.trim();
+  const lowerName = cleanName.toLowerCase();
+
+  // Known fallback character presets for instant, highly authentic offline matching (32x32 TV Character Portrait Grid)
+  const KNOWN_CHARACTERS: Record<string, any> = {
+    "walter white": {
+      characterTitle: "Walter White (Heisenberg)",
+      seriesName: "Breaking Bad",
+      characterDescription: "Albuquerque kingpin in iconic porkpie hat, dark sunglasses, brown jacket, and goatee.",
+      config: {
+        body: "russet",
+        hair: "porkpie_hat",
+        hairColor: "brown",
+        eyes: "dark_shades",
+        mouth: "goatee",
+        hat: "porkpie",
+        outfit: "brown_jacket_plaid",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "heisenberg": {
+      characterTitle: "Walter White (Heisenberg)",
+      seriesName: "Breaking Bad",
+      characterDescription: "Albuquerque kingpin in iconic porkpie hat, dark sunglasses, brown jacket, and goatee.",
+      config: {
+        body: "russet",
+        hair: "porkpie_hat",
+        hairColor: "brown",
+        eyes: "dark_shades",
+        mouth: "goatee",
+        hat: "porkpie",
+        outfit: "brown_jacket_plaid",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "geralt": {
+      characterTitle: "Geralt of Rivia",
+      seriesName: "The Witcher",
+      characterDescription: "White Wolf witcher with long silver hair, eye scar, stubble scruff, and Witcher armor.",
+      config: {
+        body: "russet",
+        hair: "white_long",
+        hairColor: "silver",
+        eyes: "chill",
+        mouth: "scruff",
+        hat: "none",
+        outfit: "grey_armor",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "geralt of rivia": {
+      characterTitle: "Geralt of Rivia",
+      seriesName: "The Witcher",
+      characterDescription: "White Wolf witcher with long silver hair, eye scar, stubble scruff, and Witcher armor.",
+      config: {
+        body: "russet",
+        hair: "white_long",
+        hairColor: "silver",
+        eyes: "chill",
+        mouth: "scruff",
+        hat: "none",
+        outfit: "grey_armor",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "michael scott": {
+      characterTitle: "Michael Scott",
+      seriesName: "The Office",
+      characterDescription: "Dunder Mifflin Regional Manager in crisp navy suit with open white collar shirt.",
+      config: {
+        body: "russet",
+        hair: "short",
+        hairColor: "black",
+        eyes: "chill",
+        mouth: "smile",
+        hat: "none",
+        outfit: "suit_open_collar",
+        item: "coffee",
+        bg: "pastel_blue"
+      }
+    },
+    "dwight schrute": {
+      characterTitle: "Dwight Schrute",
+      seriesName: "The Office",
+      characterDescription: "Assistant to the Regional Manager with center-part hair, wire reading glasses, and mustard shirt.",
+      config: {
+        body: "golden",
+        hair: "middle_part",
+        hairColor: "brown",
+        eyes: "wire_specs",
+        mouth: "smirk",
+        hat: "none",
+        outfit: "mustard_shirt_tie",
+        item: "vip_badge",
+        bg: "pastel_blue"
+      }
+    },
+    "bob belcher": {
+      characterTitle: "Bob Belcher",
+      seriesName: "Bob's Burgers",
+      characterDescription: "Ocean Avenue burger chef with thick dark mustache, dark hair, and white apron.",
+      config: {
+        body: "golden",
+        hair: "thick_mustache_hair",
+        hairColor: "black",
+        eyes: "chill",
+        mouth: "thick_stache",
+        hat: "none",
+        outfit: "white_apron",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "tina belcher": {
+      characterTitle: "Tina Belcher",
+      seriesName: "Bob's Burgers",
+      characterDescription: "Eldest Belcher daughter with brown bob, red hair clip, thick black glasses, and blue shirt.",
+      config: {
+        body: "russet",
+        hair: "bob",
+        hairColor: "black",
+        eyes: "thick_black",
+        mouth: "smirk",
+        hat: "none",
+        outfit: "blue_shirt",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "leeloo": {
+      characterTitle: "Leeloo",
+      seriesName: "The Fifth Element",
+      characterDescription: "Supreme Being with vibrant orange bob haircut and signature orange harness top.",
+      config: {
+        body: "russet",
+        hair: "orange_bob",
+        hairColor: "ginger",
+        eyes: "chill",
+        mouth: "smile",
+        hat: "none",
+        outfit: "orange_harness",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "dexter morgan": {
+      characterTitle: "Dexter Morgan",
+      seriesName: "Dexter",
+      characterDescription: "Miami Metro blood spatter analyst in thermal kill shirt with dark hair and intense gaze.",
+      config: {
+        body: "golden",
+        hair: "short",
+        hairColor: "brown",
+        eyes: "chill",
+        mouth: "smirk",
+        hat: "none",
+        outfit: "thermal_grey",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "peg bundy": {
+      characterTitle: "Peg Bundy",
+      seriesName: "Married... with Children",
+      characterDescription: "Red-haired 80s diva with voluminous bouffant hair, red lips, and leopard print top.",
+      config: {
+        body: "russet",
+        hair: "bouffant",
+        hairColor: "ginger",
+        eyes: "chill",
+        mouth: "red_lips",
+        hat: "none",
+        outfit: "leopard_top",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "sheldon cooper": {
+      characterTitle: "Sheldon Cooper",
+      seriesName: "The Big Bang Theory",
+      characterDescription: "Caltech theoretical physicist in argyle sweater vest over white collared shirt.",
+      config: {
+        body: "russet",
+        hair: "short",
+        hairColor: "brown",
+        eyes: "chill",
+        mouth: "smile",
+        hat: "none",
+        outfit: "sweater_vest",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "charlie kelly": {
+      characterTitle: "Charlie Kelly",
+      seriesName: "It's Always Sunny in Philadelphia",
+      characterDescription: "Paddy's Pub janitor with wild curly hair, full scruffy beard, tired eye bags, and green army jacket.",
+      config: {
+        body: "golden",
+        hair: "curly_wild",
+        hairColor: "black",
+        eyes: "tired_eyes",
+        mouth: "full_beard",
+        hat: "none",
+        outfit: "army_jacket",
+        item: "none",
+        bg: "pastel_blue"
+      }
+    },
+    "carmy": {
+      characterTitle: "Carmy Berzatto",
+      seriesName: "The Bear",
+      characterDescription: "Executive Chef Carmy in signature white chef shirt with curly blonde hair.",
+      config: {
+        body: "russet",
+        hair: "curly_blonde",
+        hairColor: "blonde",
+        eyes: "chill",
+        mouth: "smirk",
+        hat: "none",
+        outfit: "chef_coat",
+        item: "pizza",
+        bg: "pastel_blue"
+      }
+    },
+    "carmy berzatto": {
+      characterTitle: "Carmy Berzatto",
+      seriesName: "The Bear",
+      characterDescription: "Executive Chef Carmy in signature white chef shirt with curly blonde hair.",
+      config: {
+        body: "russet",
+        hair: "curly_blonde",
+        hairColor: "blonde",
+        eyes: "chill",
+        mouth: "smirk",
+        hat: "none",
+        outfit: "chef_coat",
+        item: "pizza",
+        bg: "pastel_blue"
+      }
+    },
+    "eric forman": {
+      characterTitle: "Eric Forman",
+      seriesName: "That '70s Show",
+      characterDescription: "70s Point Place teenager with classic brown crop, cozy couch hoodie, and 8-bit TV remote.",
+      config: {
+        body: "russet",
+        hair: "short",
+        hairColor: "brown",
+        eyes: "chill",
+        mouth: "smirk",
+        hat: "none",
+        outfit: "hoodie",
+        item: "remote",
+        bg: "pastel_blue"
+      }
+    }
+  };
+
+  try {
+    // Check known exact local match first for instant response
+    for (const [key, preset] of Object.entries(KNOWN_CHARACTERS)) {
+      if (lowerName === key || lowerName.includes(key)) {
+        res.json(preset);
+        return;
+      }
+    }
+
+    // Try Gemini AI Generation
+    const prompt = `You are a TV character 8-bit pixel art designer for CouchTaterz, a TV series tracking app.
+The user wants to generate an 8-bit pixel art avatar character for the TV show character: "${cleanName}".
+
+Your task:
+Analyze the character's physical appearance, signature outfit, hair style, headwear, eyes, and prop in their TV show, and map them to the closest allowed options in our 32x32 TV portrait renderer:
+
+Allowed Options for each property:
+- body (skin tone): "russet" (fair), "golden" (tan), "sweet" (bronze), "purple" (ebony), "baked" (olive), "cyber" (pale), "galaxy" (zombie)
+- hair: "short", "middle_part", "bob", "bouffant", "curly_wild", "white_long", "porkpie_hat", "curly_blonde", "thick_mustache_hair", "orange_bob", "pigtails", "bald", "spiky", "ponytail", "buzzcut"
+- hairColor: "brown", "black", "blonde", "ginger", "silver", "neon"
+- eyes: "chill", "wire_specs", "thick_black", "dark_shades", "tired_eyes", "frowning_brows", "excited", "sunglasses", "glasses", "sleepy"
+- mouth: "smile", "smirk", "goatee", "thick_stache", "full_beard", "scruff", "frown", "red_lips", "mustache", "beard"
+- hat: "none", "porkpie", "beanie", "cap", "chef", "cowboy", "visor", "crown"
+- outfit: "mustard_shirt_tie", "suit_open_collar", "white_apron", "blue_shirt", "leopard_top", "army_jacket", "sweater_vest", "brown_jacket_plaid", "grey_armor", "orange_harness", "thermal_grey", "chef_coat", "hoodie", "tee", "tuxedo", "apron"
+- item: "none", "remote", "popcorn", "soda", "gamepad", "pizza", "coffee", "golden_remote", "vip_badge", "trophy", "waffle"
+- bg: "pastel_blue", "pastel_pink", "pastel_purple", "gold", "neon", "sunset", "red_curtain", "dark"
+
+Return a valid JSON object matching this schema:
+{
+  "characterTitle": "Character Name",
+  "seriesName": "TV Show Name",
+  "characterDescription": "1-sentence summary of why these pixel traits fit the character",
+  "config": {
+    "body": "russet",
+    "hair": "short",
+    "hairColor": "brown",
+    "eyes": "chill",
+    "mouth": "smirk",
+    "hat": "none",
+    "outfit": "hoodie",
+    "item": "remote",
+    "bg": "pastel_blue"
+  }
+}`;
+
+    const response = await getAI().models.generateContent({
+      model: "gemini-3.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            characterTitle: { type: Type.STRING },
+            seriesName: { type: Type.STRING },
+            characterDescription: { type: Type.STRING },
+            config: {
+              type: Type.OBJECT,
+              properties: {
+                body: { type: Type.STRING },
+                hair: { type: Type.STRING },
+                hairColor: { type: Type.STRING },
+                eyes: { type: Type.STRING },
+                mouth: { type: Type.STRING },
+                hat: { type: Type.STRING },
+                outfit: { type: Type.STRING },
+                item: { type: Type.STRING },
+                bg: { type: Type.STRING }
+              },
+              required: ["body", "hair", "hairColor", "eyes", "mouth", "hat", "outfit", "item", "bg"]
+            }
+          },
+          required: ["characterTitle", "seriesName", "characterDescription", "config"]
+        }
+      }
+    });
+
+    const resultText = response.text || "";
+    const parsed = JSON.parse(resultText.trim());
+    res.json(parsed);
+    return;
+  } catch (err) {
+    console.warn(`[Pixel AI] Gemini generation fallback for "${cleanName}":`, err);
+
+    for (const [key, preset] of Object.entries(KNOWN_CHARACTERS)) {
+      if (lowerName.includes(key) || key.includes(lowerName)) {
+        res.json(preset);
+        return;
+      }
+    }
+
+    const words = cleanName.split(" ");
+    const formattedTitle = words.map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+
+    res.json({
+      characterTitle: formattedTitle,
+      seriesName: "TV Series Character",
+      characterDescription: `Custom 8-bit pixel design for ${formattedTitle} with classic TV binge attire and remote prop.`,
+      config: {
+        body: "russet",
+        hair: "short",
+        hairColor: "brown",
+        eyes: "chill",
+        mouth: "smirk",
+        hat: "none",
+        outfit: "hoodie",
+        item: "remote",
+        bg: "sunset"
+      }
+    });
+  }
+});
+
+// 4.5. AskTaterz AI Engine (Multi-purpose Service Endpoint with DB Caching + Token Safeguards)
+app.post("/api/taterz-ai", async (req, res) => {
+  const { intent, recap, group, search, customPrompt, messages, userState, preferences } = req.body;
+  const isPro = userState?.isPro || false;
+  const freeCreditsUsed = typeof userState?.freeCreditsUsed === "number" ? userState.freeCreditsUsed : 0;
+
+  try {
+    // -------------------------------------------------------------
+    // INTENT 1: RESUME BINGE (ZERO-SPOILER RECAP) WITH DB CACHING
+    // -------------------------------------------------------------
+    if (intent === "recap" && recap) {
+      const showTitle = recap.showTitle || "Unknown Show";
+      const showStatus = recap.showStatus || recap.status || 'Watching';
+      const seasonNum = recap.targetSeason || 1;
+      const episodeNum = recap.targetEpisode || 1;
+      const showIdClean = (recap.showId || showTitle).toLowerCase().replace(/[^a-z0-9]/g, "_");
+
+      // Unique cache key incorporating status
+      const cacheKey = `${showIdClean}_${showStatus.toLowerCase()}_${seasonNum}_${episodeNum}`;
+
+      // 1. Check database layer cache (ai_recap_cache table)
+      if (aiRecapCache[cacheKey]) {
+        res.json({
+          success: true,
+          content: aiRecapCache[cacheKey],
+          cached: true,
+          cacheKey
+        });
+        return;
+      }
+
+      // 2. Financial & Token Safeguard Check (Free Tier Limit: 3 queries / week)
+      if (!isPro && freeCreditsUsed >= 3) {
+        res.status(402).json({
+          success: false,
+          isLimitReached: true,
+          error: "You've used your 3 free Taterz AI credits this week. Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks."
+        });
+        return;
+      }
+
+      // 3. Generate Tailored AI Content based on Show Category
+      let systemInstruction = "";
+      let userPromptContent = "";
+
+      if (showStatus === 'Backlog') {
+        systemInstruction = `You are Taterz AI, an expert television archivist and zero-spoiler series briefing specialist.
+Your mission is to provide an engaging, zero-spoiler Series Briefing for the TV show "${showTitle}" before a viewer begins watching.
+
+STRICT ZERO-SPOILER REQUIREMENT:
+- Do NOT reveal any major plot twists, character deaths, mid-series betrayals, or finale outcomes.
+- Focus purely on setting the stage, core premise, vibe/tone, key character dynamics, and why it's worth diving into.
+
+Formatting Guidelines:
+- Header: "Series Briefing: ${showTitle}"
+- **The Premise & Hook**: 2-3 sentences explaining the core setup without giving away major turns.
+- **Vibe & Tone**: What kind of watch is this (e.g., fast-paced thriller, dark comedy, immersive slow-burn)?
+- **Key Characters**: 3-4 primary characters to watch for.
+- **Binge Recommendation**: Best way to experience it (e.g., "Great 3-episode weekend binge").`;
+        userPromptContent = `Provide a zero-spoiler series briefing and prep guide for starting ${showTitle}.`;
+      } else if (showStatus === 'Completed') {
+        systemInstruction = `You are Taterz AI, an expert television archivist and series refresher specialist.
+Your mission is to provide a complete Series Refresher & Legacy Breakdown for the TV show "${showTitle}".
+
+Formatting Guidelines:
+- Header: "Series Refresher: ${showTitle}"
+- **Series Overview**: Concise summary of the overarching narrative arc.
+- **Key Character Journeys**: The most memorable character transformations across the series.
+- **Finale & Legacy**: Highlights of how the story concluded and its lasting impact.
+- **If You Loved This**: 2 similar show recommendations for fans of ${showTitle}.`;
+        userPromptContent = `Provide a complete series refresher and legacy breakdown for ${showTitle}.`;
+      } else {
+        systemInstruction = `You are Taterz AI, an expert television archivist and zero-spoiler recap specialist.
+Your mission is to provide a concise, high-impact, bulleted plot recap of the TV show "${showTitle}" up to Season ${seasonNum}, Episode ${episodeNum}.
+
+STRICT ZERO-SPOILER REQUIREMENT:
+- You MUST ONLY summarize plot points, character developments, and events occurring UP TO AND INCLUDING Season ${seasonNum}, Episode ${episodeNum}.
+- ABSOLUTELY EXCLUDE all plot points, twists, character fates, or reveals that occur AFTER Season ${seasonNum}, Episode ${episodeNum}.
+- Protect the viewer from spoiler-slop at all costs!
+
+Formatting Guidelines:
+- Start with a clear header: "Zero-Spoiler Catch-Up: ${showTitle} (S${seasonNum}E${episodeNum})"
+- Provide 4-6 bullet points highlighting the key story arcs, major character dynamics, and stakes established up to this point.
+- Use bolding for key character names and important terms.`;
+        userPromptContent = `Provide a zero-spoiler recap for ${showTitle} up to Season ${seasonNum}, Episode ${episodeNum}.`;
+      }
+
+      if (recap.overview) {
+        systemInstruction += `\nShow Overview Context: "${recap.overview}"`;
+      }
+
+      const response = await getAI().models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: userPromptContent,
+        config: {
+          systemInstruction,
+          temperature: 0.3
+        }
+      });
+
+      const generatedRecap = response.text || `Here is a summary for ${showTitle}.`;
+
+      // Save to database cache table
+      aiRecapCache[cacheKey] = generatedRecap;
+      saveRecapCache();
+
+      res.json({
+        success: true,
+        content: generatedRecap,
+        cached: false,
+        cacheKey
+      });
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // FINANCIAL / TOKEN SAFEGUARD CHECK FOR NON-CACHED INTENTS
+    // -------------------------------------------------------------
+    if (!isPro && freeCreditsUsed >= 3) {
+      res.status(402).json({
+        success: false,
+        isLimitReached: true,
+        error: "You've used your 3 free Taterz AI credits this week. Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks."
+      });
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // INTENT 2: GROUP RECOMMENDATION ENGINE
+    // -------------------------------------------------------------
+    if (intent === "group_recommendation") {
+      const buddies = group?.buddies || [];
+      const buddyNames = buddies.map((b: any) => b.name).join(", ") || "Connected Binge Buddies";
+
+      let buddiesSummary = "";
+      buddies.forEach((b: any) => {
+        const topRated = (b.topShows || []).map((s: any) => `${s.title} (${s.rating || 9}/10, ${s.streamingService || "Streaming"})`).join("; ");
+        buddiesSummary += `- Buddy ${b.name}: Liked [${topRated || "General TV dramas & comedies"}]\n`;
+      });
+
+      const systemInstruction = `You are Taterz AI's Group Recommendation Engine.
+Analyze taste overlap across these connected Binge Buddies (${buddyNames}) and output the TOP 3 CONSENSUS SHOW RECOMMENDATIONS that the group will love watching together.
+Focus primarily on modern, contemporary, and recent series (Current 2020s and 2010s prestige television) rather than vintage 80s shows unless explicitly requested.
+
+Binge Buddy Profiles & Taste Overlap:
+${buddiesSummary || "General Binge Buddies with diverse tastes in dramas, thrillers, and comedies."}
+
+STRICT OUTPUT REQUIREMENT:
+For each of the top 3 consensus show recommendations, format cleanly in markdown with:
+1. **Show Title**
+2. **Streaming Platform Badge** (e.g., [Netflix], [HBO Max], [Hulu], [Prime Video], [Apple TV+])
+3. **1-Sentence Group Rationale**: Exactly 1 sentence explicitly explaining WHY this group (${buddyNames}) will like it based on their taste overlap.
+4. **Quick Pitch**: 1-2 punchy sentences describing the show's hook.`;
+
+      const response = await getAI().models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: `Find top 3 consensus show recommendations for the group: ${buddyNames}.`,
+        config: {
+          systemInstruction,
+          temperature: 0.7
+        }
+      });
+
+      res.json({
+        success: true,
+        content: response.text || "Here are top consensus picks for your binge group!",
+        cached: false
+      });
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // INTENT 3: NATURAL LANGUAGE QUERY SEARCH
+    // -------------------------------------------------------------
+    if (intent === "natural_search") {
+      const queryPrompt = search?.prompt || customPrompt || "Find me a great show to watch";
+
+      const systemInstruction = `You are Taterz AI's Natural Language TV Search Engine.
+Parse the user's criteria (e.g., genre, streaming platform, episode length, vibe, mood) and match them against real, acclaimed TV shows.
+
+User Search Prompt: "${queryPrompt}"
+
+Formatting Requirements:
+- Present 3 to 4 matching TV shows.
+- For each show, include: Title, Streaming Platform, Episode Duration/Format (e.g., ~25 min comedy, 50 min drama), and why it specifically matches their prompt "${queryPrompt}".
+- Keep descriptions punchy, accurate, and exciting.`;
+
+      const response = await getAI().models.generateContent({
+        model: "gemini-3.6-flash",
+        contents: queryPrompt,
+        config: {
+          systemInstruction,
+          temperature: 0.7
+        }
+      });
+
+      res.json({
+        success: true,
+        content: response.text || `Here are top show matches for "${queryPrompt}".`,
+        cached: false
+      });
+      return;
+    }
+
+    // -------------------------------------------------------------
+    // DEFAULT INTENT / GENERAL CHAT
+    // -------------------------------------------------------------
+    const chatContents = (messages || []).map((m: any) => ({
+      role: m.role === "user" ? "user" : "model",
+      parts: [{ text: m.content }]
+    }));
+
+    if (chatContents.length === 0 && customPrompt) {
+      chatContents.push({
+        role: "user",
+        parts: [{ text: customPrompt }]
+      });
+    }
+
+    const response = await getAI().models.generateContent({
+      model: "gemini-3.6-flash",
+      contents: chatContents.length > 0 ? chatContents : "Hello Taterz AI!",
+      config: {
+        systemInstruction: "You are Taterz AI, a witty, casual, and pop-culture savvy TV companion who lives for binge-watching. Speak naturally with a relaxed, fun, and distinct tone. Avoid dry, corporate, or overly formal AI language. Keep responses engaging, accurate, and easy to read with markdown formatting.",
+        temperature: 0.7
+      }
+    });
+
+    res.json({
+      success: true,
+      content: response.text || "I'm Taterz AI! How can I help you find or recap your next show?",
+      cached: false
+    });
+  } catch (error: any) {
+    console.error("[Taterz AI Error]:", error?.message || error);
+    res.status(500).json({
+      success: false,
+      error: error?.message || "Failed to generate Taterz AI response"
+    });
   }
 });
 
@@ -3364,13 +6679,18 @@ app.post("/api/recommendations", async (req, res) => {
   }
 
   try {
-    const prompt = `You are a TV recommendation engine. Analyze the user's current tracked TV shows:
+    const prompt = `You are an expert TV recommendation engine for CouchTaterz. Analyze the user's current tracked TV shows:
 ${JSON.stringify(shows || [], null, 2)}
 
 And their custom taste preferences:
 ${JSON.stringify(preferences || { genres: [], actors: [], directors: [] }, null, 2)}
 
-Based on this analysis, recommend exactly 5 real TV shows that are NOT in their current tracked shows list.
+STRICT TEMPORAL & ERA MANDATE:
+- RECOMMEND EXCLUSIVELY CONTEMPORARY AND MODERN TV SERIES RELEASED IN THE 2020s OR 2010s PRESTIGE TV ERA (e.g., The Bear, Severance, Succession, Shogun, Ted Lasso, Slow Horses, Fallout, Beef, Only Murders in the Building, House of the Dragon, White Lotus, Silo, The Last of Us, Arcane, Hacks, Shrinking, Abbott Elementary).
+- ABSOLUTELY DO NOT recommend vintage 70s, 80s, or 90s retro shows (e.g. do NOT recommend Growing Pains, Who's the Boss, Cheers, MacGyver, Family Ties, Bewitched) unless the user has explicitly selected 1980s retro era in their preferences.
+- Default to modern, acclaimed, high-production streaming hits currently accessible on modern streaming platforms.
+
+Based on this analysis, recommend exactly 5 real, high-quality modern TV shows that are NOT in their current tracked shows list.
 For each recommended show, make sure to find the real matching details (streaming service, genres, typical Rotten Tomatoes score, overview, key actors/cast, directors, status, totalSeasons - number of released seasons, and episodesPerSeason - array of episode counts per season).
 For each recommendation, write a highly compelling, personalized 'reason' explaining why it matches their watch history (e.g., 'Since you gave The Bear a 10/10 and enjoy intense kitchen drama, this high-pressure, fast-paced culinary/hospitality story is the perfect follow-up...').
 
@@ -3469,11 +6789,61 @@ For 'bannerImage', use a valid, high-quality TMDB backdrop image path starting w
   }
 });
 
+let viteDevServer: any = null;
+
+// Dynamic Open Graph HTML Route Handler for shared watchlists & user profiles
+app.get(["/list/:listId", "/p/:username"], async (req, res) => {
+  try {
+    const listId = req.params.listId || req.params.username || (req.query.board as string) || (req.query.list as string);
+    const db = readDatabase();
+    const boardId = normalizeBoardId(listId || "default");
+    const board = db[boardId];
+
+    const matchedUser = COMMUNITY_USERS.find(u => u.id === boardId || u.name?.toLowerCase() === boardId.toLowerCase());
+    const ownerName = board?.owner?.name || board?.name || matchedUser?.name || "Binge Buddy";
+    const showCount = board?.shows?.length || 0;
+    const topShows = (board?.shows || []).slice(0, 3).map((s: any) => s.title).join(", ");
+
+    const ogTitle = `${ownerName}'s Binge Watchlist — CouchTaterz`;
+    const ogDescription = showCount > 0 
+      ? `Tracking ${showCount} shows across Netflix, HBO, Disney+. Top picks: ${topShows}. Join their household queue!`
+      : `Check out ${ownerName}'s TV watchlist on CouchTaterz!`;
+    const ogImage = `/api/og-card?name=${encodeURIComponent(ownerName)}&count=${showCount}`;
+
+    const indexPath = process.env.NODE_ENV === "production" 
+      ? path.join(process.cwd(), "dist", "index.html")
+      : path.join(process.cwd(), "index.html");
+
+    if (fs.existsSync(indexPath)) {
+      let html = fs.readFileSync(indexPath, "utf-8");
+      html = html
+        .replace(/<title>.*?<\/title>/gi, `<title>${ogTitle}</title>`)
+        .replace(/<meta property="og:title" content=".*?" \/>/gi, `<meta property="og:title" content="${ogTitle}" />`)
+        .replace(/<meta property="og:description" content=".*?" \/>/gi, `<meta property="og:description" content="${ogDescription}" />`)
+        .replace(/<meta property="og:image" content=".*?" \/>/gi, `<meta property="og:image" content="${ogImage}" />`)
+        .replace(/<meta name="twitter:title" content=".*?" \/>/gi, `<meta name="twitter:title" content="${ogTitle}" />`)
+        .replace(/<meta name="twitter:description" content=".*?" \/>/gi, `<meta name="twitter:description" content="${ogDescription}" />`)
+        .replace(/<meta name="twitter:image" content=".*?" \/>/gi, `<meta name="twitter:image" content="${ogImage}" />`);
+
+      res.setHeader("Content-Type", "text/html");
+      res.send(html);
+      return;
+    }
+    res.sendFile(indexPath);
+  } catch (err) {
+    console.warn("[OG Route] Error processing dynamic OG tags:", err);
+    const fallbackPath = process.env.NODE_ENV === "production"
+      ? path.join(process.cwd(), "dist", "index.html")
+      : path.join(process.cwd(), "index.html");
+    res.sendFile(fallbackPath);
+  }
+});
+
 // Vite & Static file serving setup
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: false },
+      server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);

@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { TvShow, Board, StreamingService, ShowStatus, User, UserPreferences, AppNotification } from './types';
+import { TvShow, Board, StreamingService, ShowStatus, User, UserPreferences, AppNotification, TaterzAIIntent } from './types';
 import { ShowCard } from './components/ShowCard';
 import { UpcomingCarousel } from './components/UpcomingCarousel';
 import { AddShowModal } from './components/AddShowModal';
 import { ChatAgent } from './components/ChatAgent';
+import { AskTaterzAIModal } from './components/AskTaterzAIModal';
 import { ShareBoardModal } from './components/ShareBoardModal';
 import { ManageActiveShowsModal } from './components/ManageActiveShowsModal';
 import { RecommendationsCarousel } from './components/RecommendationsCarousel';
@@ -18,6 +19,10 @@ import { LoginPage } from './components/LoginPage';
 import { PreferencesModal } from './components/PreferencesModal';
 import { QueueOnboardingModal } from './components/QueueOnboardingModal';
 import { OnboardingWalkthrough } from './components/OnboardingWalkthrough';
+import { UserAdminModal } from './components/UserAdminModal';
+import { SocialStoryCardModal } from './components/SocialStoryCardModal';
+import { SoftGateAuthModal } from './components/SoftGateAuthModal';
+import { TaterzAvatarBuilderModal } from './components/TaterzAvatarBuilderModal';
 import { 
   getFriendsData, 
   fetchFriendsDataAsync, 
@@ -27,14 +32,16 @@ import {
   FriendsData, 
   FriendRequestDetail 
 } from './utils/friendsStorage';
+import { normalizeShowTitle, isSameShowTitle, getCanonicalShowTitle } from './utils/titleUtils';
 
 // Helper checks for Julio and user equality
-const isUserJulio = (user?: { id?: string; email?: string; name?: string } | null) => {
+const isUserJulio = (user?: { id?: string; email?: string; name?: string; isAdmin?: boolean; isPro?: boolean } | null) => {
   if (!user) return false;
-  const idMatch = user.id === JULIO_USER_ID || user.id === 'default' || user.id === 'user-julio';
-  const emailMatch = user.email?.toLowerCase() === 'juliozaldivar@gmail.com';
-  const nameMatch = user.name?.trim().toLowerCase() === 'julio';
-  return idMatch || emailMatch || nameMatch;
+  const email = user.email?.trim().toLowerCase();
+  if (email === 'juliozaldivar@gmail.com') return true;
+  if (user.id === 'default' || user.id === 'user-julio') return true;
+  if (user.name?.trim().toLowerCase() === 'julio' && (!user.id || user.id === 'default' || user.id === 'user-julio' || user.id.startsWith('user-julio-'))) return true;
+  return false;
 };
 
 const isUserSelf = (
@@ -75,10 +82,33 @@ import {
   User as UserIcon,
   Star,
   ChevronUp,
-  X
+  X,
+  Reply,
+  Send,
+  Shield,
+  LogIn,
+  UserCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
+import { getNormalizedGenres } from './utils/genreUtils';
+import { getShowBannerImage } from './utils/showBanners';
+export { getNormalizedGenres, getShowBannerImage };
+
+const normalizeClientBoardId = (id: string): string => {
+  if (!id) return 'default';
+  const clean = id.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+  if (clean === 'julio' || clean === 'user-julio' || clean === 'default') return 'default';
+  if (clean === 'ejc' || clean === 'user-ejc' || clean === 'user-ejc-2841') return 'user-ejc-2841';
+  if (clean === 'kris' || clean === 'user-kris' || clean === 'user-kris-5139') return 'user-kris-5139';
+  if (clean === 'rafael' || clean === 'user-rafael' || clean === 'user-rafael-9639') return 'user-rafael-9639';
+  if (clean === 'annadee' || clean === 'lily' || clean === 'user-lily-9367') return 'user-lily-9367';
+  if (clean === 'julian' || clean === 'user-julian-7667') return 'user-julian-7667';
+  if (clean === 'lilyann' || clean === 'user-lilyann-4290') return 'user-lilyann-4290';
+  if (clean === 'greg' || clean === 'user-greg' || clean === 'user-greg-3842') return 'user-greg-3842';
+  if (clean === 'hyunjin' || clean === 'user-hyunjin' || clean === 'user-hyunjin-6821') return 'user-hyunjin-6821';
+  return clean;
+};
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
@@ -95,16 +125,25 @@ export default function App() {
 
   const [board, setBoard] = useState<Board | null>(null);
   const [boardId, setBoardId] = useState<string>(() => {
+    const pathname = window.location.pathname;
+    if (pathname.startsWith('/list/')) {
+      const extracted = pathname.split('/list/')[1]?.split('/')[0]?.split('?')[0];
+      if (extracted) return normalizeClientBoardId(extracted);
+    }
+    if (pathname.startsWith('/p/')) {
+      const extracted = pathname.split('/p/')[1]?.split('/')[0]?.split('?')[0];
+      if (extracted) return normalizeClientBoardId(extracted);
+    }
     const params = new URLSearchParams(window.location.search);
-    const queryBoard = params.get('board');
+    const queryBoard = params.get('board') || params.get('list');
     if (queryBoard) {
-      return queryBoard.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      return normalizeClientBoardId(queryBoard);
     }
     const saved = localStorage.getItem('coughtater_user');
     if (saved) {
       try {
         const u = JSON.parse(saved);
-        if (u && u.id) return u.id;
+        if (u && u.id) return normalizeClientBoardId(u.id);
       } catch (e) {}
     }
     return 'default';
@@ -117,17 +156,66 @@ export default function App() {
   // Self-heal corrupted user IDs from localStorage on load
   useEffect(() => {
     if (currentUser) {
-      const isPrimaryUser = currentUser.email?.toLowerCase() === 'juliozaldivar@gmail.com';
-      if (isPrimaryUser && currentUser.id !== 'default') {
-        const correctedUser = { ...currentUser, id: 'default', name: 'Julio' };
+      const isJulioAccount = currentUser.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' || currentUser.id === 'default' || currentUser.id === 'user-julio';
+      const isLegacyEjc = currentUser.id === 'user-ejc' || currentUser.id === 'ejc';
+      const isLegacyKris = currentUser.id === 'user-kris' || currentUser.id === 'kris' || currentUser.id === 'user-kris-vance';
+      const isLegacyRafael = currentUser.id === 'user-rafael' || currentUser.id === 'rafael' || currentUser.id === 'user-rafael-gomez';
+      const isLegacyGreg = currentUser.id === 'user-greg' || (currentUser.id !== 'user-greg-3842' && currentUser.email?.toLowerCase() === 'greg@taterz.com');
+      const isLegacyHyunjin = currentUser.id === 'user-hyunjin' || (currentUser.id !== 'user-hyunjin-6821' && (currentUser.email?.toLowerCase() === 'hyunjin@taterz.com' || currentUser.name?.toLowerCase().trim() === 'hyunjin'));
+      const isLegacyJulian = currentUser.id === 'user-julian' || (currentUser.id !== 'user-julian-7667' && currentUser.email?.toLowerCase() === 'julian@taterz.com');
+      const isLegacyLilyann = currentUser.id === 'user-lilyann' || (currentUser.id !== 'user-lilyann-4290' && currentUser.email?.toLowerCase() === 'lilyann@taterz.com');
+
+      if (isJulioAccount) {
+        localStorage.setItem('couchtaterz_is_pro', 'true');
+        if (currentUser.id !== 'default' || currentUser.email !== 'juliozaldivar@gmail.com' || !currentUser.isPro || !currentUser.isAdmin) {
+          const correctedUser = {
+            ...currentUser,
+            id: 'default',
+            name: 'Julio',
+            email: 'juliozaldivar@gmail.com',
+            avatarUrl: currentUser.avatarUrl || 'https://api.dicebear.com/7.x/pixel-art/svg?seed=SuperFan',
+            isPro: true,
+            isAdmin: true
+          };
+          setCurrentUser(correctedUser);
+          localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+          setBoardId('default');
+        }
+      } else if (isLegacyEjc) {
+        const correctedUser = { ...currentUser, id: 'user-ejc-2841', name: 'EJC', email: 'ejc@taterz.com' };
         setCurrentUser(correctedUser);
         localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
-        setBoardId('default');
-      } else if (currentUser.name === 'AnnaDee' && currentUser.id !== 'user-lily-9367') {
-        const correctedUser = { ...currentUser, id: 'user-lily-9367' };
+        setBoardId('user-ejc-2841');
+      } else if (isLegacyGreg) {
+        const correctedUser = { ...currentUser, id: 'user-greg-3842', name: 'Greg', email: 'greg@taterz.com' };
         setCurrentUser(correctedUser);
         localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
-        setBoardId('user-lily-9367');
+        setBoardId('user-greg-3842');
+      } else if (isLegacyHyunjin) {
+        const correctedUser = { ...currentUser, id: 'user-hyunjin-6821', name: 'Hyunjin', email: 'hyunjin@taterz.com', avatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Hyunjin' };
+        setCurrentUser(correctedUser);
+        localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+        setBoardId('user-hyunjin-6821');
+      } else if (isLegacyJulian) {
+        const correctedUser = { ...currentUser, id: 'user-julian-7667' };
+        setCurrentUser(correctedUser);
+        localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+        setBoardId('user-julian-7667');
+      } else if (isLegacyRafael) {
+        const correctedUser = { ...currentUser, id: 'user-rafael-9639' };
+        setCurrentUser(correctedUser);
+        localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+        setBoardId('user-rafael-9639');
+      } else if (isLegacyKris) {
+        const correctedUser = { ...currentUser, id: 'user-kris-5139' };
+        setCurrentUser(correctedUser);
+        localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+        setBoardId('user-kris-5139');
+      } else if (isLegacyLilyann) {
+        const correctedUser = { ...currentUser, id: 'user-lilyann-4290' };
+        setCurrentUser(correctedUser);
+        localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+        setBoardId('user-lilyann-4290');
       }
     }
   }, [currentUser]);
@@ -158,6 +246,12 @@ export default function App() {
             if (data.preferences) {
               setCurrentUserPrefs(data.preferences);
             }
+            // Auto-heal / sync custom avatar from server & Firestore if available
+            if (data.owner?.avatarUrl && data.owner.avatarUrl !== currentUser.avatarUrl && !data.owner.avatarUrl.includes('seed=SuperFan') && !data.owner.avatarUrl.includes('seed=Julio')) {
+              const updatedUser = { ...currentUser, avatarUrl: data.owner.avatarUrl };
+              setCurrentUser(updatedUser);
+              localStorage.setItem('coughtater_user', JSON.stringify(updatedUser));
+            }
           }
         })
         .catch(err => {
@@ -175,16 +269,26 @@ export default function App() {
   useEffect(() => {
     if (!currentUser) return;
 
-    const sendPresence = () => {
+    let lastPingTime = Date.now();
+    let isInitialLoginSent = false;
+
+    const sendPresence = (isLogin = false) => {
+      const now = Date.now();
+      const elapsedSeconds = Math.min(Math.max(Math.round((now - lastPingTime) / 1000), 1), 60);
+      lastPingTime = now;
+
       fetch('/api/presence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: currentUser.id,
           name: currentUser.name,
-          email: currentUser.email
+          email: currentUser.email,
+          activeSeconds: isLogin ? 0 : elapsedSeconds,
+          isLogin: isLogin || !isInitialLoginSent
         })
       }).catch(() => {});
+      isInitialLoginSent = true;
     };
 
     const fetchUsers = () => {
@@ -198,24 +302,39 @@ export default function App() {
         })
         .then(data => {
           if (Array.isArray(data)) {
-            setAllUsers(data);
+            const seen = new Set<string>();
+            const unique = data.filter((u: any) => u && u.id && !seen.has(u.id) && seen.add(u.id));
+            setAllUsers(unique);
           }
         })
         .catch(() => {});
     };
 
-    sendPresence();
+    sendPresence(true);
     fetchUsers();
 
-    // Poll presence and users every 30 seconds for live active status sync (only when tab is visible)
+    // Poll presence and users every 10 seconds for live active status and time tracking (only when tab is visible)
     const interval = setInterval(() => {
       if (!document.hidden) {
-        sendPresence();
+        sendPresence(false);
         fetchUsers();
       }
-    }, 30000);
+    }, 10000);
 
-    return () => clearInterval(interval);
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        lastPingTime = Date.now();
+        sendPresence(false);
+        fetchUsers();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [currentUser]);
 
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -226,6 +345,12 @@ export default function App() {
   );
   const [inviteConnectedToast, setInviteConnectedToast] = useState<string | null>(null);
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
+
+  // Notification Reply States
+  const [replyingNotifId, setReplyingNotifId] = useState<string | null>(null);
+  const [notifReplyTextMap, setNotifReplyTextMap] = useState<Record<string, string>>({});
+  const [isSendingReplyMap, setIsSendingReplyMap] = useState<Record<string, boolean>>({});
+  const [replySentSuccessMap, setReplySentSuccessMap] = useState<Record<string, string>>({});
 
   // Sync friends state when currentUser changes (syncing local + server)
   useEffect(() => {
@@ -321,16 +446,131 @@ export default function App() {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [showQueueOnboarding, setShowQueueOnboarding] = useState(false);
+
+  // AskTaterz AI Engine Modal State
+  const [isTaterzAiOpen, setIsTaterzAiOpen] = useState(false);
+  const [taterzAiIntent, setTaterzAiIntent] = useState<TaterzAIIntent>('general_chat');
+  const [taterzAiShow, setTaterzAiShow] = useState<TvShow | undefined>(undefined);
+
+  const handleOpenTaterzAiRecap = (show: TvShow) => {
+    setTaterzAiShow(show);
+    setTaterzAiIntent('recap');
+    setIsTaterzAiOpen(true);
+  };
+
+  const handleOpenTaterzAiGroup = () => {
+    setTaterzAiShow(undefined);
+    setTaterzAiIntent('group_recommendation');
+    setIsTaterzAiOpen(true);
+  };
+
+  const handleOpenTaterzAiGeneral = () => {
+    setTaterzAiShow(undefined);
+    setTaterzAiIntent('general_chat');
+    setIsTaterzAiOpen(true);
+  };
+
+  // 9:16 Social Story Card Generator State
+  const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
+  const [storyModalShow, setStoryModalShow] = useState<TvShow | null>(null);
+  const [storyTriggerReason, setStoryTriggerReason] = useState<'completed' | 'high_rating' | 'manual'>('manual');
+
+  // Soft-gate Auth Modal State
+  const [isSoftGateOpen, setIsSoftGateOpen] = useState(false);
+  const [softGateActionTitle, setSoftGateActionTitle] = useState('interact with watch lists');
+  const [pendingGuestAction, setPendingGuestAction] = useState<((loggedInUser?: User) => void) | null>(null);
+
+  // Custom Taterz Avatar Studio State
+  const [isAvatarStudioOpen, setIsAvatarStudioOpen] = useState(false);
+
+  const handleOpenStoryCard = (show: TvShow, reason: 'completed' | 'high_rating' | 'manual' = 'manual') => {
+    setStoryModalShow(show);
+    setStoryTriggerReason(reason);
+    setIsStoryModalOpen(true);
+  };
+
+  const handleRequireAuth = (actionTitle: string, actionFn: (loggedInUser?: User) => void) => {
+    const activeUser = currentUser || (() => {
+      try {
+        const saved = localStorage.getItem('coughtater_user');
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) { return null; }
+    })();
+
+    if (activeUser) {
+      if (!currentUser) setCurrentUser(activeUser);
+      actionFn(activeUser);
+      return;
+    }
+    setSoftGateActionTitle(actionTitle);
+    setPendingGuestAction(() => (loggedInUser?: User) => actionFn(loggedInUser));
+    setIsSoftGateOpen(true);
+  };
+
+  const handleSoftGateSuccessLogin = async (user: User) => {
+    setCurrentUser(user);
+    localStorage.setItem('coughtater_user', JSON.stringify(user));
+    setIsSoftGateOpen(false);
+    
+    let myBoard: Board | null = null;
+    try {
+      const res = await fetch(`/api/boards?id=${user.id}`);
+      if (res.ok) {
+        myBoard = await res.json();
+      }
+    } catch (e) {}
+
+    if (!myBoard) {
+      myBoard = {
+        id: user.id,
+        name: `${user.name}'s Collection`,
+        shows: [],
+        owner: user,
+        updatedAt: new Date().toISOString()
+      };
+      try {
+        await fetch('/api/boards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(myBoard),
+        });
+      } catch (e) {}
+    }
+
+    // Load user's shows into currentUserShows state
+    setCurrentUserShows(myBoard.shows || []);
+
+    const viewingFriendBoard = !!(boardId && boardId !== user.id);
+
+    if (viewingFriendBoard) {
+      // User signed up while visiting a friend's public binge list
+      // Stay on friend's board, keep currentUser logged in, and defer onboarding
+      setIsNewlyRegisteredUser(true);
+      localStorage.setItem(`coughtater_starter_pack_${user.id}`, 'true');
+      localStorage.removeItem(`seen_queue_onboarding_${user.id}`);
+    } else {
+      handleLogin(myBoard, { isNewAccount: true });
+    }
+
+    if (pendingGuestAction) {
+      const actionToRun = pendingGuestAction;
+      setPendingGuestAction(null);
+      setTimeout(() => {
+        actionToRun(user);
+      }, 150);
+    }
+  };
   const [showFirstStatusPrompt, setShowFirstStatusPrompt] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState<number | null>(null);
-  const [autoDeleteOnboardingShow, setAutoDeleteOnboardingShow] = useState(true);
+  const [autoDeleteOnboardingShow, setAutoDeleteOnboardingShow] = useState(false);
   const [onboardingTargetShowId, setOnboardingTargetShowId] = useState<string | null>(null);
   const [isNewlyRegisteredUser, setIsNewlyRegisteredUser] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Lock body scroll whenever any modal or panel overlay is active to eliminate background thrashing/flicker
-  const isAnyModalOpen = isAddOpen || isShareOpen || isManageActiveOpen || isCalendarOpen || isStatsOpen || isPreferencesOpen || showQueueOnboarding;
+  const isAnyModalOpen = isAddOpen || isShareOpen || isManageActiveOpen || isCalendarOpen || isStatsOpen || isPreferencesOpen || isAdminOpen || showQueueOnboarding;
 
   useEffect(() => {
     if (isAnyModalOpen) {
@@ -382,7 +622,41 @@ export default function App() {
   const [selectedService, setSelectedService] = useState<StreamingService | 'All'>('All');
   const [activeTab, setActiveTab] = useState<'all' | 'active' | 'library' | 'queue'>('active');
   const [selectedGenre, setSelectedGenre] = useState<string>('All');
-  const [sortBy, setSortBy] = useState<'airingNext' | 'recent' | 'rtScore' | 'userScore' | 'title' | 'category'>('airingNext');
+  
+  type SortOption = 'airingNext' | 'recent' | 'rtScore' | 'userScore' | 'title' | 'category';
+  const DEFAULT_SECTION_SORTS: Record<'all' | 'active' | 'library' | 'queue', SortOption> = {
+    active: 'airingNext',
+    queue: 'airingNext',
+    library: 'title',
+    all: 'airingNext'
+  };
+
+  const [sectionSorts, setSectionSorts] = useState<Record<'all' | 'active' | 'library' | 'queue', SortOption>>(() => {
+    try {
+      const saved = localStorage.getItem('couchtaterz_section_sorts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...DEFAULT_SECTION_SORTS, ...parsed };
+      }
+    } catch (e) {
+      // ignore
+    }
+    return DEFAULT_SECTION_SORTS;
+  });
+
+  const sortBy = sectionSorts[activeTab] || DEFAULT_SECTION_SORTS[activeTab] || 'airingNext';
+
+  const setSortBy = (newSort: SortOption) => {
+    setSectionSorts(prev => {
+      const updated = { ...prev, [activeTab]: newSort };
+      try {
+        localStorage.setItem('couchtaterz_section_sorts', JSON.stringify(updated));
+      } catch (e) {
+        // ignore
+      }
+      return updated;
+    });
+  };
   const [showStarterAlert, setShowStarterAlert] = useState(false);
   const lastBoardIdRef = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -493,7 +767,7 @@ export default function App() {
       setCompletedShowToast({
         id: show.id,
         title: show.title,
-        bannerImage: show.bannerImage
+        bannerImage: getShowBannerImage(show)
       });
       return;
     }
@@ -531,7 +805,7 @@ export default function App() {
     setCompletedShowToast({
       id: show.id,
       title: show.title,
-      bannerImage: show.bannerImage
+      bannerImage: getShowBannerImage(show)
     });
   };
 
@@ -609,25 +883,24 @@ export default function App() {
 
   // Load board code from URL query parameter
   useEffect(() => {
-    if (!currentUser) return;
     const params = new URLSearchParams(window.location.search);
-    const queryBoard = params.get('board');
+    const queryBoard = params.get('board') || params.get('list');
     if (queryBoard) {
-      const cleanCode = queryBoard.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+      const cleanCode = normalizeClientBoardId(queryBoard);
       if (cleanCode && cleanCode !== boardId) {
         setBoardId(cleanCode);
       }
-    } else if (!boardId) {
+    } else if (!boardId && currentUser) {
       setBoardId(currentUser.id);
     }
   }, [currentUser, boardId]);
 
-  // Default to 'View All' if visiting a friend's board, default to 'active' on own board
+  // Default to 'active' ('Watching') if visiting a friend's board or own board
   useEffect(() => {
-    if (currentUser && boardId) {
+    if (boardId) {
       if (boardId !== lastBoardIdRef.current) {
-        if (boardId !== currentUser.id) {
-          setActiveTab('all');
+        if (!currentUser || boardId !== currentUser.id) {
+          setActiveTab('active');
         } else {
           const isNewUser = isNewlyRegisteredUser;
           const hasSeenOnboarding = localStorage.getItem(`seen_queue_onboarding_${currentUser.id}`) === 'true';
@@ -642,20 +915,9 @@ export default function App() {
     }
   }, [boardId, currentUser, showStarterAlert]);
 
-  // Set default sorting based on the active tab
-  useEffect(() => {
-    if (activeTab === 'active') {
-      setSortBy('airingNext');
-    } else if (activeTab === 'library') {
-      setSortBy('title');
-    } else {
-      setSortBy('rtScore');
-    }
-  }, [activeTab]);
-
   // Sync / Fetch active board data safely without overwriting friend boards
   useEffect(() => {
-    if (!currentUser || !boardId) return;
+    if (!boardId) return;
 
     // Check memory (familyBoards) or disk cache first for instant synchronous board update
     if (familyBoards[boardId] && (!board || board.id !== boardId)) {
@@ -688,45 +950,23 @@ export default function App() {
 
           let finalBoard = data;
           // Only sync local cache back to server if it's the user's OWN board
-          if (localSaved && boardId === currentUser.id) {
+          if (localSaved && currentUser && (boardId === currentUser.id || boardId === 'default' || boardId === 'user-julio')) {
             try {
               const parsedLocal = JSON.parse(localSaved);
               if (parsedLocal && Array.isArray(parsedLocal.shows) && Array.isArray(data.shows)) {
                 const localTime = new Date(parsedLocal.updatedAt || 0).getTime();
                 const serverTime = new Date(data.updatedAt || 0).getTime();
 
-                // If local cache has more shows or a newer timestamp, merge and push to server
-                if (parsedLocal.shows.length > data.shows.length || localTime > serverTime) {
-                  const showMap = new Map<string, any>();
-                  data.shows.forEach((s: any) => {
-                    if (s && s.title) showMap.set(s.title.toLowerCase().trim(), s);
-                  });
-                  parsedLocal.shows.forEach((s: any) => {
-                    if (s && s.title) {
-                      const k = s.title.toLowerCase().trim();
-                      if (!showMap.has(k)) {
-                        showMap.set(k, s);
-                      } else {
-                        const existing = showMap.get(k);
-                        const exProg = ((existing.latestWatched?.season || 0) * 1000) + (existing.latestWatched?.episode || 0);
-                        const locProg = ((s.latestWatched?.season || 0) * 1000) + (s.latestWatched?.episode || 0);
-                        showMap.set(k, locProg >= exProg ? { ...existing, ...s } : { ...s, ...existing });
-                      }
-                    }
-                  });
-
-                  finalBoard = {
-                    ...data,
-                    ...parsedLocal,
-                    shows: Array.from(showMap.values()),
-                    updatedAt: new Date().toISOString()
-                  };
-
+                // Merge local reviews and ratings with server shows so reviews are never lost
+                if (localTime > serverTime) {
+                  finalBoard = parsedLocal;
                   await fetch('/api/boards', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(finalBoard),
                   });
+                } else {
+                  finalBoard = data;
                 }
               }
             } catch (e) {}
@@ -735,9 +975,27 @@ export default function App() {
           setBoard(finalBoard);
           localStorage.setItem(localKey, JSON.stringify(finalBoard));
           setFamilyBoards(prev => ({ ...prev, [boardId]: finalBoard }));
+        } else {
+          // Fallback if requested board fails to return OK
+          if (!board) {
+            const fallbackRes = await fetch('/api/boards?id=default');
+            if (fallbackRes.ok && isSubscribed) {
+              const fallbackData = await fallbackRes.json();
+              setBoard(fallbackData);
+            }
+          }
         }
       } catch (err) {
         console.warn("Transient: Failed to load board data from server:", err);
+        if (!board) {
+          try {
+            const fallbackRes = await fetch('/api/boards?id=default');
+            if (fallbackRes.ok && isSubscribed) {
+              const fallbackData = await fallbackRes.json();
+              setBoard(fallbackData);
+            }
+          } catch (e) {}
+        }
       }
     };
 
@@ -750,7 +1008,7 @@ export default function App() {
 
   // Poll for board/notifications updates every 15 seconds (only when active tab)
   useEffect(() => {
-    if (!currentUser || !boardId) return;
+    if (!boardId) return;
     
     const interval = setInterval(async () => {
       if (document.hidden) return;
@@ -788,6 +1046,37 @@ export default function App() {
 
     return () => clearInterval(interval);
   }, [boardId, currentUser]);
+
+  // Auto-highlight and scroll to target show when ?show= parameter is present in URL
+  useEffect(() => {
+    if (!board || !Array.isArray(board.shows)) return;
+    const params = new URLSearchParams(window.location.search);
+    const targetShowId = params.get('show');
+    if (!targetShowId) return;
+
+    const matched = board.shows.find(s => s.id === targetShowId || s.id.toLowerCase().includes(targetShowId.toLowerCase()) || s.title.toLowerCase().includes(targetShowId.toLowerCase()));
+    if (matched) {
+      if (matched.status === 'Watching') {
+        setActiveTab('active');
+      } else if (matched.status === 'Completed') {
+        setActiveTab('library');
+      } else if (matched.status === 'Backlog') {
+        setActiveTab('queue');
+      } else {
+        setActiveTab('active');
+      }
+      setTimeout(() => {
+        const el = document.getElementById(`show-card-${matched.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-4', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900', 'transition-all');
+          setTimeout(() => {
+            el.classList.remove('ring-4', 'ring-purple-500', 'ring-offset-2', 'ring-offset-slate-900', 'transition-all');
+          }, 3500);
+        }
+      }, 350);
+    }
+  }, [board]);
 
   // Sync board updates back to server
   const saveBoardToServer = async (updatedShows: TvShow[], customName?: string) => {
@@ -857,12 +1146,12 @@ export default function App() {
     if (!board) return;
 
     // Sync shows isFavorite flag with updatedPrefs.favoriteShows
-    const updatedFavList = (updatedPrefs.favoriteShows || [])
+    const updatedFavSet = new Set((updatedPrefs.favoriteShows || [])
       .filter(s => typeof s === 'string')
-      .map(s => s.toLowerCase().trim());
+      .map(s => normalizeShowTitle(s)));
     const updatedShows = (board.shows || []).map(show => {
       if (!show || typeof show.title !== 'string') return show;
-      const isFav = updatedFavList.includes(show.title.toLowerCase().trim());
+      const isFav = updatedFavSet.has(normalizeShowTitle(show.title));
       if (show.isFavorite !== isFav) {
         return { ...show, isFavorite: isFav };
       }
@@ -890,31 +1179,37 @@ export default function App() {
     .then(res => res.json())
     .then(data => {
       if (Array.isArray(data)) {
-        setAllUsers(data);
+        const seen = new Set<string>();
+        const unique = data.filter((u: any) => u && u.id && !seen.has(u.id) && seen.add(u.id));
+        setAllUsers(unique);
       }
     })
     .catch(err => console.error("Failed to save profile & preferences:", err));
   };
 
   // Add a new show
-  const handleAddShow = (newShow: TvShow) => {
+  const handleAddShow = (rawNewShow: TvShow) => {
     if (!board) return;
+
+    const canonicalTitle = getCanonicalShowTitle(rawNewShow.title, board.shows);
+    const newShow = { ...rawNewShow, title: canonicalTitle };
 
     // Progress Step 3 to Step 4 when a show is added
     if (onboardingStep === 3) {
+      setOnboardingTargetShowId(newShow.id);
       setOnboardingStep(4);
       setActiveTab('active');
       setSearchFamily(false);
     }
 
-    const exists = board.shows.some(s => s.title.toLowerCase().trim() === newShow.title.toLowerCase().trim());
+    const exists = board.shows.some(s => isSameShowTitle(s.title, newShow.title));
     let updatedShows;
     if (exists) {
       updatedShows = board.shows.map(s => 
-        s.title.toLowerCase().trim() === newShow.title.toLowerCase().trim()
+        isSameShowTitle(s.title, newShow.title)
           ? { 
               ...s, 
-              title: newShow.title,
+              title: canonicalTitle,
               streamingService: newShow.streamingService,
               genres: newShow.genres,
               rottenTomatoesScore: newShow.rottenTomatoesScore,
@@ -1026,12 +1321,8 @@ export default function App() {
       });
     }
 
-    // Set tab appropriately
-    if (currentUser && newCode !== currentUser.id) {
-      setActiveTab('all');
-    } else {
-      setActiveTab('active');
-    }
+    // Set tab appropriately to 'active' (Watching)
+    setActiveTab('active');
 
     setSearchFamily(false);
     setBoardId(newCode);
@@ -1040,6 +1331,17 @@ export default function App() {
     params.set('board', newCode);
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
   };
+
+  // Sync body class with theme
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light');
+      document.body.classList.remove('dark');
+    } else {
+      document.body.classList.add('dark');
+      document.body.classList.remove('light');
+    }
+  }, [theme]);
 
   // Toggle theme
   const toggleTheme = () => {
@@ -1085,17 +1387,19 @@ export default function App() {
     }
   }, [showStarterAlert]);
 
-  // Trigger interactive onboarding when new user visits for the first time
+  // Trigger interactive onboarding when new user visits for the first time on their own board
   useEffect(() => {
     if (currentUser && onboardingStep === null) {
       const isNewUser = isNewlyRegisteredUser;
       const hasSeen = localStorage.getItem(`seen_queue_onboarding_${currentUser.id}`) === 'true';
       if (isNewUser && !hasSeen) {
-        setActiveTab('queue');
-        setOnboardingStep(1);
+        if (!boardId || boardId === currentUser.id) {
+          setActiveTab('queue');
+          setOnboardingStep(1);
+        }
       }
     }
-  }, [currentUser, isNewlyRegisteredUser, onboardingStep]);
+  }, [currentUser, isNewlyRegisteredUser, onboardingStep, boardId]);
 
   // Enforce What's Next (queue) tab during Onboarding Step 1 & ensure Backlog show exists
   useEffect(() => {
@@ -1135,6 +1439,7 @@ export default function App() {
       handleDeleteShow(onboardingTargetShowId);
     }
     
+    setOnboardingTargetShowId(null);
     setOnboardingStep(null);
     setIsNewlyRegisteredUser(false);
     setShowFirstStatusPrompt(false);
@@ -1395,6 +1700,7 @@ export default function App() {
         method: 'DELETE'
       });
       localStorage.removeItem(`couchtater_board_${currentUser.id}`);
+      localStorage.removeItem(`coughtater_friends_${currentUser.id}`);
       handleLogout();
       setIsPreferencesOpen(false);
     } catch (err) {
@@ -1441,7 +1747,7 @@ export default function App() {
   const handleAcceptRecommendation = async (notif: AppNotification) => {
     if (!board || !notif.show) return;
     
-    const exists = board.shows.some(s => s.title.toLowerCase().trim() === notif.show!.title.toLowerCase().trim());
+    const exists = board.shows.some(s => isSameShowTitle(s.title, notif.show!.title));
     if (exists) {
       alert(`"${notif.show.title}" is already in your collection!`);
       handleDismissNotification(notif.id);
@@ -1463,50 +1769,141 @@ export default function App() {
     await handleDismissNotification(notif.id);
   };
 
-  // Copy show to current user's queue board
-  const handleAddToMyQueue = async (friendShow: TvShow) => {
-    if (!currentUser) return;
+  // Reply to a notification from another tater
+  const handleSendReplyToNotif = async (notif: AppNotification) => {
+    const replyText = (notifReplyTextMap[notif.id] || '').trim();
+    if (!replyText || !currentUser) return;
+
+    setIsSendingReplyMap(prev => ({ ...prev, [notif.id]: true }));
+
+    // Find target user ID to send reply to
+    let targetUserId = notif.senderId;
+    if (!targetUserId) {
+      const found = allUsers.find(u => u.name?.trim().toLowerCase() === notif.senderName?.trim().toLowerCase());
+      targetUserId = found?.id || 'user-julio';
+    }
+
+    const isGuest = currentUser.id === 'guest-demo' || currentUser.id.startsWith('guest') || currentUser.email?.includes('guest');
+
+    if (isGuest) {
+      setTimeout(() => {
+        setIsSendingReplyMap(prev => ({ ...prev, [notif.id]: false }));
+        setReplySentSuccessMap(prev => ({ ...prev, [notif.id]: `Reply sent to ${notif.senderName}! (Demo Mode)` }));
+        setTimeout(() => {
+          handleDismissNotification(notif.id);
+          setReplyingNotifId(null);
+          setNotifReplyTextMap(prev => ({ ...prev, [notif.id]: '' }));
+          setReplySentSuccessMap(prev => ({ ...prev, [notif.id]: '' }));
+        }, 1200);
+      }, 400);
+      return;
+    }
+
     try {
-      const res = await fetch(`/api/boards?id=${currentUser.id}`);
+      const res = await fetch('/api/notify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetUserId,
+          notification: {
+            id: `msg-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+            senderId: currentUser.id,
+            senderName: currentUser.name || 'Binge Buddy',
+            senderAvatarUrl: currentUser.avatarUrl,
+            message: replyText,
+            createdAt: new Date().toISOString()
+          }
+        })
+      });
+
       if (res.ok) {
-        const myBoard: Board = await res.json();
-        
-        // Avoid duplicates by title match
-        const exists = myBoard.shows.some(s => s.title.toLowerCase() === friendShow.title.toLowerCase());
-        if (exists) {
-          alert(`"${friendShow.title}" is already in your collection!`);
-          return;
-        }
+        setIsSendingReplyMap(prev => ({ ...prev, [notif.id]: false }));
+        setReplySentSuccessMap(prev => ({ ...prev, [notif.id]: `Reply sent to ${notif.senderName}!` }));
+        setTimeout(() => {
+          handleDismissNotification(notif.id);
+          setReplyingNotifId(null);
+          setNotifReplyTextMap(prev => ({ ...prev, [notif.id]: '' }));
+          setReplySentSuccessMap(prev => ({ ...prev, [notif.id]: '' }));
+        }, 1200);
+      } else {
+        throw new Error("Failed to send reply");
+      }
+    } catch (err) {
+      console.error("Error sending reply:", err);
+      setIsSendingReplyMap(prev => ({ ...prev, [notif.id]: false }));
+      alert(`Failed to send reply to ${notif.senderName}. Please try again.`);
+    }
+  };
 
-        const clonedShow: TvShow = {
-          ...friendShow,
-          id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-          status: 'Backlog',
-          latestWatched: { season: 1, episode: 0, title: 'Not Started' },
-          userScore: null,
-          userNotes: '',
-          createdAt: new Date().toISOString()
-        };
+  // Copy show to current user's queue board
+  const handleAddToMyQueue = async (friendShow: TvShow, userOverride?: User) => {
+    const activeUser = userOverride || currentUser || (() => {
+      try {
+        const saved = localStorage.getItem('coughtater_user');
+        return saved ? JSON.parse(saved) : null;
+      } catch (e) { return null; }
+    })();
 
-        const updatedShows = [clonedShow, ...myBoard.shows];
-        const updatedBoard: Board = {
-          ...myBoard,
-          shows: updatedShows,
+    if (!activeUser) {
+      handleRequireAuth(`Add "${friendShow.title}" to your Up Next queue`, (newUser) => {
+        handleAddToMyQueue(friendShow, newUser);
+      });
+      return;
+    }
+    try {
+      let myBoard: Board;
+      const res = await fetch(`/api/boards?id=${activeUser.id}`);
+      if (res.ok) {
+        myBoard = await res.json();
+      } else {
+        myBoard = {
+          id: activeUser.id,
+          name: `${activeUser.name}'s Collection`,
+          shows: [],
+          owner: activeUser,
           updatedAt: new Date().toISOString()
         };
+      }
+      
+      // Avoid duplicates by title match
+      const exists = myBoard.shows.some(s => isSameShowTitle(s.title, friendShow.title));
+      if (exists) {
+        alert(`"${friendShow.title}" is already in your collection!`);
+        return;
+      }
 
-        const saveRes = await fetch('/api/boards', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(updatedBoard),
-        });
+      const clonedShow: TvShow = {
+        ...friendShow,
+        id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
+        status: 'Backlog',
+        latestWatched: { season: 1, episode: 0, title: 'Not Started' },
+        userScore: null,
+        userNotes: '',
+        createdAt: new Date().toISOString()
+      };
 
-        if (saveRes.ok) {
-          setCurrentUserShows(updatedShows);
-          if (onboardingStep === 3) {
-            setOnboardingStep(4);
-            setSearchFamily(false);
-          }
+      const updatedShows = [clonedShow, ...myBoard.shows];
+      const updatedBoard: Board = {
+        ...myBoard,
+        shows: updatedShows,
+        updatedAt: new Date().toISOString()
+      };
+
+      const saveRes = await fetch('/api/boards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedBoard),
+      });
+
+      if (saveRes.ok) {
+        setCurrentUserShows(updatedShows);
+        if (boardId === currentUser.id) {
+          setBoard(updatedBoard);
+        }
+        if (onboardingStep === 3) {
+          setOnboardingTargetShowId(clonedShow.id);
+          setOnboardingStep(4);
+          setSearchFamily(false);
         }
       }
     } catch (err) {
@@ -1566,10 +1963,10 @@ export default function App() {
       }
     });
 
-    // Now group/consolidate shows by title (case-insensitive, trimmed)
+    // Now group/consolidate shows by title (case-insensitive, normalized)
     const groupedMap = new Map<string, (TvShow & { ownerName: string })[]>();
     allShows.forEach(s => {
-      const normTitle = s.title.toLowerCase().trim();
+      const normTitle = normalizeShowTitle(s.title);
       const list = groupedMap.get(normTitle) || [];
       list.push(s);
       groupedMap.set(normTitle, list);
@@ -1634,7 +2031,7 @@ export default function App() {
 
       if (Array.isArray(fBoard.shows)) {
         fBoard.shows.forEach(s => {
-          const normTitle = s.title.toLowerCase().trim();
+          const normTitle = normalizeShowTitle(s.title);
           const ownerKey = `${ownerName.toLowerCase().trim()}_${normTitle}`;
           if (!seenPerOwner.has(ownerKey)) {
             seenPerOwner.add(ownerKey);
@@ -1647,7 +2044,8 @@ export default function App() {
     return list;
   }, [familyBoards, board, allUsers, friendsState, currentUser]);
 
-  if (!currentUser) {
+  const isSharedRoute = window.location.pathname.startsWith('/list/') || window.location.pathname.startsWith('/p/') || window.location.search.includes('board=') || window.location.search.includes('list=') || boardId !== 'default';
+  if (!currentUser && boardId === 'default' && !isSharedRoute) {
     return <LoginPage onLogin={handleLogin} />;
   }
 
@@ -1660,9 +2058,24 @@ export default function App() {
     );
   }
 
-  // Compute list of unique genres present in the searched shows list with 'All' at the front
-  const genreList = Array.from(new Set(showsToSearch.flatMap(s => s.genres))).sort();
-  const allGenres = ['All', ...genreList];
+  // Compute list of unique normalized genres present in the searched shows list with 'All' at the front
+  const ALL_PREFERRED_GENRES_ORDER = ['Action', 'Animation', 'Comedy', 'Drama', 'Dystopian', 'Fantasy', 'Horror', 'Mystery', 'Sci-Fi', 'Thriller', 'Western'];
+
+  const presentNormalizedGenres = new Set<string>();
+  showsToSearch.forEach(s => {
+    getNormalizedGenres(s).forEach(g => presentNormalizedGenres.add(g));
+  });
+
+  const sortedGenreList = Array.from(presentNormalizedGenres).sort((a, b) => {
+    const idxA = ALL_PREFERRED_GENRES_ORDER.indexOf(a);
+    const idxB = ALL_PREFERRED_GENRES_ORDER.indexOf(b);
+    if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+    if (idxA !== -1) return -1;
+    if (idxB !== -1) return 1;
+    return a.localeCompare(b);
+  });
+
+  const allGenres = ['All', ...sortedGenreList];
 
   // Filter & Sort shows
   const filteredShows = showsToSearch
@@ -1671,10 +2084,18 @@ export default function App() {
                             s.actors.some(a => a.toLowerCase().includes(searchQuery.toLowerCase())) ||
                             s.directors.some(d => d.toLowerCase().includes(searchQuery.toLowerCase()));
       const matchesService = selectedService === 'All' || s.streamingService === selectedService;
-      const matchesGenre = selectedGenre === 'All' || s.genres.includes(selectedGenre);
+      
+      const normalizedGenres = getNormalizedGenres(s);
+      const matchesGenre = selectedGenre === 'All' || normalizedGenres.some(g => {
+        const gLower = g.toLowerCase();
+        const selLower = selectedGenre.toLowerCase();
+        return gLower === selLower || gLower.includes(selLower) || selLower.includes(gLower);
+      });
       
       let matchesTab = true;
-      if (searchQuery.trim() === '') {
+      // Filter by active tab only if no query, genre, or service filter is active.
+      // Selecting a Category (e.g. Horror) or Service searches across all shows in your collection regardless of tab!
+      if (searchQuery.trim() === '' && selectedGenre === 'All' && selectedService === 'All') {
         if (activeTab === 'all') {
           matchesTab = true;
         } else if (activeTab === 'active') {
@@ -1759,10 +2180,10 @@ export default function App() {
     });
 
   const activeStreamingServices: StreamingService[] = [
-    'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+'
+    'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Starz'
   ];
 
-  const isFriendView = !!(currentUser && boardId && !isUserSelf({ id: boardId }, currentUser));
+  const isFriendView = !currentUser || !!(boardId && !isUserSelf({ id: boardId }, currentUser));
 
   // Helper to calculate days until an episode airs
   const getDaysUntilEpisode = (airDateStr: string): number => {
@@ -1845,6 +2266,30 @@ export default function App() {
       {/* Master Container */}
       <div className="max-w-7xl mx-auto px-4 py-6 md:px-8 space-y-6">
         
+        {!currentUser && (
+          <div className="sticky top-3 z-50 bg-gradient-to-r from-purple-950/95 via-indigo-950/95 to-slate-900/95 backdrop-blur-md border border-purple-500/40 rounded-2xl p-3.5 shadow-2xl flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2.5 text-purple-200">
+              <div className="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-300 shrink-0">
+                <Sparkles className="w-4 h-4 animate-pulse" />
+              </div>
+              <div>
+                <p className="font-extrabold text-white text-xs sm:text-sm">
+                  Viewing {board?.owner?.name || board?.name || 'Shared'}'s Public Binge List
+                </p>
+                <p className="text-[10px] sm:text-xs text-purple-300/80">
+                  Join their Binge Buddies on CouchTaterz to vote, rate, and sync watch lists!
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => handleRequireAuth('Join Binge Buddies', () => {})}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-white font-black text-xs shadow-md transition-all cursor-pointer hover:scale-105 shrink-0"
+            >
+              1-Tap Sign In / Join
+            </button>
+          </div>
+        )}
+        
         {/* Top Header Group */}
         <div className="space-y-3">
           {/* Top Utility Bar (Board switcher, Collab, Member status) */}
@@ -1873,6 +2318,7 @@ export default function App() {
                 <AnimatePresence>
                   {isBuddyMenuOpen && (
                     <motion.div
+                      key="buddy-menu-popover"
                       initial={{ opacity: 0, y: 6, scale: 0.98 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 4, scale: 0.98 }}
@@ -1899,37 +2345,39 @@ export default function App() {
 
                       {/* Scrollable List of Boards / Buddies */}
                       <div className="max-h-60 overflow-y-auto p-1.5 space-y-1 scrollbar-thin">
-                        <button
-                          onClick={() => {
-                            handleJoinBoard(currentUser.id);
-                            setIsBuddyMenuOpen(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 rounded-xl transition flex items-center justify-between cursor-pointer ${
-                            !isFriendView
-                              ? theme === 'dark'
-                                ? 'bg-blue-600/20 text-blue-300 font-extrabold border border-blue-500/30'
-                                : 'bg-blue-100 text-blue-950 font-extrabold border border-blue-300 shadow-2xs'
-                              : theme === 'dark'
-                                ? 'hover:bg-white/5 text-slate-300'
-                                : 'hover:bg-neutral-300 text-neutral-900 font-bold'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <div className="relative shrink-0">
-                              <img
-                                src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
-                                alt={currentUser.name}
-                                className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-blue-500/30' : 'border-blue-500'}`}
-                              />
-                              <span
-                                className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#141720] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
-                                title="Active now (Logged in)"
-                              />
+                        {currentUser && (
+                          <button
+                            onClick={() => {
+                              handleJoinBoard(currentUser.id);
+                              setIsBuddyMenuOpen(false);
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-xl transition flex items-center justify-between cursor-pointer ${
+                              !isFriendView
+                                ? theme === 'dark'
+                                  ? 'bg-blue-600/20 text-blue-300 font-extrabold border border-blue-500/30'
+                                  : 'bg-blue-100 text-blue-950 font-extrabold border border-blue-300 shadow-2xs'
+                                : theme === 'dark'
+                                  ? 'hover:bg-white/5 text-slate-300'
+                                  : 'hover:bg-neutral-300 text-neutral-900 font-bold'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <div className="relative shrink-0">
+                                <img
+                                  src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
+                                  alt={currentUser.name}
+                                  className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-blue-500/30' : 'border-blue-500'}`}
+                                />
+                                <span
+                                  className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#141720] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
+                                  title="Active now (Logged in)"
+                                />
+                              </div>
+                              <span className="truncate">My TV Shows</span>
                             </div>
-                            <span className="truncate">My TV Shows</span>
-                          </div>
-                          {!isFriendView && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-700'}`} />}
-                        </button>
+                            {!isFriendView && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-700'}`} />}
+                          </button>
+                        )}
 
                         {/* Section Header */}
                         <div className={`px-2 pt-2.5 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider font-black border-t mt-1 ${
@@ -2009,37 +2457,70 @@ export default function App() {
             </div>
 
             {/* Active Session info on Right */}
-            <div className="flex items-center gap-1.5 sm:gap-3 ml-auto shrink-0">
-              <button
-                onClick={() => setIsPreferencesOpen(true)}
-                className="flex items-center gap-1.5 cursor-pointer hover:opacity-85 active:scale-98 transition-all group"
-                title="View & Edit Preferences / Profile (Online)"
-              >
-                <div className="relative shrink-0">
-                  <img
-                    src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
-                    alt={currentUser.name}
-                    className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-blue-500/30 group-hover:border-blue-400 transition-colors object-cover shrink-0"
-                  />
-                  <span
-                    className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#0F1115] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
-                    title="Active now (Logged in)"
-                  />
-                </div>
-                <span className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors max-w-[65px] xs:max-w-[100px] sm:max-w-none truncate">{currentUser.name}</span>
-              </button>
+            <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto shrink-0">
+              {currentUser ? (
+                <>
+                  {isUserJulio(currentUser) && (
+                    <>
+                      <button
+                        onClick={() => setIsAdminOpen(true)}
+                        className="bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 font-extrabold text-[10px] sm:text-[11px] rounded-xl px-2.5 py-1 sm:py-1.5 flex items-center gap-1.5 border border-indigo-500/30 transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
+                        title="Central User Administration & Community Insights Dashboard"
+                      >
+                        <Shield className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span className="hidden sm:inline">User Admin</span>
+                        <span className="sm:hidden">Admin</span>
+                      </button>
 
-              <span className="text-slate-300 dark:text-slate-800">|</span>
+                      <span className="text-slate-300 dark:text-slate-800">|</span>
+                    </>
+                  )}
 
-              <button
-                onClick={handleLogout}
-                className="hover:text-rose-500 font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
-                title="Sign Out of CouchTaterz"
-              >
-                <LogOut className="w-3 h-3" />
-                <span className="hidden xs:inline">Sign Out</span>
-                <span className="xs:hidden">Out</span>
-              </button>
+
+
+                  <button
+                    onClick={() => setIsPreferencesOpen(true)}
+                    className="flex items-center gap-1.5 cursor-pointer hover:opacity-85 active:scale-98 transition-all group"
+                    title="View & Edit Preferences / Profile (Online)"
+                  >
+                    <div className="relative shrink-0">
+                      <img
+                        src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
+                        alt={currentUser.name}
+                        className="w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-blue-500/30 group-hover:border-blue-400 transition-colors object-cover shrink-0"
+                      />
+                      <span
+                        className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#0F1115] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
+                        title="Active now (Logged in)"
+                      />
+                    </div>
+                    <span className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors max-w-[100px] sm:max-w-none truncate">{currentUser.name}</span>
+                  </button>
+
+                  <span className="text-slate-300 dark:text-slate-800">|</span>
+
+                  <button
+                    onClick={handleLogout}
+                    className="hover:text-rose-500 font-bold transition flex items-center gap-1 cursor-pointer shrink-0"
+                    title="Sign Out of CouchTaterz"
+                  >
+                    <LogOut className="w-3 h-3" />
+                    <span className="hidden sm:inline">Sign Out</span>
+                    <span className="sm:hidden">Out</span>
+                  </button>
+                </>
+              ) : (
+                <button
+                  onClick={() => {
+                    window.location.href = '/';
+                  }}
+                  className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                  title="Sign in to CouchTaterz"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Sign In</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -2064,24 +2545,24 @@ export default function App() {
             </div>
 
             {/* Core Tools Panel */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               {/* Toggle Theme */}
               <button
                 onClick={toggleTheme}
-                className={`p-2.5 rounded-xl sm:rounded-2xl border transition hover:scale-105 cursor-pointer ${
+                className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition hover:scale-105 cursor-pointer ${
                   theme === 'dark' 
                     ? 'bg-[#262A33] border-white/5 text-slate-400 hover:bg-[#1A1D23] hover:text-slate-300' 
                     : 'bg-neutral-100 border-neutral-200 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800'
                 }`}
                 title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
               >
-                {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-600" />}
+                {theme === 'dark' ? <Sun className="w-4 h-4 text-slate-300" /> : <Moon className="w-4 h-4 text-neutral-600" />}
               </button>
 
               {/* View Calendar Trigger */}
               <button
                 onClick={() => setIsCalendarOpen(true)}
-                className={`p-2.5 rounded-xl sm:rounded-2xl border transition hover:scale-105 cursor-pointer ${
+                className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition hover:scale-105 cursor-pointer ${
                   theme === 'dark'
                     ? 'bg-[#262A33] border-white/5 text-blue-400 hover:bg-[#1C2028]'
                     : 'bg-neutral-100 border-neutral-200 text-blue-600 hover:bg-neutral-200'
@@ -2093,28 +2574,26 @@ export default function App() {
 
               {/* Add Show Trigger - Desktop */}
               {!isFriendView && (
-                <div className="hidden sm:flex items-center gap-2">
-                  <button
-                    id="add-show-button-desktop"
-                    onClick={() => {
-                      setAddModalInitialTab('search');
-                      setIsAddOpen(true);
-                    }}
-                    className={`px-4 py-2.5 rounded-2xl font-bold text-xs flex items-center justify-center gap-1.5 transition hover:scale-[1.02] cursor-pointer ${
-                      onboardingStep === 3
-                        ? 'ring-4 ring-purple-400 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-purple-500/40 relative z-50 animate-pulse border border-purple-400'
-                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-950/20 border border-blue-500/25'
-                    }`}
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Show</span>
-                  </button>
-                </div>
+                <button
+                  id="add-show-button-desktop"
+                  onClick={() => {
+                    setAddModalInitialTab('search');
+                    setIsAddOpen(true);
+                  }}
+                  className={`hidden sm:flex px-4 py-2.5 rounded-2xl font-bold text-xs items-center justify-center gap-1.5 transition hover:scale-[1.02] cursor-pointer ${
+                    onboardingStep === 3
+                      ? 'ring-4 ring-purple-400 bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-purple-500/40 relative z-50 animate-pulse border border-purple-400'
+                      : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-950/20 border border-blue-500/25'
+                  }`}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Show</span>
+                </button>
               )}
             </div>
           </header>
 
-          {/* Mobile-only Action Buttons (Separate Row) */}
+          {/* Mobile-only Action Button (Next Row) */}
           {!isFriendView && (
             <div className="flex sm:hidden w-full gap-2 mt-2">
               <button
@@ -2137,7 +2616,7 @@ export default function App() {
         </div>
 
         {/* Friend View Banner */}
-        {isFriendView && (
+        {isFriendView && currentUser && (
           <div className={`sticky top-0 z-40 py-2 -mx-4 px-4 md:-mx-8 md:px-8 transition-colors duration-300 ${
             theme === 'dark' ? 'bg-[#0F1115]' : 'bg-neutral-50'
           }`}>
@@ -2238,6 +2717,7 @@ export default function App() {
             <AnimatePresence>
               {showWorkflowGuide && (
                 <motion.div
+                  key="workflow-guide-panel"
                   initial={{ opacity: 0, y: -15, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: 'auto' }}
                   exit={{ opacity: 0, y: -15, height: 0 }}
@@ -2368,12 +2848,12 @@ export default function App() {
                   >
                     All Services
                   </button>
-                  {activeStreamingServices.map((service) => {
+                  {activeStreamingServices.map((service, srvIdx) => {
                     const isActive = selectedService === service;
                     const count = board.shows.filter(s => s.streamingService === service).length;
                     return (
                       <button
-                        key={service}
+                        key={`srv-filter-${service}-${srvIdx}`}
                         onClick={() => setSelectedService(service)}
                         className={`px-2.5 py-1 rounded-lg font-extrabold text-[10px] uppercase tracking-wide border shrink-0 snap-start transition-all duration-200 flex items-center gap-1.5 cursor-pointer ${
                           isActive
@@ -2449,14 +2929,9 @@ export default function App() {
                                 }
                               } else {
                                 setActiveTab(tab.id);
-                                if (tab.id === 'active') {
-                                  setSortBy('airingNext');
-                                } else {
-                                  setSortBy('rtScore');
-                                }
                               }
                             }}
-                            className={`relative py-2.5 sm:py-3 px-1 rounded-2xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 sm:gap-2 z-10 ${
+                            className={`relative py-2 sm:py-3 px-1 rounded-2xl text-[10px] sm:text-[11px] font-bold transition-all duration-200 cursor-pointer flex items-center justify-center gap-1 sm:gap-2 z-10 whitespace-nowrap ${
                               isWatchingOnboardingHighlight 
                                 ? 'ring-2 ring-blue-400 ring-offset-2 ring-offset-[#1A1D23]' 
                                 : ''
@@ -2474,7 +2949,7 @@ export default function App() {
                                   : 'bg-transparent text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100'
                             }`}
                           >
-                            <span className={`flex items-center gap-1 sm:gap-1.5 ${
+                            <span className={`flex items-center gap-1 sm:gap-1.5 whitespace-nowrap ${
                               isActive 
                                 ? 'text-white font-extrabold' 
                                 : theme === 'dark'
@@ -2485,7 +2960,7 @@ export default function App() {
                               <span className="hidden sm:inline">{tab.label}</span>
                               <span className="sm:hidden">{tab.id === 'active' ? 'Watching' : tab.id === 'library' ? 'Watched' : 'Up Next'}</span>
                             </span>
-                            <span className={`px-1.5 py-0.5 text-[9px] rounded-full font-black transition-colors duration-300 ${
+                            <span className={`px-1.5 py-0.5 text-[9px] rounded-full font-black shrink-0 transition-colors duration-300 ${
                               isActive 
                                 ? 'bg-black/25 text-white border border-white/20 shadow-2xs' 
                                 : searchFamily
@@ -2514,7 +2989,6 @@ export default function App() {
                           }
                         } else {
                           setActiveTab('all');
-                          setSortBy('rtScore');
                         }
                       }}
                       className={`relative py-2 px-3 sm:px-4 rounded-xl text-[10px] sm:text-[11px] font-bold transition-all cursor-pointer hidden sm:flex items-center justify-center gap-1.5 z-10 border shrink-0 ${
@@ -2550,52 +3024,69 @@ export default function App() {
                 ? 'shadow-[0_0_15px_rgba(16,185,129,0.03)] border-t-emerald-500/20'
                 : 'shadow-[0_0_15px_rgba(245,158,11,0.03)] border-t-amber-500/20'
             }`}>
-              {/* Search Scope Toggle (Subtle & Compact) */}
+              {/* Search Scope Toggle (High Clarity & Responsive) */}
               {!isFriendView && (
                 <div 
                   id="scope-tabs-container"
-                  className="flex items-center gap-2 text-[11px] font-medium text-slate-400 px-1 pb-1 select-none"
+                  className="flex flex-wrap items-center justify-between gap-2 text-xs font-medium px-1 pb-1 select-none"
                 >
-                  <span className="opacity-75">Scope:</span>
-                  <div className="inline-flex items-center gap-1 bg-neutral-950/30 p-0.5 rounded-lg border border-white/5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchFamily(false);
-                        if (activeTab === 'all') {
-                          setActiveTab('active');
-                        }
-                      }}
-                      className={`px-2 py-0.5 rounded-md transition-all duration-150 cursor-pointer ${
-                        !searchFamily 
-                          ? 'bg-[#2E333F] text-white font-semibold shadow-sm' 
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      My Shows
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSearchFamily(true);
-                        setActiveTab('all');
-                      }}
-                      className={`px-2 py-0.5 rounded-md transition-all duration-150 cursor-pointer flex items-center gap-1 ${
-                        searchFamily 
-                          ? 'bg-purple-950/60 text-purple-300 border border-purple-500/20 font-semibold shadow-sm' 
-                          : 'text-slate-400 hover:text-slate-200'
-                      } ${
-                        onboardingStep === 3 && !searchFamily
-                          ? 'ring-2 ring-purple-400 bg-[#581c87] text-white animate-pulse border border-purple-500 relative z-50'
-                          : ''
-                      }`}
-                    >
-                      <span>Buddy Picks</span>
-                    </button>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[11px] font-bold uppercase tracking-wider ${
+                      theme === 'dark' ? 'text-slate-400' : 'text-slate-700'
+                    }`}>Scope:</span>
+                    <div className={`inline-flex items-center p-0.5 rounded-xl border shadow-inner ${
+                      theme === 'dark' ? 'bg-black/40 border-white/10' : 'bg-slate-200/90 border-slate-300'
+                    }`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchFamily(false);
+                          if (activeTab === 'all') {
+                            setActiveTab('active');
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                          !searchFamily 
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-900/30' 
+                            : theme === 'dark'
+                              ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                              : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
+                        }`}
+                      >
+                        <UserIcon className="w-3.5 h-3.5" />
+                        <span>My Shows</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSearchFamily(true);
+                          setActiveTab('all');
+                        }}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 cursor-pointer ${
+                          searchFamily 
+                            ? 'bg-purple-600 text-white shadow-md shadow-purple-900/30' 
+                            : theme === 'dark'
+                              ? 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                              : 'text-slate-700 hover:text-slate-950 hover:bg-white/70'
+                        } ${
+                          onboardingStep === 3 && !searchFamily
+                            ? 'ring-2 ring-purple-400 bg-[#581c87] text-white animate-pulse border border-purple-500 relative z-50'
+                            : ''
+                        }`}
+                      >
+                        <Users className={`w-3.5 h-3.5 ${searchFamily ? 'text-white' : 'text-purple-500 dark:text-purple-400'}`} />
+                        <span>Buddy Picks</span>
+                      </button>
+                    </div>
+                    {searchFamily && isLoadingFamilyBoards && (
+                      <span className={`animate-pulse text-[10px] font-semibold ml-1 ${
+                        theme === 'dark' ? 'text-purple-300' : 'text-purple-700'
+                      }`}>
+                        Syncing...
+                      </span>
+                    )}
                   </div>
-                  {searchFamily && isLoadingFamilyBoards && (
-                    <span className="text-slate-500 animate-pulse text-[10px] ml-1">Syncing trackers...</span>
-                  )}
                 </div>
               )}
 
@@ -2660,7 +3151,7 @@ export default function App() {
                           : 'bg-neutral-100 border-neutral-200 text-neutral-700'
                       }`}
                     >
-                      {activeTab === 'active' && <option value="airingNext">Airing Next</option>}
+                      <option value="airingNext">Airing Next</option>
                       <option value="recent">Added Date</option>
                       <option value="rtScore">RT Score</option>
                       <option value="userScore">Your Score</option>
@@ -2688,8 +3179,8 @@ export default function App() {
                       <option value="All" className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>
                         All Categories
                       </option>
-                      {allGenres.filter(g => g !== 'All').map(g => (
-                        <option key={g} value={g} className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>{g}</option>
+                      {allGenres.filter(g => g !== 'All').map((g, gOptIdx) => (
+                        <option key={`genre-opt-${g}-${gOptIdx}`} value={g} className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>{g}</option>
                       ))}
                     </select>
                     <div className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${
@@ -2706,11 +3197,11 @@ export default function App() {
                 <div className="pt-1 pb-0.5 hidden sm:block">
                   <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none py-1">
                     <span className="text-[10px] uppercase font-black tracking-wider text-slate-500 shrink-0 mr-1">Categories:</span>
-                    {allGenres.map((genre) => {
+                    {allGenres.map((genre, gChipIdx) => {
                       const isSelected = selectedGenre === genre;
                       return (
                         <button
-                          key={genre}
+                          key={`genre-chip-${genre}-${gChipIdx}`}
                           type="button"
                           onClick={() => setSelectedGenre(genre)}
                           className={`px-2.5 py-1 rounded-xl text-[10px] font-extrabold uppercase tracking-wide transition-all duration-150 cursor-pointer shrink-0 border ${
@@ -2878,21 +3369,16 @@ export default function App() {
                 {/* Desktop AI Sidebar Toggle Button when closed */}
                 {!isAiSidebarOpen && (
                   <button
-                    onClick={() => {
-                      setIsAiSidebarOpen(true);
-                      setTimeout(() => {
-                        chatAgentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 150);
-                    }}
-                    className={`hidden md:flex px-3 py-1.5 text-[10px] font-black border rounded-xl transition items-center gap-1.5 cursor-pointer ${
+                    onClick={handleOpenTaterzAiGeneral}
+                    className={`hidden md:flex px-3 py-1.5 text-[10px] font-black border rounded-xl transition items-center gap-1.5 cursor-pointer shadow-sm ${
                       theme === 'dark'
-                        ? 'bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border-emerald-500/15'
-                        : 'bg-neutral-100 hover:bg-neutral-200 text-emerald-600 border-neutral-200'
+                        ? 'bg-gradient-to-r from-amber-500/15 to-yellow-500/15 hover:from-amber-500/25 hover:to-yellow-500/25 text-amber-300 border-amber-500/25 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
+                        : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500/80 shadow-md shadow-amber-500/20'
                     }`}
-                    title="Open Ask Spudz Chat"
+                    title="Open AskTaterz"
                   >
-                    <Bot className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
-                    <span>Ask Spudz</span>
+                    <Bot className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-amber-400' : 'text-white'}`} />
+                    <span>AskTaterz</span>
                   </button>
                 )}
               </div>
@@ -2902,11 +3388,11 @@ export default function App() {
             <AnimatePresence>
               {activeNotifications.length > 0 && (
                 <div className="space-y-4 mb-6">
-                  {activeNotifications.map((notif) => {
+                  {activeNotifications.map((notif, nIdx) => {
                     const isShowRec = !!notif.show;
                     return (
                       <motion.div
-                        key={notif.id}
+                        key={notif.id ? `notif-${notif.id}-${nIdx}` : `notif-idx-${nIdx}`}
                         initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                         animate={{ opacity: 1, height: 'auto', marginBottom: 16 }}
                         exit={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -2934,10 +3420,10 @@ export default function App() {
                           }`} />
 
                           {/* Show Banner Image Layer fading in from right (only for show recommendations) */}
-                          {notif.show?.bannerImage && (
+                          {notif.show && (
                             <div className="absolute right-0 top-0 bottom-0 w-2/5 sm:w-1/2 pointer-events-none overflow-hidden z-0">
                               <img
-                                src={notif.show.bannerImage}
+                                src={getShowBannerImage(notif.show)}
                                 alt={notif.show.title || 'Show'}
                                 className="w-full h-full object-cover opacity-30 md:opacity-40 transition-opacity"
                                 referrerPolicy="no-referrer"
@@ -2993,16 +3479,23 @@ export default function App() {
                                     )}
                                   </div>
 
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-2 flex-wrap items-center">
                                     <button
                                       onClick={() => handleAcceptRecommendation(notif)}
-                                      className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl transition cursor-pointer shadow-sm"
+                                      className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl transition cursor-pointer shadow-sm active:scale-95"
                                     >
                                       Add to Up Next
                                     </button>
                                     <button
+                                      onClick={() => setReplyingNotifId(replyingNotifId === notif.id ? null : notif.id)}
+                                      className="px-3.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5 active:scale-95"
+                                    >
+                                      <Reply className="w-3.5 h-3.5" />
+                                      <span>Reply</span>
+                                    </button>
+                                    <button
                                       onClick={() => handleDismissNotification(notif.id)}
-                                      className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                                      className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer active:scale-95"
                                     >
                                       Dismiss
                                     </button>
@@ -3023,16 +3516,103 @@ export default function App() {
                                     </p>
                                   </div>
 
-                                  <div className="flex gap-2">
+                                  <div className="flex gap-2 flex-wrap items-center">
+                                    <button
+                                      onClick={() => setReplyingNotifId(replyingNotifId === notif.id ? null : notif.id)}
+                                      className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl transition cursor-pointer shadow-sm flex items-center gap-1.5 active:scale-95"
+                                    >
+                                      <Reply className="w-3.5 h-3.5" />
+                                      <span>Reply</span>
+                                    </button>
                                     <button
                                       onClick={() => handleDismissNotification(notif.id)}
-                                      className="px-3.5 py-1.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl transition cursor-pointer shadow-sm"
+                                      className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer active:scale-95"
                                     >
                                       Mark as Read
                                     </button>
                                   </div>
                                 </>
                               )}
+
+                              {/* Animated Inline Reply Box */}
+                              <AnimatePresence>
+                                {replyingNotifId === notif.id && (
+                                  <motion.div
+                                    initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    animate={{ opacity: 1, height: 'auto', marginTop: 10 }}
+                                    exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                    transition={{ duration: 0.2 }}
+                                    className={`p-3 rounded-xl border text-xs overflow-hidden ${
+                                      isShowRec
+                                        ? (theme === 'dark' ? 'bg-[#12141A] border-amber-500/30' : 'bg-amber-50/90 border-amber-200')
+                                        : (theme === 'dark' ? 'bg-[#12101D] border-purple-500/30' : 'bg-purple-50 border-purple-200')
+                                    }`}
+                                  >
+                                    <form
+                                      onSubmit={(e) => {
+                                        e.preventDefault();
+                                        handleSendReplyToNotif(notif);
+                                      }}
+                                      className="space-y-2.5"
+                                    >
+                                      <div className="flex items-center justify-between">
+                                        <span className={`font-bold flex items-center gap-1.5 text-[11px] ${
+                                          isShowRec
+                                            ? (theme === 'dark' ? 'text-amber-300' : 'text-amber-900')
+                                            : (theme === 'dark' ? 'text-purple-300' : 'text-purple-900')
+                                        }`}>
+                                          <Reply className="w-3.5 h-3.5" />
+                                          <span>Replying to <strong className="font-extrabold">{notif.senderName}</strong></span>
+                                        </span>
+                                        <button
+                                          type="button"
+                                          onClick={() => setReplyingNotifId(null)}
+                                          className={`p-1 rounded-lg transition cursor-pointer ${
+                                            theme === 'dark' ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-200'
+                                          }`}
+                                          title="Close Reply"
+                                        >
+                                          <X className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+
+                                      {replySentSuccessMap[notif.id] ? (
+                                        <div className="p-2.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 font-bold text-xs flex items-center gap-2">
+                                          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                          <span>{replySentSuccessMap[notif.id]}</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex gap-2 items-center">
+                                          <input
+                                            type="text"
+                                            value={notifReplyTextMap[notif.id] || ''}
+                                            onChange={(e) => setNotifReplyTextMap(prev => ({ ...prev, [notif.id]: e.target.value }))}
+                                            placeholder={`Type your reply to ${notif.senderName}...`}
+                                            autoFocus
+                                            className={`flex-1 px-3 py-2 text-xs rounded-xl border outline-none transition ${
+                                              theme === 'dark'
+                                                ? 'bg-[#1A1E29] border-white/10 text-white placeholder-slate-500 focus:border-purple-500'
+                                                : 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-purple-500 shadow-inner'
+                                            }`}
+                                          />
+                                          <button
+                                            type="submit"
+                                            disabled={!(notifReplyTextMap[notif.id] || '').trim() || isSendingReplyMap[notif.id]}
+                                            className={`px-3.5 py-2 font-extrabold text-xs rounded-xl transition cursor-pointer flex items-center gap-1.5 shrink-0 shadow-sm disabled:opacity-50 ${
+                                              isShowRec
+                                                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
+                                                : 'bg-purple-600 hover:bg-purple-500 text-white'
+                                            }`}
+                                          >
+                                            <Send className="w-3.5 h-3.5" />
+                                            <span>{isSendingReplyMap[notif.id] ? 'Sending...' : 'Send'}</span>
+                                          </button>
+                                        </div>
+                                      )}
+                                    </form>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
                             </div>
                           </div>
                         </div>
@@ -3047,6 +3627,7 @@ export default function App() {
             <AnimatePresence>
               {pendingIncomingRequests.length > 0 && (
                 <motion.div
+                  key="pending-incoming-requests-banner"
                   initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                   animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -3087,9 +3668,9 @@ export default function App() {
 
                         {/* Requests List */}
                         <div className="space-y-3">
-                          {pendingIncomingRequests.map(req => (
+                          {pendingIncomingRequests.map((req, reqIdx) => (
                             <div 
-                              key={req.fromUserId}
+                              key={req.fromUserId ? `req-${req.fromUserId}-${reqIdx}` : `req-idx-${reqIdx}`}
                               className={`p-4 sm:p-4.5 rounded-2xl border flex flex-col gap-3.5 transition shadow-md ${
                                 theme === 'dark'
                                   ? 'bg-[#161822] border-purple-500/30 text-slate-100'
@@ -3170,6 +3751,7 @@ export default function App() {
             <AnimatePresence>
               {matchingBacklogShows.length > 0 && (
                 <motion.div
+                  key="matching-backlog-alert-banner"
                   initial={{ opacity: 0, height: 0, marginBottom: 0 }}
                   animate={{ opacity: 1, height: 'auto', marginBottom: 24 }}
                   exit={{ opacity: 0, height: 0, marginBottom: 0 }}
@@ -3326,10 +3908,12 @@ export default function App() {
                       isFriendView={isFriendView || searchFamily || belongsToOther}
                       onAddToMyQueue={handleAddToMyQueue}
                       isAlreadyInCollection={currentUserShows.some(s => s.title.toLowerCase().trim() === show.title.toLowerCase().trim())}
+                      currentUserShows={currentUserShows}
                       subscribedServices={currentUserPrefs?.services || []}
                       currentUser={currentUser}
                       allUsers={allUsers}
-                      ownerName={searchFamily ? undefined : (isFriendView ? show.ownerName : undefined)}
+                      friendsList={friendsState.friends}
+                      ownerName={searchFamily ? undefined : (isFriendView ? (show.ownerName || board?.owner?.name || allUsers.find(u => u.id === boardId)?.name || 'Buddy') : undefined)}
                       ownerNames={searchFamily ? show.ownerNames : undefined}
                       familyDetails={searchFamily ? show.familyDetails : undefined}
                       onboardingStep={onboardingStep}
@@ -3339,6 +3923,10 @@ export default function App() {
                         (onboardingStep === 2 && show.id === onboardingTargetShowId) ||
                         (onboardingStep === 3 && searchFamily)
                       }
+                      theme={theme}
+                      onOpenStoryCard={handleOpenStoryCard}
+                      onRequireAuth={handleRequireAuth}
+                      onOpenTaterzAiRecap={handleOpenTaterzAiRecap}
                     />
                   );
                 })}
@@ -3451,22 +4039,25 @@ export default function App() {
           <div ref={chatAgentRef} className={`${isAiSidebarOpen ? 'md:col-span-1 block' : 'hidden'} h-full`}>
             {/* Desktop Side Panel */}
             <div className="hidden md:block sticky top-6 h-fit max-h-[calc(100vh-100px)] md:max-h-[840px]">
-              <ChatAgent shows={board.shows} preferences={currentUserPrefs} onClose={() => setIsAiSidebarOpen(false)} currentUser={currentUser} />
+              <ChatAgent shows={board.shows} preferences={currentUserPrefs} onClose={() => setIsAiSidebarOpen(false)} currentUser={currentUser} theme={theme} />
             </div>
           </div>
 
           {/* Mobile Sheet Panel drawer */}
           <AnimatePresence>
             {isChatOpen && (
-              <div className="fixed inset-0 z-50 bg-black/85 md:hidden flex justify-end">
+              <div key="chat-mobile-sheet-overlay" className="fixed inset-0 z-50 bg-black/85 md:hidden flex justify-end">
                 <motion.div
+                  key="chat-mobile-sheet-panel"
                   initial={{ x: '100%' }}
                   animate={{ x: 0 }}
                   exit={{ x: '100%' }}
                   transition={{ type: 'spring', damping: 25 }}
-                  className="w-[85vw] h-full bg-[#1A1D23] border-l border-white/5"
+                  className={`w-[85vw] h-full border-l ${
+                    theme === 'dark' ? 'bg-[#1A1D23] border-white/5' : 'bg-white border-slate-200 shadow-2xl'
+                  }`}
                 >
-                  <ChatAgent shows={board.shows} preferences={currentUserPrefs} onClose={() => setIsChatOpen(false)} currentUser={currentUser} />
+                  <ChatAgent shows={board.shows} preferences={currentUserPrefs} onClose={() => setIsChatOpen(false)} currentUser={currentUser} theme={theme} />
                 </motion.div>
               </div>
             )}
@@ -3491,29 +4082,19 @@ export default function App() {
         <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-3.5 items-end pointer-events-auto">
           {/* AI Scout Button */}
           <div className="relative flex items-center group">
-            <span className="absolute right-14 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-emerald-400 border border-emerald-500/10 shadow-2xl">
-              Ask SPUDZ
+            <span className="absolute right-14 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-amber-300 border border-amber-500/20 shadow-2xl">
+              AskTATERZ AI
             </span>
             <button
-              onClick={() => {
-                const isCurrentlyOpen = typeof window !== 'undefined' && window.innerWidth < 768 ? isChatOpen : isAiSidebarOpen;
-                const nextVal = !isCurrentlyOpen;
-                setIsAiSidebarOpen(nextVal);
-                setIsChatOpen(nextVal);
-                if (nextVal) {
-                  setTimeout(() => {
-                    chatAgentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }, 150);
-                }
-              }}
-              className={`p-3.5 rounded-full shadow-2xl transition-colors duration-150 flex items-center justify-center border cursor-pointer ${
-                isAiSidebarOpen || isChatOpen
-                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-emerald-500/20'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white border-emerald-500/20 shadow-emerald-950/40'
+              onClick={handleOpenTaterzAiGeneral}
+              className={`p-3.5 rounded-full transition-all duration-150 flex items-center justify-center border shadow-xl backdrop-blur-md cursor-pointer hover:scale-105 active:scale-95 ${
+                theme === 'dark'
+                  ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 border-amber-500/30 shadow-[0_0_18px_rgba(245,158,11,0.25)]'
+                  : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
               }`}
-              title="Chat with Spudz Agent"
+              title="Open AskTaterz"
             >
-              <Bot className={`w-4 h-4 ${(isAiSidebarOpen || isChatOpen) ? '' : 'animate-pulse'}`} />
+              <Bot className={`w-5 h-5 ${theme === 'dark' ? 'text-amber-400' : 'text-white'}`} />
             </button>
           </div>
 
@@ -3539,6 +4120,7 @@ export default function App() {
       <AnimatePresence>
         {isAddOpen && (
           <AddShowModal
+            key="add-show-modal"
             onClose={() => setIsAddOpen(false)}
             onAddShow={handleAddShow}
             onboardingStep={onboardingStep}
@@ -3552,6 +4134,7 @@ export default function App() {
         )}
         {isShareOpen && (
           <ShareBoardModal
+            key="share-board-modal"
             currentBoardId={boardId}
             currentUser={currentUser}
             allUsers={allUsers}
@@ -3560,26 +4143,58 @@ export default function App() {
             onFriendsUpdated={() => {
               setFriendsState(getFriendsData(currentUser?.id || JULIO_USER_ID));
             }}
+            onOpenGroupWatchAi={handleOpenTaterzAiGroup}
+            theme={theme}
+          />
+        )}
+        {isTaterzAiOpen && (
+          <AskTaterzAIModal
+            key="ask-taterz-ai-modal"
+            isOpen={isTaterzAiOpen}
+            onClose={() => setIsTaterzAiOpen(false)}
+            shows={board?.shows || []}
+            preferences={currentUserPrefs}
+            buddies={
+              (friendsState.friends || []).map((fId) => {
+                const uObj = allUsers.find((u) => u.id === fId);
+                return {
+                  id: fId,
+                  name: uObj?.name || 'Binge Buddy',
+                  avatarUrl: uObj?.avatarUrl,
+                  topShows: [
+                    { title: 'Shogun', rating: 10, streamingService: 'Hulu' },
+                    { title: 'The Bear', rating: 9, streamingService: 'Hulu' }
+                  ]
+                };
+              })
+            }
+            initialIntent={taterzAiIntent}
+            initialShowForRecap={taterzAiShow}
             theme={theme}
           />
         )}
         {isManageActiveOpen && (
           <ManageActiveShowsModal
+            key="manage-active-shows-modal"
             shows={board?.shows || []}
             onUpdateShow={handleUpdateShow}
             onDeleteShow={handleDeleteShow}
             onClose={() => setIsManageActiveOpen(false)}
+            theme={theme}
           />
         )}
         {isCalendarOpen && (
           <ShowCalendarModal
+            key="show-calendar-modal"
             shows={board?.shows || []}
             onUpdateShow={handleUpdateShow}
             onClose={() => setIsCalendarOpen(false)}
+            theme={theme}
           />
         )}
         {isPreferencesOpen && (
           <PreferencesModal
+            key="preferences-modal"
             currentUser={currentUser}
             preferences={board?.preferences || currentUserPrefs || { genres: [], actors: [], directors: [] }}
             existingShows={board?.shows || []}
@@ -3601,15 +4216,48 @@ export default function App() {
             }}
           />
         )}
+        {currentUser && isUserJulio(currentUser) && isAdminOpen && (
+          <UserAdminModal
+            key="user-admin-modal"
+            isOpen={isAdminOpen}
+            onClose={() => setIsAdminOpen(false)}
+            currentUser={currentUser}
+            theme={theme}
+            onInspectUserLibrary={(targetUserId) => {
+              handleJoinBoard(targetUserId);
+              setIsAdminOpen(false);
+            }}
+            onDeleteUserProfile={(targetUserId) => {
+              if (boardId === targetUserId) {
+                handleJoinBoard(currentUser.id);
+              }
+              const fetchUsers = () => {
+                fetch(`/api/users?currentUserId=${encodeURIComponent(currentUser.id)}&email=${encodeURIComponent(currentUser.email || '')}&name=${encodeURIComponent(currentUser.name || '')}`)
+                  .then(res => res.ok ? res.json() : null)
+                  .then(data => {
+                    if (Array.isArray(data)) {
+                      const seen = new Set<string>();
+                      const unique = data.filter((u: any) => u && u.id && !seen.has(u.id) && seen.add(u.id));
+                      setAllUsers(unique);
+                    }
+                  })
+                  .catch(() => {});
+              };
+              fetchUsers();
+            }}
+          />
+        )}
         {showQueueOnboarding && (
           <QueueOnboardingModal
+            key="queue-onboarding-modal"
             isOpen={showQueueOnboarding}
             onClose={handleCloseOnboarding}
             hasRecommendations={localStorage.getItem(`coughtater_starter_pack_${currentUser?.id}`) !== 'false'}
+            theme={theme}
           />
         )}
         {onboardingStep !== null && !isAddOpen && (
-          <>
+          <div key="onboarding-walkthrough-overlay-container">
             {/* Spotlight Onboarding Dimming Backdrop */}
             <div className="fixed inset-0 bg-[#06080F]/80 pointer-events-auto z-40 transition-all duration-300" />
             
@@ -3628,7 +4276,7 @@ export default function App() {
               autoDeleteShow={autoDeleteOnboardingShow}
               setAutoDeleteShow={setAutoDeleteOnboardingShow}
             />
-          </>
+          </div>
         )}
 
         {/* Auto-Connect Toast */}
@@ -3708,6 +4356,71 @@ export default function App() {
         )}
         {/* Hidden stats functionality for now */}
       </AnimatePresence>
+
+      {/* 9:16 Social Story Card Modal */}
+      <SocialStoryCardModal
+        isOpen={isStoryModalOpen}
+        onClose={() => setIsStoryModalOpen(false)}
+        show={storyModalShow}
+        currentUser={currentUser}
+        boardId={boardId}
+        triggerReason={storyTriggerReason}
+      />
+
+      {/* Soft Gate Auth Modal for Guest Users */}
+      <SoftGateAuthModal
+        isOpen={isSoftGateOpen}
+        onClose={() => setIsSoftGateOpen(false)}
+        onSuccessLogin={handleSoftGateSuccessLogin}
+        ownerName={board?.owner?.name || board?.name || 'a Binge Buddy'}
+        actionTitle={softGateActionTitle}
+      />
+
+      {/* Custom Tater Avatar Creator Studio Modal */}
+      <TaterzAvatarBuilderModal
+        isOpen={isAvatarStudioOpen}
+        onClose={() => setIsAvatarStudioOpen(false)}
+        currentAvatarUrl={currentUser?.avatarUrl}
+        onSaveAvatar={(newAvatarUrl) => {
+          if (currentUser) {
+            const updatedUser = { ...currentUser, avatarUrl: newAvatarUrl };
+            setCurrentUser(updatedUser);
+            localStorage.setItem(`couchtaterz_user_${updatedUser.id}`, JSON.stringify(updatedUser));
+            localStorage.setItem('couchtaterz_active_user', JSON.stringify(updatedUser));
+            localStorage.setItem('coughtater_user', JSON.stringify(updatedUser));
+
+            // Immediately update local allUsers list so that community lists, chat, and headers reflect change immediately
+            setAllUsers(prev => prev.map(u => u.id === updatedUser.id ? { ...u, avatarUrl: newAvatarUrl } : u));
+
+            // Sync user profile directly to persistent cloud storage
+            fetch('/api/users/profile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: updatedUser.id,
+                email: updatedUser.email,
+                name: updatedUser.name,
+                avatarUrl: newAvatarUrl
+              })
+            }).catch(err => console.error("Failed to sync profile avatar:", err));
+
+            if (board) {
+              const updatedBoard = {
+                ...board,
+                owner: updatedUser,
+                updatedAt: new Date().toISOString()
+              };
+              setBoard(updatedBoard);
+              fetch('/api/boards', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedBoard),
+              }).catch(err => console.error("Failed to sync board avatar:", err));
+            }
+          }
+        }}
+        isPro={localStorage.getItem('couchtaterz_is_pro') === 'true'}
+      />
     </div>
   );
 }

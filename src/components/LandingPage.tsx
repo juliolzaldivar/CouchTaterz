@@ -118,9 +118,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
 
-            {/* Top Right Mobile Controls: Sign In */}
-            <div className="flex items-center gap-2 sm:hidden">
-              {(isInstallable || isIos) && (
+            {/* Top Right Mobile Controls */}
+            {(isInstallable || isIos) && (
+              <div className="flex items-center gap-2 sm:hidden">
                 <button
                   onClick={handleInstallClick}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800/90 text-slate-200 text-xs font-semibold border border-slate-700"
@@ -128,14 +128,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 >
                   <Download className="w-3.5 h-3.5 text-blue-400" />
                 </button>
-              )}
-              <button
-                onClick={onOpenLogin}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-300 hover:text-white bg-slate-900/80 border border-slate-800 active:scale-95 transition-all"
-              >
-                Sign In
-              </button>
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Desktop Controls / Mobile Row 2 (Centered 1-Click Guest Preview) */}
@@ -150,13 +144,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 <span>Install App</span>
               </button>
             )}
-
-            <button
-              onClick={onOpenLogin}
-              className="hidden sm:block px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all"
-            >
-              Sign In
-            </button>
 
             <button
               onClick={() => setShowGuestChoiceModal(true)}
@@ -181,10 +168,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 text-[10px] sm:text-xs font-medium shadow-inner"
           >
             <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="text-slate-200 font-semibold hidden sm:inline">Gemini 2.5 Flash & TVmaze Redundancy Engine</span>
-            <span className="text-slate-200 font-semibold sm:hidden">AI Powered</span>
+            <span className="text-slate-200 font-semibold hidden sm:inline">Powered by AskTaterz &amp; Live TV Calendar</span>
+            <span className="text-slate-200 font-semibold sm:hidden">AskTaterz</span>
             <span className="text-slate-500">•</span>
-            <span className="text-blue-400 font-medium">Zero Spoilers</span>
+            <span className="text-blue-400 font-medium">100% Spoiler-Free</span>
           </motion.div>
 
           {/* Headline */}
@@ -235,23 +222,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               className="pt-4 border-t border-slate-900/80 max-w-lg mx-auto"
             >
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                Or select household member profile:
+                Or jump right into a Binge Buddy profile:
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
-                {registeredUsers.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => onSelectUser(u)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-xs text-slate-300 hover:text-white transition-all shadow-sm group"
-                  >
-                    <img 
-                      src={u.avatarUrl} 
-                      alt={u.name} 
-                      className="w-5 h-5 rounded-full bg-slate-800 group-hover:scale-105 transition-transform" 
-                    />
-                    <span className="font-semibold">{u.name}</span>
-                  </button>
-                ))}
+                {registeredUsers.map((u, idx) => {
+                  const isJulio = u.id === 'default' || u.id === 'user-julio' || u.name?.toLowerCase().trim() === 'julio' || u.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com';
+                  return (
+                    <button
+                      key={`reguser-${u.id}-${idx}`}
+                      onClick={() => onSelectUser(u)}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-xs text-slate-300 hover:text-white transition-all shadow-sm group"
+                    >
+                      <img 
+                        src={u.avatarUrl} 
+                        alt={u.name} 
+                        className="w-5 h-5 rounded-full bg-slate-800 group-hover:scale-105 transition-transform" 
+                      />
+                      <span className="font-semibold">{u.name}</span>
+                      {isJulio && (
+                        <span title="Admin Account - Google Auth Required">
+                          <Lock className="w-3 h-3 text-amber-400 shrink-0 ml-0.5" />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </motion.div>
           )}
@@ -259,13 +254,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           {/* Trust badges */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-slate-500 font-medium">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Friend recommendations &amp; pick borrowing
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Borrow top picks from Binge Buddies
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Multi-user household sync
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Sync queues across your household
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Automatic TVmaze release calendar
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Live premiere dates &amp; episode countdowns
             </span>
           </div>
 
@@ -282,7 +277,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div className="flex items-center justify-between pb-6 border-b border-slate-800/80 mb-6">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping" />
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Interactive Preview Sandbox</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Try It Live Right Here</span>
             </div>
             <div className="flex items-center gap-1 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-[11px] text-slate-400 font-mono">
               <span>Status:</span>
@@ -389,7 +384,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors"
                   >
                     <Sparkles className="w-3 h-3 text-indigo-400" />
-                    <span>{showAiRecapDemo ? 'Hide AI Recap' : '✨ Try AI Recap'}</span>
+                    <span>{showAiRecapDemo ? 'Hide AskTaterz' : '✨ Try AskTaterz Recap'}</span>
                   </button>
                 </div>
               </div>
@@ -405,7 +400,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   >
                     <div className="flex items-center gap-1.5 text-indigo-300 font-bold text-[11px]">
                       <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>Gemini Spoiler-Free Recap for S2 E{demoEpisode}:</span>
+                      <span>AskTaterz Spoiler-Free Catchup (S2 Ep {demoEpisode}):</span>
                     </div>
                     <p className="text-slate-300 leading-relaxed text-[11px]">
                       "Mark and the Lumon severed team uncover encrypted keycards in the macrodata department. High narrative tension develops without revealing future unreleased plot points!"
@@ -416,7 +411,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               <div className="text-[11px] text-slate-500 flex items-center gap-1">
                 <Info className="w-3 h-3" />
-                <span>Try clicking the episode buttons or AI Recap above to test the live mechanics!</span>
+                <span>Tap any episode button or hit 'AskTaterz' above to test the live mechanics!</span>
               </div>
 
             </div>
@@ -429,10 +424,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           
           <div className="text-center max-w-xl mx-auto space-y-3">
             <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-              Built Specifically for TV Enthusiasts &amp; Households
+              Built Specifically for TV Lovers &amp; Couch Potatoes
             </h2>
             <p className="text-sm text-slate-400">
-              Everything you need to track, discover, coordinate, and catch up on TV shows without clutter or spoilers.
+              Everything you need to track, discover, borrow recommendations, and catch up on TV shows without clutter or spoilers.
             </p>
           </div>
 
@@ -445,40 +440,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
               <h3 className="text-base font-bold text-white">No More "Which Episode Were We On?"</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Log exact season and episode progress across every streaming service. Settle household arguments before you press play.
+                Log exact season and episode progress across every streaming service. Settle household TV debates before you press play.
               </p>
             </div>
 
             {/* Feature 2 */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
+              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                <Users className="w-5 h-5" />
+              </div>
+              <h3 className="text-base font-bold text-white">Borrow Your Buddies' Best Picks</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                See what your Binge Buddies are raving about and swipe top-rated picks straight into your watchlist with 1 tap.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
             <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                 <Sparkles className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-white">Zero-Spoiler Catchup Recaps</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Haven't watched in 6 months? Get an AI summary of strictly what happened up to your last episode—without spoiling who dies next.
+                Haven't watched in 6 months? AskTaterz gives you a quick refresher on strictly what happened up to your last episode—without spoiling what comes next.
               </p>
             </div>
 
-            {/* Feature 3 */}
+            {/* Feature 4 */}
             <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
                 <Calendar className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-white">Season Premiere Radar</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Live release dates and countdown timers so you never miss a surprise drop or weekly episode release again.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
-                <Users className="w-5 h-5" />
-              </div>
-              <h3 className="text-base font-bold text-white">Borrow Your Friends' Good Taste</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Send TV recommendations straight to your friends' queues and swipe top-rated picks from their watchlists in 1 click.
+                Live release dates and countdown timers so you never miss a surprise drop or weekly episode premiere again.
               </p>
             </div>
 
@@ -487,9 +482,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                 <Smartphone className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">PWA Mobile Install Support</h3>
+              <h3 className="text-base font-bold text-white">Save Right to Your Phone</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Add to your iOS or Android home screen for native full-screen app performance, fast loading, and offline caching.
+                Add CouchTaterz to your iPhone or Android home screen for instant, 1-tap TV tracking right from the couch.
               </p>
             </div>
 
@@ -498,9 +493,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                 <Share2 className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Dynamic OpenGraph Sharing</h3>
+              <h3 className="text-base font-bold text-white">Pretty Links When You Text Recs</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Text or share your watchlist links on iMessage or social media to auto-generate beautiful visual preview cards.
+                Texting a show recommendation to a friend? Your watchlist links automatically generate rich preview cards with artwork and stats.
               </p>
             </div>
 
@@ -628,7 +623,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="font-extrabold text-sm text-white group-hover:text-blue-300 transition-colors flex items-center gap-1.5">
-                          Free Sandbox Mode
+                          Free Playground Mode
                         </span>
                         <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
                           Direct Access

@@ -1,0 +1,92 @@
+{
+  "default": {
+    "userId": "default",
+    "name": "Julio",
+    "email": "juliozaldivar@gmail.com",
+    "lastLoginAt": "2026-08-19T13:46:36.834Z",
+    "lastActiveAt": "2026-08-19T13:49:14.798Z",
+    "totalTimeSpentSeconds": 79796,
+    "sessionCount": 106
+  },
+  "user-julio": {
+    "userId": "user-julio",
+    "name": "Julio",
+    "email": "juliozaldivar@gmail.com",
+    "lastLoginAt": "2026-08-19T13:46:36.834Z",
+    "lastActiveAt": "2026-08-19T13:49:14.798Z",
+    "totalTimeSpentSeconds": 73558,
+    "sessionCount": 74
+  },
+  "user-julian-7667": {
+    "userId": "user-julian-7667",
+    "name": "Julian",
+    "email": "julian@taterz.com",
+    "lastLoginAt": "2026-08-16T05:40:24.367Z",
+    "lastActiveAt": "2026-08-16T05:50:24.367Z",
+    "totalTimeSpentSeconds": 26100,
+    "sessionCount": 18
+  },
+  "user-lily-9367": {
+    "userId": "user-lily-9367",
+    "name": "AnnaDee",
+    "email": "annadee@taterz.com",
+    "lastLoginAt": "2026-08-16T03:25:24.367Z",
+    "lastActiveAt": "2026-08-16T04:25:24.367Z",
+    "totalTimeSpentSeconds": 41400,
+    "sessionCount": 29
+  },
+  "user-rafael-9639": {
+    "userId": "user-rafael-9639",
+    "name": "Rafael",
+    "email": "rafael.gomez@taterz.com",
+    "lastLoginAt": "2026-08-15T16:25:24.367Z",
+    "lastActiveAt": "2026-08-15T17:25:24.367Z",
+    "totalTimeSpentSeconds": 19200,
+    "sessionCount": 14
+  },
+  "user-kris-5139": {
+    "userId": "user-kris-5139",
+    "name": "Kris",
+    "email": "kris@taterz.com",
+    "lastLoginAt": "2026-08-15T02:25:24.367Z",
+    "lastActiveAt": "2026-08-15T03:25:24.367Z",
+    "totalTimeSpentSeconds": 13500,
+    "sessionCount": 9
+  },
+  "user-lilyann-4290": {
+    "userId": "user-lilyann-4290",
+    "name": "LilyAnn",
+    "email": "lilyann@taterz.com",
+    "lastLoginAt": "2026-08-14T06:25:24.367Z",
+    "lastActiveAt": "2026-08-14T07:25:24.367Z",
+    "totalTimeSpentSeconds": 8700,
+    "sessionCount": 6
+  },
+  "user-ejc-2841": {
+    "userId": "user-ejc-2841",
+    "name": "EJC",
+    "email": "ejc@taterz.com",
+    "lastLoginAt": "2026-08-13T06:25:24.367Z",
+    "lastActiveAt": "2026-08-13T07:25:24.367Z",
+    "totalTimeSpentSeconds": 14400,
+    "sessionCount": 11
+  },
+  "user-greg-3842": {
+    "userId": "user-greg-3842",
+    "name": "Greg",
+    "email": "greg@taterz.com",
+    "lastLoginAt": "2026-08-12T06:25:24.367Z",
+    "lastActiveAt": "2026-08-12T07:25:24.367Z",
+    "totalTimeSpentSeconds": 5400,
+    "sessionCount": 4
+  },
+  "user-hyunjin-6821": {
+    "userId": "user-hyunjin-6821",
+    "name": "Hyunjin",
+    "email": "hyunjin@taterz.com",
+    "lastLoginAt": "2026-08-16T06:07:32.042Z",
+    "lastActiveAt": "2026-08-16T06:27:32.042Z",
+    "totalTimeSpentSeconds": 7200,
+    "sessionCount": 7
+  }
+}

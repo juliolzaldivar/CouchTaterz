@@ -14,6 +14,7 @@ interface ChatAgentProps {
   preferences?: UserPreferences;
   onClose?: () => void;
   currentUser?: User | null;
+  theme?: 'dark' | 'light';
 }
 
 const QUICK_PROMPTS = [
@@ -27,7 +28,7 @@ const QUICK_PROMPTS = [
   }
 ];
 
-export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClose, currentUser }) => {
+export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClose, currentUser, theme = 'dark' }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -146,29 +147,41 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
   };
 
   return (
-    <div className="flex flex-col h-full md:h-[680px] lg:h-[750px] max-h-full bg-[#161920] border border-white/10 rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative">
+    <div className={`flex flex-col h-full md:h-[680px] lg:h-[750px] max-h-full border rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl relative ${
+      theme === 'dark' ? 'bg-[#161920] border-white/10 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+    }`}>
       {/* Agent Top Header */}
-      <div className="p-4 sm:p-5 border-b border-white/10 bg-[#181B22] flex items-center justify-between shrink-0">
+      <div className={`p-4 sm:p-5 border-b flex items-center justify-between shrink-0 ${
+        theme === 'dark' ? 'bg-[#181B22] border-white/10' : 'bg-slate-50 border-slate-200'
+      }`}>
         <div className="flex items-center gap-3">
           <div className="relative">
-            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center border border-emerald-500/20 shadow-sm">
+            <div className={`p-2.5 rounded-2xl flex items-center justify-center border shadow-sm ${
+              theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+            }`}>
               <Bot className="w-5 h-5" />
             </div>
-            <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full ring-2 ring-[#181B22]" />
+            <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-500 rounded-full ring-2 ${
+              theme === 'dark' ? 'ring-[#181B22]' : 'ring-slate-50'
+            }`} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base sm:text-lg font-bold text-white tracking-tight">Spudz AI</h3>
-              <span className="px-2 py-0.5 text-[9px] font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-md tracking-wider uppercase">Agent</span>
+              <h3 className={`text-base sm:text-lg font-bold tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Spudz AI</h3>
+              <span className={`px-2 py-0.5 text-[9px] font-extrabold border rounded-md tracking-wider uppercase ${
+                theme === 'dark' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              }`}>Agent</span>
             </div>
-            <p className="text-xs text-slate-400 font-medium">Synced with your active watchlist</p>
+            <p className={`text-xs font-medium ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>Synced with your active watchlist</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             onClick={handleClearHistory}
-            className="p-2 sm:p-1.5 rounded-xl bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white transition cursor-pointer border border-white/5"
+            className={`p-2 sm:p-1.5 rounded-xl transition cursor-pointer border ${
+              theme === 'dark' ? 'bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white border-white/5' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200'
+            }`}
             title="Clear Chat History"
           >
             <Trash2 className="w-4 h-4" />
@@ -176,7 +189,9 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
           {onClose && (
             <button
               onClick={onClose}
-              className="p-2 sm:p-1.5 rounded-xl bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white transition cursor-pointer border border-white/5"
+              className={`p-2 sm:p-1.5 rounded-xl transition cursor-pointer border ${
+                theme === 'dark' ? 'bg-[#252932] hover:bg-[#313642] text-slate-300 hover:text-white border-white/5' : 'bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border-slate-200'
+              }`}
               title="Close Panel"
               aria-label="Close Panel"
             >
@@ -187,11 +202,13 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
       </div>
 
       {/* Messages Scroll Panel */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-3 bg-[#111319]">
+      <div className={`flex-1 overflow-y-auto px-4 pt-4 pb-2 space-y-3 ${
+        theme === 'dark' ? 'bg-[#111319]' : 'bg-slate-50/70'
+      }`}>
         <AnimatePresence initial={false}>
-          {messages.map((msg) => (
+          {messages.map((msg, idx) => (
             <motion.div
-              key={msg.id}
+              key={`${msg.id}-${idx}`}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -200,11 +217,13 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
                 className={`rounded-2xl px-4 py-3 text-xs leading-relaxed border ${
                   msg.role === 'user'
                     ? 'max-w-[85%] bg-emerald-600 text-white border-transparent font-medium shadow-md shadow-emerald-950/15'
-                    : 'w-full bg-[#1A1D25] text-slate-200 border-white/10 shadow-sm'
+                    : theme === 'dark'
+                      ? 'w-full bg-[#1A1D25] text-slate-200 border-white/10 shadow-sm'
+                      : 'w-full bg-white text-slate-900 border-slate-200 shadow-sm'
                 }`}
               >
                 {msg.role === 'model' ? (
-                  <div className="markdown-body space-y-2">
+                  <div className={`markdown-body space-y-2 ${theme === 'light' ? 'light text-slate-800' : 'text-slate-200'}`}>
                     <Markdown>{msg.content}</Markdown>
                   </div>
                 ) : (
@@ -219,15 +238,19 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
           <motion.div 
             initial={{ opacity: 0 }} 
             animate={{ opacity: 1 }} 
-            className="flex justify-start items-center gap-2 p-2 bg-[#1A1D25]/50 rounded-xl border border-white/5"
+            className={`flex justify-start items-center gap-2 p-2.5 rounded-xl border ${
+              theme === 'dark' ? 'bg-[#1A1D25]/50 border-white/5' : 'bg-white border-slate-200 shadow-sm'
+            }`}
           >
-            <div className="p-1.5 bg-[#252932] text-emerald-400 border border-white/5 rounded-lg">
+            <div className={`p-1.5 rounded-lg border ${
+              theme === 'dark' ? 'bg-[#252932] text-emerald-400 border-white/5' : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+            }`}>
               <Bot className="w-3.5 h-3.5 animate-bounce" />
             </div>
             <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce delay-100" />
-              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce delay-200" />
-              <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce delay-300" />
+              <span className={`w-1.5 h-1.5 rounded-full animate-bounce delay-100 ${theme === 'dark' ? 'bg-slate-500' : 'bg-slate-400'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full animate-bounce delay-200 ${theme === 'dark' ? 'bg-slate-500' : 'bg-slate-400'}`} />
+              <span className={`w-1.5 h-1.5 rounded-full animate-bounce delay-300 ${theme === 'dark' ? 'bg-slate-500' : 'bg-slate-400'}`} />
             </div>
           </motion.div>
         )}
@@ -242,13 +265,19 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
         {/* Suggested Quick Prompts Panel */}
         {messages.length === 1 && (
           <div className="space-y-2 pt-2">
-            <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest block mb-1">Recommended Topics</span>
+            <span className={`text-[10px] font-extrabold uppercase tracking-widest block mb-1 ${
+              theme === 'dark' ? 'text-slate-400' : 'text-slate-500'
+            }`}>Recommended Topics</span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {QUICK_PROMPTS.map((qp, i) => (
                 <button
                   key={i}
                   onClick={() => handleSendMessage(qp.prompt)}
-                  className="text-left px-3.5 py-3 rounded-xl bg-[#1A1D25] border border-white/10 text-slate-300 hover:text-white hover:bg-[#222632] hover:border-emerald-500/40 text-xs font-semibold transition leading-tight flex items-center min-h-[44px] cursor-pointer"
+                  className={`text-left px-3.5 py-3 rounded-xl border text-xs font-semibold transition leading-tight flex items-center min-h-[44px] cursor-pointer ${
+                    theme === 'dark'
+                      ? 'bg-[#1A1D25] border-white/10 text-slate-300 hover:text-white hover:bg-[#222632] hover:border-emerald-500/40'
+                      : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 hover:border-emerald-500/50 shadow-sm'
+                  }`}
                 >
                   <span>{qp.label}</span>
                 </button>
@@ -266,7 +295,9 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
           e.preventDefault();
           handleSendMessage(input);
         }}
-        className="p-3 sm:p-4 border-t border-white/10 bg-[#14171F]"
+        className={`p-3 sm:p-4 border-t ${
+          theme === 'dark' ? 'border-white/10 bg-[#14171F]' : 'border-slate-200 bg-slate-50'
+        }`}
       >
         <div className="relative flex items-center">
           <input
@@ -276,7 +307,11 @@ export const ChatAgent: React.FC<ChatAgentProps> = ({ shows, preferences, onClos
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
             placeholder="Ask Spudz..."
-            className="w-full bg-[#1C202B] text-slate-100 pl-4 pr-12 py-3 rounded-2xl border border-white/10 focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30 placeholder-slate-400 text-xs transition-all duration-200"
+            className={`w-full pl-4 pr-12 py-3 rounded-2xl border text-xs focus:outline-none focus:border-emerald-500/80 focus:ring-1 focus:ring-emerald-500/30 transition-all duration-200 ${
+              theme === 'dark'
+                ? 'bg-[#1C202B] text-slate-100 border-white/10 placeholder-slate-400'
+                : 'bg-white text-slate-900 border-slate-200 placeholder-slate-400 shadow-sm'
+            }`}
           />
           <button
             type="submit"
