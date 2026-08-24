@@ -8,7 +8,6 @@ import { User } from '../types';
 import { 
   Tv, 
   Sparkles, 
-  Play, 
   ArrowRight, 
   CheckCircle2, 
   Download, 
@@ -17,15 +16,14 @@ import {
   Calendar, 
   Clapperboard, 
   Smartphone, 
-  Star, 
-  Clock, 
-  TrendingUp, 
   Share2, 
   Lock,
-  ChevronRight,
   Info,
   Compass,
-  X
+  X,
+  LogIn,
+  UserPlus,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -34,6 +32,7 @@ interface LandingPageProps {
   onOpenLogin: () => void;
   onOpenSignup: () => void;
   onSelectUser: (user: User) => void;
+  onOpenGuide?: () => void;
   registeredUsers: User[];
 }
 
@@ -42,6 +41,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   onOpenLogin,
   onOpenSignup,
   onSelectUser,
+  onOpenGuide,
   registeredUsers
 }) => {
   // PWA Install prompt state
@@ -90,67 +90,75 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-x-hidden">
+    <div id="landing-page-root" className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-x-hidden">
       
       {/* Background Subtle Gradient Blobs */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-tr from-blue-600/15 via-indigo-600/10 to-violet-600/15 blur-3xl pointer-events-none rounded-full" />
       <div className="absolute top-[600px] right-0 w-[500px] h-[500px] bg-sky-500/10 blur-3xl pointer-events-none rounded-full" />
 
       {/* Top Floating Navigation Header */}
-      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/80 border-b border-slate-800/80 px-4 lg:px-8 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+      <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/90 border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
           
-          {/* Top Row on Mobile: Logo on Left, Sign In on Top Right */}
-          <div className="flex items-center justify-between w-full sm:w-auto">
-            {/* Brand Logo */}
-            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setShowGuestChoiceModal(true)}>
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-600/25 text-white shrink-0">
-                <Tv className="w-5 h-5 stroke-[2.2]" />
-              </div>
-              <div className="flex flex-col justify-center">
-                <span className="font-black text-lg sm:text-xl tracking-tight uppercase leading-none">
-                  <span className="text-blue-500">COUCH</span>
-                  <span className="text-white">TATERZ</span>
-                </span>
-                <p className="text-[10px] sm:text-[11px] font-extrabold tracking-[0.2em] text-slate-400 uppercase mt-1 leading-none whitespace-nowrap">
-                  YOUR BINGE BUDDY
-                </p>
-              </div>
+          {/* Brand Logo - Always prominent, never truncated */}
+          <div 
+            className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group shrink-0" 
+            onClick={() => setShowGuestChoiceModal(true)}
+            title="CouchTaterz: Your Binge Buddy"
+          >
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-600/25 text-white shrink-0 group-hover:scale-105 transition-transform">
+              <Tv className="w-5 h-5 stroke-[2.2]" />
             </div>
-
-            {/* Top Right Mobile Controls */}
-            {(isInstallable || isIos) && (
-              <div className="flex items-center gap-2 sm:hidden">
-                <button
-                  onClick={handleInstallClick}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800/90 text-slate-200 text-xs font-semibold border border-slate-700"
-                  title="Install App to Home Screen"
-                >
-                  <Download className="w-3.5 h-3.5 text-blue-400" />
-                </button>
-              </div>
-            )}
+            <div className="flex flex-col justify-center">
+              <span className="font-black text-lg sm:text-xl tracking-tight uppercase leading-none whitespace-nowrap">
+                <span className="text-blue-500">COUCH</span>
+                <span className="text-white">TATERZ</span>
+              </span>
+              <p className="text-[9px] sm:text-[11px] font-extrabold tracking-[0.2em] text-slate-400 uppercase mt-1 leading-none whitespace-nowrap">
+                YOUR BINGE BUDDY
+              </p>
+            </div>
           </div>
 
-          {/* Desktop Controls / Mobile Row 2 (Centered 1-Click Guest Preview) */}
-          <div className="flex flex-col sm:flex-row items-center gap-2.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800/60 w-full sm:w-auto justify-center sm:justify-end">
+          {/* Navigation Action Cluster */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {(isInstallable || isIos) && (
               <button
                 onClick={handleInstallClick}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors shadow-sm"
+                className="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold border border-slate-800 transition-colors shadow-sm cursor-pointer"
                 title="Install App to Home Screen"
               >
                 <Download className="w-3.5 h-3.5 text-blue-400" />
-                <span>Install App</span>
+                <span>Install</span>
               </button>
             )}
 
+            {/* Guest Sandbox Button */}
             <button
               onClick={() => setShowGuestChoiceModal(true)}
-              className="w-full sm:w-auto px-5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+              className="hidden md:flex px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-850 text-slate-300 hover:text-white text-xs font-bold border border-slate-800 transition-colors items-center gap-1.5 cursor-pointer shrink-0"
+              title="Open Guest Sandbox (Sample Watchlist & Guided Tour)"
             >
-              <span>1-Click Guest Preview</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Compass className="w-3.5 h-3.5 text-slate-400" />
+              <span>Guest Sandbox</span>
+            </button>
+
+            {/* Sign In Button */}
+            <button
+              onClick={onOpenLogin}
+              className="px-3 sm:px-3.5 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white text-xs font-bold border border-slate-800 transition-colors flex items-center gap-1.5 cursor-pointer shrink-0"
+            >
+              <LogIn className="w-3.5 h-3.5 text-blue-400" />
+              <span className="whitespace-nowrap">Sign In</span>
+            </button>
+
+            {/* Join / Sign Up CTA - Hidden on mobile, visible on tablet/desktop */}
+            <button
+              onClick={onOpenSignup}
+              className="hidden sm:flex px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
+            >
+              <UserPlus className="w-3.5 h-3.5 shrink-0" />
+              <span className="whitespace-nowrap">Join Beta Free</span>
             </button>
           </div>
 
@@ -158,32 +166,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </header>
 
       {/* Main Hero Section */}
-      <section className="relative pt-12 md:pt-20 pb-16 px-4 lg:px-8 max-w-7xl mx-auto flex-1">
+      <section className="relative pt-10 md:pt-16 pb-14 px-4 lg:px-8 max-w-7xl mx-auto flex-1">
         <div className="text-center max-w-3xl mx-auto space-y-6">
           
-          {/* Pill Badge */}
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-slate-900/90 border border-slate-800 text-slate-300 text-[10px] sm:text-xs font-medium shadow-inner"
-          >
-            <span className="flex h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-            <span className="text-slate-200 font-semibold hidden sm:inline">Powered by AskTaterz &amp; Live TV Calendar</span>
-            <span className="text-slate-200 font-semibold sm:hidden">AskTaterz</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-blue-400 font-medium">100% Spoiler-Free</span>
-          </motion.div>
-
           {/* Headline */}
           <motion.h1 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.18] sm:leading-[1.12]"
+            className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.15]"
           >
-            <span className="block sm:inline">Track Shows. </span>
-            <span className="block sm:inline">Borrow Recs. </span>
-            <span className="block sm:inline text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-400">Binge Together.</span>
+            Track Shows. <br className="hidden sm:inline" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-400">
+              Borrow Recs. Binge Together.
+            </span>
           </motion.h1>
 
           {/* Subtitle */}
@@ -193,7 +189,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             transition={{ delay: 0.2 }}
             className="text-base md:text-lg text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto"
           >
-            Stop scrolling Netflix for 45 minutes just to end up rewatching <span className="text-slate-200 font-medium">The Office</span> again. Track what you're actually watching, borrow top picks straight from your friends' queues, and catch up with spoiler-free AI recaps.
+            Stop scrolling streaming menus for 40 minutes. Track exact seasons, borrow recommendations from friends, get spoiler-free AI recaps, and keep your household in sync.
           </motion.p>
 
           {/* Main Action Buttons */}
@@ -201,28 +197,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="pt-2 flex items-center justify-center"
+            className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3.5 max-w-md mx-auto"
           >
             <button
               onClick={onOpenSignup}
-              className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm sm:text-base shadow-xl shadow-blue-600/30 transition-all transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2.5 group"
+              className="w-full sm:w-auto flex-1 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
-              <Sparkles className="w-5 h-5 text-blue-200 group-hover:scale-110 transition-transform" />
-              <span>Create Free Account</span>
-              <ArrowRight className="w-5 h-5 text-blue-200 group-hover:translate-x-1 transition-transform" />
+              <Sparkles className="w-4 h-4 text-blue-200 group-hover:scale-110 transition-transform" />
+              <span>Create Tester Account</span>
+              <ArrowRight className="w-4 h-4 text-blue-200 group-hover:translate-x-1 transition-transform" />
+            </button>
+
+            <button
+              onClick={onOpenLogin}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/40 text-slate-200 hover:text-white font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+            >
+              <LogIn className="w-4 h-4 text-blue-400" />
+              <span>Sign In</span>
             </button>
           </motion.div>
 
-          {/* Quick Family Avatar Login Chips (If registered users exist) */}
+          {/* Secure Registered Account Quick-Switcher */}
           {registeredUsers.length > 0 && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="pt-4 border-t border-slate-900/80 max-w-lg mx-auto"
+              className="pt-5 border-t border-slate-900/80 max-w-2xl mx-auto"
             >
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">
-                Or jump right into a Binge Buddy profile:
+              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center justify-center gap-1.5">
+                <Lock className="w-3 h-3 text-slate-500" />
+                Active Tester Directory (Sign In Required)
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2">
                 {registeredUsers.map((u, idx) => {
@@ -231,18 +236,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <button
                       key={`reguser-${u.id}-${idx}`}
                       onClick={() => onSelectUser(u)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/40 text-xs text-slate-300 hover:text-white transition-all shadow-sm group"
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800/80 hover:border-blue-500/30 text-xs text-slate-300 hover:text-white transition-all shadow-sm group cursor-pointer"
                     >
                       <img 
                         src={u.avatarUrl} 
                         alt={u.name} 
-                        className="w-5 h-5 rounded-full bg-slate-800 group-hover:scale-105 transition-transform" 
+                        className="w-4 h-4 rounded-full bg-slate-800 group-hover:scale-105 transition-transform" 
                       />
                       <span className="font-semibold">{u.name}</span>
-                      {isJulio && (
-                        <span title="Admin Account - Google Auth Required">
+                      {isJulio ? (
+                        <span title="Admin Account - Password / Google Verification Required">
                           <Lock className="w-3 h-3 text-amber-400 shrink-0 ml-0.5" />
                         </span>
+                      ) : (
+                        <Lock className="w-2.5 h-2.5 text-slate-500 opacity-60 group-hover:opacity-100" />
                       )}
                     </button>
                   );
@@ -252,15 +259,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           )}
 
           {/* Trust badges */}
-          <div className="pt-2 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-slate-500 font-medium">
+          <div className="pt-3 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-slate-500 font-medium">
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Borrow top picks from Binge Buddies
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Private personal queues
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Sync queues across your household
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Multi-device cloud sync
             </span>
             <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Live premiere dates &amp; episode countdowns
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Live premiere countdowns
             </span>
           </div>
 
@@ -271,13 +278,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="mt-14 max-w-4xl mx-auto rounded-3xl bg-slate-900/90 border border-slate-800/90 shadow-2xl overflow-hidden p-6 md:p-8 relative"
+          className="mt-12 max-w-4xl mx-auto rounded-3xl bg-slate-900/90 border border-slate-800/90 shadow-2xl overflow-hidden p-6 md:p-8 relative"
         >
           {/* Subtle Top Badge */}
           <div className="flex items-center justify-between pb-6 border-b border-slate-800/80 mb-6">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping" />
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Try It Live Right Here</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Interactive Preview Sandbox</span>
             </div>
             <div className="flex items-center gap-1 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-[11px] text-slate-400 font-mono">
               <span>Status:</span>
@@ -319,7 +326,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <button
                       key={st}
                       onClick={() => setDemoStatus(st)}
-                      className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all ${
+                      className={`px-2 py-1 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
                         demoStatus === st
                           ? st === 'Completed'
                             ? 'bg-emerald-600 text-white shadow-sm font-extrabold'
@@ -364,7 +371,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       <button
                         key={ep}
                         onClick={() => setDemoEpisode(ep)}
-                        className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors ${
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono transition-colors cursor-pointer ${
                           demoEpisode === ep
                             ? demoStatus === 'Completed'
                               ? 'bg-emerald-500 text-white font-bold'
@@ -381,10 +388,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
                   <button
                     onClick={() => setShowAiRecapDemo(!showAiRecapDemo)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
                   >
                     <Sparkles className="w-3 h-3 text-indigo-400" />
-                    <span>{showAiRecapDemo ? 'Hide AskTaterz' : '✨ Try AskTaterz Recap'}</span>
+                    <span>{showAiRecapDemo ? 'Hide Spudz Recap' : '✨ Try Spudz Recap'}</span>
                   </button>
                 </div>
               </div>
@@ -399,8 +406,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     className="bg-indigo-950/40 border border-indigo-800/50 rounded-xl p-3 text-xs space-y-1.5 overflow-hidden"
                   >
                     <div className="flex items-center gap-1.5 text-indigo-300 font-bold text-[11px]">
-                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                      <span>AskTaterz Spoiler-Free Catchup (S2 Ep {demoEpisode}):</span>
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="uppercase tracking-wider font-black text-amber-400">SPUDZ SAYS:</span>
+                      <span className="text-indigo-200 font-semibold">(Spoiler-Free Catchup S2 Ep {demoEpisode})</span>
                     </div>
                     <p className="text-slate-300 leading-relaxed text-[11px]">
                       "Mark and the Lumon severed team uncover encrypted keycards in the macrodata department. High narrative tension develops without revealing future unreleased plot points!"
@@ -411,7 +419,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               <div className="text-[11px] text-slate-500 flex items-center gap-1">
                 <Info className="w-3 h-3" />
-                <span>Tap any episode button or hit 'AskTaterz' above to test the live mechanics!</span>
+                <span>Tap any episode button or hit 'Ask Spudz' above to test the live mechanics!</span>
               </div>
 
             </div>
@@ -420,82 +428,82 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </motion.div>
 
         {/* Feature Highlights Grid */}
-        <div className="mt-24 space-y-12">
+        <div className="mt-20 space-y-10">
           
-          <div className="text-center max-w-xl mx-auto space-y-3">
+          <div className="text-center max-w-xl mx-auto space-y-2">
             <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-              Built Specifically for TV Lovers &amp; Couch Potatoes
+              Crafted for Real TV Enthusiasts
             </h2>
             <p className="text-sm text-slate-400">
-              Everything you need to track, discover, borrow recommendations, and catch up on TV shows without clutter or spoilers.
+              Personal queues, spoiler-free AI recaps, and friend recommendation sharing built into one clean platform.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-3 gap-5">
             
             {/* Feature 1 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
                 <Clapperboard className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">No More "Which Episode Were We On?"</h3>
+              <h3 className="text-base font-bold text-white">Precise Episode Tracking</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Log exact season and episode progress across every streaming service. Settle household TV debates before you press play.
+                Log exact season and episode progress across every streaming service. Settle household TV debates before pressing play.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
                 <Users className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Borrow Your Buddies' Best Picks</h3>
+              <h3 className="text-base font-bold text-white">Borrow Friend Recommendations</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                See what your Binge Buddies are raving about and swipe top-rated picks straight into your watchlist with 1 tap.
+                See what your friends are binging and swipe top-rated picks straight into your watchlist with one tap.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Zero-Spoiler Catchup Recaps</h3>
+              <h3 className="text-base font-bold text-white">Spoiler-Free Catchup Recaps</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Haven't watched in 6 months? AskTaterz gives you a quick refresher on strictly what happened up to your last episode—without spoiling what comes next.
+                Haven't watched in months? Spudz AI gives you a quick refresher on what happened up to your last episode without spoiling ahead.
               </p>
             </div>
 
             {/* Feature 4 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
                 <Calendar className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Season Premiere Radar</h3>
+              <h3 className="text-base font-bold text-white">Premiere Calendar Radar</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Live release dates and countdown timers so you never miss a surprise drop or weekly episode premiere again.
+                Live release dates and countdown timers so you never miss a season drop or weekly episode premiere.
               </p>
             </div>
 
             {/* Feature 5 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
                 <Smartphone className="w-5 h-5" />
               </div>
               <h3 className="text-base font-bold text-white">Save Right to Your Phone</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Add CouchTaterz to your iPhone or Android home screen for instant, 1-tap TV tracking right from the couch.
+                Add CouchTaterz to your mobile home screen for instant TV tracking right from the couch.
               </p>
             </div>
 
             {/* Feature 6 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-3 hover:border-slate-700 transition-colors">
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
                 <Share2 className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Pretty Links When You Text Recs</h3>
+              <h3 className="text-base font-bold text-white">Rich Link Sharing</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Texting a show recommendation to a friend? Your watchlist links automatically generate rich preview cards with artwork and stats.
+                Text recommendations to friends with rich open graph preview cards containing poster art, ratings, and stats.
               </p>
             </div>
 
@@ -506,27 +514,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </section>
 
       {/* Footer Call to Action */}
-      <footer className="mt-20 border-t border-slate-900 bg-slate-950 py-12 px-4 lg:px-8">
+      <footer className="mt-16 border-t border-slate-900 bg-slate-950 py-10 px-4 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-          <div>
-            <div className="flex items-center justify-center md:justify-start gap-3 mb-1">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-600/20 text-white shrink-0">
-                <Tv className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <div className="flex flex-col justify-center">
-                <span className="font-black text-lg tracking-tight uppercase leading-none">
-                  <span className="text-blue-500">COUCH</span>
-                  <span className="text-white">TATERZ</span>
-                </span>
-                <p className="text-[10px] font-extrabold tracking-[0.2em] text-slate-500 uppercase mt-1 leading-none whitespace-nowrap">
-                  YOUR BINGE BUDDY
-                </p>
-              </div>
+          <div className="flex items-center justify-center md:justify-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-600/20 text-white shrink-0">
+              <Tv className="w-4 h-4 stroke-[2.2]" />
+            </div>
+            <div className="flex flex-col justify-center">
+              <span className="font-black text-lg tracking-tight uppercase leading-none">
+                <span className="text-blue-500">COUCH</span>
+                <span className="text-white">TATERZ</span>
+              </span>
+              <p className="text-[10px] font-extrabold tracking-[0.2em] text-slate-500 uppercase mt-1 leading-none whitespace-nowrap">
+                YOUR BINGE BUDDY
+              </p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400 font-medium">
-            <button onClick={() => setShowGuestChoiceModal(true)} className="hover:text-white transition-colors cursor-pointer">Guest Demo</button>
+            <button onClick={() => setShowGuestChoiceModal(true)} className="hover:text-white transition-colors cursor-pointer">Guest Sandbox</button>
             <span>•</span>
             <button onClick={onOpenLogin} className="hover:text-white transition-colors cursor-pointer">Sign In</button>
             <span>•</span>
@@ -562,10 +568,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                   </div>
                   <div>
                     <h3 className="text-lg sm:text-xl font-black text-white tracking-tight uppercase leading-snug">
-                      Choose Demo Experience
+                      Sandbox Experience
                     </h3>
                     <p className="text-xs font-semibold text-slate-400 mt-0.5">
-                      How would you like to explore CouchTaterz?
+                      Explore CouchTaterz features in guest mode
                     </p>
                   </div>
                 </div>
@@ -602,7 +608,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                         </span>
                       </div>
                       <p className="text-xs text-slate-300 leading-relaxed font-normal">
-                        Follow a step-by-step interactive walkthrough highlighting watchlist pipelines, episode progress, and AI spoiler-free recaps.
+                        Follow an interactive step-by-step tour highlighting watchlist filters, episode tracking, and spoiler-free AI recaps.
                       </p>
                     </div>
                   </div>
@@ -614,7 +620,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     setShowGuestChoiceModal(false);
                     onGuestLogin({ startTour: false });
                   }}
-                  className="w-full text-left p-4 rounded-2xl bg-slate-800/40 hover:bg-slate-800/80 border border-slate-800 hover:border-slate-700 transition-all duration-200 group cursor-pointer shadow-sm hover:shadow-md active:scale-[0.99]"
+                  className="w-full text-left p-4 rounded-2xl bg-slate-800/40 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 transition-all duration-200 group cursor-pointer shadow-sm hover:shadow-md active:scale-[0.99]"
                 >
                   <div className="flex items-start gap-3.5">
                     <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0 group-hover:scale-110 transition-transform">
@@ -623,14 +629,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
                         <span className="font-extrabold text-sm text-white group-hover:text-blue-300 transition-colors flex items-center gap-1.5">
-                          Free Playground Mode
+                          Free Sandbox Mode
                         </span>
                         <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 shrink-0">
                           Direct Access
                         </span>
                       </div>
                       <p className="text-xs text-slate-400 leading-relaxed font-normal">
-                        Jump straight into a pre-populated watchlist without guided overlays. Click around and test features completely on your own.
+                        Jump straight into a sample watchlist without overlays. Test out adding shows, checking off episodes, and viewing stats.
                       </p>
                     </div>
                   </div>
@@ -640,7 +646,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               {/* Footer Note */}
               <div className="pt-2 border-t border-slate-800/80 text-center relative z-10">
                 <p className="text-[11px] text-slate-500 font-medium">
-                  You can restart or exit the guided tour anytime inside the app.
+                  Sandbox changes are local to your session and will not affect any tester's account.
                 </p>
               </div>
             </motion.div>
@@ -681,7 +687,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
               <button
                 onClick={() => setShowIosGuide(false)}
-                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors"
+                className="w-full py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition-colors cursor-pointer"
               >
                 Got It
               </button>

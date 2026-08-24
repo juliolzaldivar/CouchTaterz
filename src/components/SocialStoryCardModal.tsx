@@ -316,14 +316,9 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
     return `Aired: ${formatAirDate(airDateStr)}`;
   };
 
-  // Check if show has an un-watched or upcoming next episode
+  // Check if show has an upcoming or recent next episode regardless of tracker progress
   const shouldShowNextEpNotification = Boolean(
-    show.nextEpisode &&
-    (
-      !show.latestWatched ||
-      show.latestWatched.season < show.nextEpisode.season ||
-      (show.latestWatched.season === show.nextEpisode.season && show.latestWatched.episode < show.nextEpisode.episode)
-    )
+    show.nextEpisode && !show.concluded
   );
 
   // Action badge text based on status or user rating

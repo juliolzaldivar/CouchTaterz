@@ -15,6 +15,7 @@ import {
   getTodayDateString,
   getTitleForEpisode as getTitleForEpHelper 
 } from '../utils/airedEpisodes';
+import { resolveNextUpcomingEpisode } from '../utils/showSchedules';
 import { 
   Play, 
   Plus, 
@@ -234,32 +235,65 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
   const isEpisodeReviewEligible = (show.latestWatched?.episode || 0) >= 1;
   const currentEpKey = isEpisodeReviewEligible ? `S${show.latestWatched.season}E${show.latestWatched.episode}` : '';
-  const currentEpReview = currentEpKey ? (show.episodeReviews?.[currentEpKey] || '') : '';
-  const [epReviewInput, setEpReviewInput] = useState<string>(currentEpReview);
+  const currentEpReview = useMemo(() => {
+    if (!currentEpKey || !show.episodeReviews) return '';
+    if (show.episodeReviews[currentEpKey]) return show.episodeReviews[currentEpKey];
+    // Check alternative legacy keys if canonical is not set
+    const legacyKey = `${show.latestWatched.season}-${show.latestWatched.episode}`;
+    const altPaddedKey = `S${String(show.latestWatched.season).padStart(2, '0')}E${String(show.latestWatched.episode).padStart(2, '0')}`;
+    return show.episodeReviews[legacyKey] || show.episodeReviews[altPaddedKey] || '';
+  }, [currentEpKey, show.episodeReviews, show.latestWatched]);
+  const [epReviewInput, setEpReviewInput] = useState<string>(() => {
+    if (!currentEpKey) return '';
+    try {
+      const draft = localStorage.getItem(`couchtater_ep_review_draft_${show.id}_${currentEpKey}`);
+      if (draft !== null && draft !== undefined) return draft;
+    } catch (e) {}
+    return currentEpReview;
+  });
   const [isEpReviewOpen, setIsEpReviewOpen] = useState(false);
   const [epReviewSavedFeedback, setEpReviewSavedFeedback] = useState(false);
   const [selectedReviewEpKey, setSelectedReviewEpKey] = useState<string>(currentEpKey);
   const [unmaskedSpoilers, setUnmaskedSpoilers] = useState<Record<string, boolean>>({});
   const [showAllEpisodeReviewsDrawer, setShowAllEpisodeReviewsDrawer] = useState<boolean>(false);
+  const [isFocusedEpReview, setIsFocusedEpReview] = useState<boolean>(false);
+  const [isFocusedNotes, setIsFocusedNotes] = useState<boolean>(false);
 
-  // All episode reviews logged for this show (filtering out any invalid episode 0 reviews)
+  // All episode reviews logged for this show (filtering out any invalid episode 0 reviews and deduplicating by season & episode)
   const allLoggedReviews = useMemo(() => {
     if (!show.episodeReviews || typeof show.episodeReviews !== 'object') return [];
-    return Object.entries(show.episodeReviews)
-      .filter(([key, review]) => {
-        if (typeof review !== 'string' || review.trim().length === 0) return false;
-        const match = key.match(/S(\d+)E(\d+)/i) || key.match(/(\d+)-(\d+)/);
-        const episode = match ? parseInt(match[2], 10) : 1;
-        return episode >= 1;
-      })
-      .map(([key, review]) => {
-        const match = key.match(/S(\d+)E(\d+)/i) || key.match(/(\d+)-(\d+)/);
-        const season = match ? parseInt(match[1], 10) : 1;
-        const episode = match ? parseInt(match[2], 10) : 1;
-        return { key, season, episode, review: (review as string).trim() };
-      })
+    const dedupMap = new Map<string, { key: string; season: number; episode: number; review: string }>();
+
+    for (const [rawKey, review] of Object.entries(show.episodeReviews)) {
+      if (typeof review !== 'string' || review.trim().length === 0) continue;
+      const match = rawKey.match(/S(\d+)E(\d+)/i) || rawKey.match(/(\d+)-(\d+)/);
+      const season = match ? parseInt(match[1], 10) : 1;
+      const episode = match ? parseInt(match[2], 10) : 1;
+      if (episode < 1) continue;
+
+      const normKey = `S${season}E${episode}`;
+      const existing = dedupMap.get(normKey);
+      const isMirroredSeriesNotes = Boolean(show.userNotes && review.trim() === show.userNotes.trim());
+      const existingIsMirrored = Boolean(existing && show.userNotes && existing.review.trim() === show.userNotes.trim());
+
+      if (!existing) {
+        dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim() });
+      } else {
+        const isCurrentCanonical = /^S\d+E\d+$/i.test(rawKey);
+        const isExistingCanonical = /^S\d+E\d+$/i.test(existing.key);
+        
+        // Prioritize distinct authentic episode takes over duplicate mirrored series notes
+        if (existingIsMirrored && !isMirroredSeriesNotes) {
+          dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim() });
+        } else if (!isMirroredSeriesNotes && ((isCurrentCanonical && !isExistingCanonical) || (review.trim().length > existing.review.length))) {
+          dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim() });
+        }
+      }
+    }
+
+    return Array.from(dedupMap.values())
       .sort((a, b) => (b.season - a.season) || (b.episode - a.episode));
-  }, [show.episodeReviews]);
+  }, [show.episodeReviews, show.userNotes]);
 
   const toggleSpoilerReveal = (key: string) => {
     setUnmaskedSpoilers(prev => ({
@@ -269,21 +303,30 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   };
 
   useEffect(() => {
+    if (isFocusedEpReview) return; // Protected from background polling while user is actively typing
+
     if (currentEpKey) {
-      const saved = show.episodeReviews?.[currentEpKey] || '';
-      setEpReviewInput(saved);
+      let content = show.episodeReviews?.[currentEpKey] || '';
+      try {
+        const draft = localStorage.getItem(`couchtater_ep_review_draft_${show.id}_${currentEpKey}`);
+        if (draft !== null && draft !== undefined && draft.trim().length > 0) {
+          content = draft;
+        }
+      } catch (e) {}
+      setEpReviewInput(content);
       setSelectedReviewEpKey(currentEpKey);
     } else {
       setEpReviewInput('');
       setSelectedReviewEpKey('');
       setIsEpReviewOpen(false);
     }
-  }, [show.id, currentEpKey]);
+  }, [show.id, currentEpKey, show.episodeReviews, isFocusedEpReview]);
 
   const handleSaveEpReview = (textToSave?: string, targetKey?: string) => {
     const keyToUse = targetKey || selectedReviewEpKey || currentEpKey;
     if (!keyToUse) return;
     const text = (textToSave !== undefined ? textToSave : epReviewInput).slice(0, 280).trim();
+    const nowIso = new Date().toISOString();
     setEpReviewInput(text);
     const updatedReviews = {
       ...(show.episodeReviews || {}),
@@ -292,16 +335,20 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       updatedReviews[keyToUse] = text;
       try {
         localStorage.setItem(`couchtater_ep_review_${show.id}_${keyToUse}`, text);
+        localStorage.removeItem(`couchtater_ep_review_draft_${show.id}_${keyToUse}`);
       } catch (e) {}
     } else {
       delete updatedReviews[keyToUse];
       try {
         localStorage.removeItem(`couchtater_ep_review_${show.id}_${keyToUse}`);
+        localStorage.removeItem(`couchtater_ep_review_draft_${show.id}_${keyToUse}`);
       } catch (e) {}
     }
     onUpdateShow({
       ...show,
       episodeReviews: updatedReviews,
+      reviewUpdatedAt: nowIso,
+      updatedAt: nowIso,
     });
     setEpReviewSavedFeedback(true);
     setTimeout(() => setEpReviewSavedFeedback(false), 2200);
@@ -310,6 +357,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   const handleClearEpReview = (targetKey?: string) => {
     const keyToUse = targetKey || selectedReviewEpKey || currentEpKey;
     if (!keyToUse) return;
+    const nowIso = new Date().toISOString();
     setEpReviewInput('');
     const updatedReviews = {
       ...(show.episodeReviews || {}),
@@ -317,18 +365,35 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     delete updatedReviews[keyToUse];
     try {
       localStorage.removeItem(`couchtater_ep_review_${show.id}_${keyToUse}`);
+      localStorage.removeItem(`couchtater_ep_review_draft_${show.id}_${keyToUse}`);
     } catch (e) {}
     onUpdateShow({
       ...show,
       episodeReviews: updatedReviews,
+      reviewUpdatedAt: nowIso,
+      updatedAt: nowIso,
     });
     setEpReviewSavedFeedback(true);
     setTimeout(() => setEpReviewSavedFeedback(false), 2200);
   };
 
   useEffect(() => {
-    setNotes(show.userNotes || '');
-  }, [show.userNotes]);
+    if (show.userScore !== null && show.userScore !== undefined) {
+      setCustomScore(show.userScore);
+    }
+  }, [show.userScore]);
+
+  useEffect(() => {
+    if (isEditingNotes || isFocusedNotes) return; // Protected from background polling sweeps while editing
+    let content = show.userNotes || '';
+    try {
+      const draft = localStorage.getItem(`couchtater_notes_draft_${show.id}`);
+      if (draft !== null && draft !== undefined && draft.trim().length > 0) {
+        content = draft;
+      }
+    } catch (e) {}
+    setNotes(content);
+  }, [show.userNotes, show.id, isEditingNotes, isFocusedNotes]);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showExpanderDeleteConfirm, setShowExpanderDeleteConfirm] = useState(false);
   const [showResetRatingConfirm, setShowResetRatingConfirm] = useState(false);
@@ -495,12 +560,9 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     !show.concluded || Boolean(show.nextEpisode) || show.latestWatched.season < maxSeasons
   );
 
-  // Only show nextEpisode notification if user hasn't watched it yet AND either it's upcoming/today or aired within the last 30 days (1 month)
+  // Show nextEpisode notification based purely on the air date of the show (upcoming or aired within the last 30 days), regardless of tracker progress
   const shouldShowNextEpNotification = (() => {
-    if (!show.nextEpisode) return false;
-    const hasNotWatched = show.latestWatched.season < show.nextEpisode.season ||
-      (show.latestWatched.season === show.nextEpisode.season && show.latestWatched.episode < show.nextEpisode.episode);
-    if (!hasNotWatched) return false;
+    if (!show.nextEpisode || show.concluded) return false;
 
     if (!show.nextEpisode.airDate) return true;
 
@@ -558,15 +620,17 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     const nextEp = show.latestWatched.episode + 1;
     const s = show.latestWatched.season;
     const clampedWatched = clampProgressToAired(show, s, nextEp);
+    const nextCalculated = !show.concluded ? resolveNextUpcomingEpisode({ ...show, latestWatched: clampedWatched }) : null;
     const isCompletedNow = Boolean(
       clampedWatched.episode === maxEpisodesInSeason && 
       s >= maxSeasons && 
       show.concluded && 
-      !show.nextEpisode
+      !nextCalculated
     );
     const updated = {
       ...show,
       latestWatched: clampedWatched,
+      nextEpisode: nextCalculated || (show.nextEpisode && show.nextEpisode.airDate ? show.nextEpisode : null),
       status: isCompletedNow ? ('Completed' as ShowStatus) : show.status
     };
     onUpdateShow(updated);
@@ -647,11 +711,18 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
   const handleSaveNotes = () => {
     if (isFriendView || !currentUser) return;
+    const nowIso = new Date().toISOString();
+    try {
+      localStorage.removeItem(`couchtater_notes_draft_${show.id}`);
+    } catch (e) {}
     onUpdateShow({
       ...show,
-      userNotes: notes
+      userNotes: notes,
+      reviewUpdatedAt: nowIso,
+      updatedAt: nowIso,
     });
     setIsEditingNotes(false);
+    setIsFocusedNotes(false);
   };
 
   const handleStatusChange = (status: ShowStatus) => {
@@ -689,9 +760,12 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     if (score !== null) {
       setCustomScore(score);
     }
+    const nowIso = new Date().toISOString();
     const updated = {
       ...show,
-      userScore: score
+      userScore: score,
+      reviewUpdatedAt: nowIso,
+      updatedAt: nowIso
     };
     onUpdateShow(updated);
 
@@ -840,8 +914,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         }`} />
 
         {/* Streaming Badge */}
-        <div className="absolute top-4 left-4 z-20 group/badge">
-          <div className="relative">
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-2 flex-wrap">
+          <div className="group/badge relative">
             <span className={`px-3.5 py-1.5 text-xs font-semibold rounded-full border transition-colors flex items-center gap-1.5 ${colors.bg} ${colors.text} ${colors.border}`}>
               <span 
                 className={`w-2 h-2 rounded-full transition-colors duration-300 ${
@@ -1257,8 +1331,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                   }`}
                   title={
                     show.hasAirDateReminder 
-                      ? "Reminder active! You will get an alert the day before this episode airs." 
-                      : "Click to get a text or email reminder the day before this show airs."
+                      ? "Air Date Alert active! You will receive an email & in-app notification before this episode airs." 
+                      : "Click to enable automated email & in-app reminders before this episode airs."
                   }
                 >
                   <Bell className={`w-3.5 h-3.5 ${show.hasAirDateReminder ? 'fill-amber-400 text-amber-400' : 'text-slate-500'}`} />
@@ -1922,11 +1996,25 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                           <textarea
                             rows={3}
                             value={epReviewInput}
+                            onFocus={() => setIsFocusedEpReview(true)}
                             onChange={(e) => {
-                              setEpReviewInput(e.target.value.slice(0, 280));
+                              const val = e.target.value.slice(0, 280);
+                              setEpReviewInput(val);
+                              if (currentEpKey) {
+                                try {
+                                  localStorage.setItem(`couchtater_ep_review_draft_${show.id}_${currentEpKey}`, val);
+                                } catch (err) {}
+                              }
                             }}
                             onBlur={() => {
+                              setIsFocusedEpReview(false);
                               if (epReviewInput !== (show.episodeReviews?.[currentEpKey] || '')) {
+                                handleSaveEpReview(epReviewInput);
+                              }
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                e.preventDefault();
                                 handleSaveEpReview(epReviewInput);
                               }
                             }}
@@ -2075,7 +2163,23 @@ export const ShowCard: React.FC<ShowCardProps> = ({
               <div className="space-y-2">
                 <textarea
                   value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
+                  onFocus={() => setIsFocusedNotes(true)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setNotes(val);
+                    try {
+                      localStorage.setItem(`couchtater_notes_draft_${show.id}`, val);
+                    } catch (err) {}
+                  }}
+                  onBlur={() => {
+                    setIsFocusedNotes(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                      e.preventDefault();
+                      handleSaveNotes();
+                    }
+                  }}
                   placeholder="What's your current vibe check of this show?"
                   className={`w-full p-2.5 rounded-lg border focus:outline-none min-h-20 text-xs leading-relaxed ${
                     theme === 'dark'
@@ -2179,9 +2283,9 @@ export const ShowCard: React.FC<ShowCardProps> = ({
           {onOpenTaterzAiRecap ? (
             <div className="flex items-center gap-2 w-full">
               {(() => {
-                let aiLabel = "Catch Up with AskTaterz";
+                let aiLabel = "Catch Up with Spudz";
                 let AiIcon = Bot;
-                let aiTooltip = `Catch up on S${show.latestWatched?.season || 1}E${show.latestWatched?.episode || 1} of ${show.title} with zero-spoiler AskTaterz recap`;
+                let aiTooltip = `Catch up on S${show.latestWatched?.season || 1}E${show.latestWatched?.episode || 1} of ${show.title} with zero-spoiler Spudz recap`;
 
                 if (show.status === 'Backlog') {
                   aiLabel = "Season Update";

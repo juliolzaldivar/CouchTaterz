@@ -65,27 +65,19 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'network' | 'invite' | 'search' | 'buddies'>('network');
   
-  // Feature 4: Network Graph State
-  const [networkData, setNetworkData] = useState<{ users: any[]; networkConnections: any[]; topShows: any[] } | null>(null);
-  const [networkLoading, setNetworkLoading] = useState<boolean>(false);
+  // Friends data from storage & async server sync
+  const [friendsData, setFriendsData] = useState<FriendsData>(() => 
+    getFriendsData(currentUser?.id || JULIO_USER_ID)
+  );
 
   useEffect(() => {
-    if (activeTab === 'network' && !networkData) {
-      setNetworkLoading(true);
-      fetch('/api/network/graph')
-        .then(res => res.json())
-        .then(data => {
-          setNetworkData(data);
-        })
-        .catch(err => {
-          console.error('Failed to fetch network graph:', err);
-        })
-        .finally(() => {
-          setNetworkLoading(false);
-        });
+    if (currentUser) {
+      fetchFriendsDataAsync(currentUser.id).then(updated => {
+        setFriendsData(updated);
+      });
     }
-  }, [activeTab, networkData]);
-  
+  }, [currentUser]);
+
   // Feature 1: Invite Link State
   const [linkCopied, setLinkCopied] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -102,21 +94,30 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
   const [messageInput, setMessageInput] = useState('');
   const [sendingMessage, setSendingMessage] = useState(false);
 
-  // Friends data from storage & async server sync
-  const [friendsData, setFriendsData] = useState<FriendsData>(() => 
-    getFriendsData(currentUser?.id || JULIO_USER_ID)
-  );
-
   const [requestMessages, setRequestMessages] = useState<Record<string, string>>({});
   const [replyMessages, setReplyMessages] = useState<Record<string, string>>({});
 
+  // Feature 4: Network Graph State
+  const [networkData, setNetworkData] = useState<{ users: any[]; networkConnections: any[]; topShows: any[] } | null>(null);
+  const [networkLoading, setNetworkLoading] = useState<boolean>(false);
+
   useEffect(() => {
-    if (currentUser) {
-      fetchFriendsDataAsync(currentUser.id).then(updated => {
-        setFriendsData(updated);
-      });
+    if (activeTab === 'network') {
+      const currentId = currentUser?.id || 'default';
+      setNetworkLoading(true);
+      fetch(`/api/network/graph?userId=${encodeURIComponent(currentId)}&scope=connections`)
+        .then(res => res.json())
+        .then(data => {
+          setNetworkData(data);
+        })
+        .catch(err => {
+          console.error('Failed to fetch network graph:', err);
+        })
+        .finally(() => {
+          setNetworkLoading(false);
+        });
     }
-  }, [currentUser]);
+  }, [activeTab, currentUser?.id, friendsData?.friends?.length]);
 
   // Notification Toast
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -643,7 +644,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                   className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-purple-600 via-indigo-600 to-pink-600 hover:from-purple-500 hover:via-indigo-500 hover:to-pink-500 text-white font-black text-xs sm:text-sm shadow-xl shadow-purple-950/40 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.01] active:scale-[0.98] cursor-pointer"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300 fill-amber-300 animate-pulse" />
-                  <span>✨ AskTaterz What to Watch Together</span>
+                  <span>✨ Ask Spudz What to Watch Together</span>
                 </button>
               )}
 
@@ -1155,6 +1156,9 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                   topShowsList={networkData?.topShows || []}
                   theme={theme}
                   currentUser={currentUser}
+                  confirmedBuddyIds={friendsData?.friends || []}
+                  scope="connections"
+                  allowScopeToggle={false}
                   onInspectUserLibrary={(uId) => {
                     onJoinBoard(uId);
                     onClose();

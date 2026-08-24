@@ -74,7 +74,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   const [name, setName] = useState(currentUser?.name || '');
   const [email, setEmail] = useState(currentUser?.email || '');
   const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatarUrl || '');
-  const isJulioUser = currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com' || currentUser?.id === 'default' || currentUser?.id === 'user-julio' || currentUser?.name?.trim().toLowerCase() === 'julio';
+  const isJulioUser = currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com' || currentUser?.email?.trim().toLowerCase() === 'julio@couchtaterz.com' || currentUser?.id === 'default' || currentUser?.id === 'user-julio' || currentUser?.name?.trim().toLowerCase() === 'julio';
   const isPro = isJulioUser || localStorage.getItem('couchtaterz_is_pro') === 'true' || Boolean((currentUser as any)?.isPro) || Boolean((currentUser as any)?.isAdmin) || false;
   const maxVariations = isPro ? 10 : 1;
   const [savedVariations, setSavedVariations] = useState<{ id: string; name: string; url: string; createdAt: number }[]>([]);
@@ -143,7 +143,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
         }
         if (perm === 'granted') {
           new Notification("🍿 CouchTaterz Air Date Alert", {
-            body: "Futurama Season 14 Episode 1 premieres on Hulu! (Test Alert)",
+            body: "Silo Season 3 Episode 8 premiers on Apple TV! (Test Alert)",
             icon: "/favicon.ico"
           });
           pushSent = true;
@@ -153,21 +153,45 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
       }
     }
 
-    setTimeout(() => {
-      setIsSendingTest(false);
-      const pushNote = pushSent ? " (Web Push Notification dispatched to your browser!)" : "";
-      if (alertPreference === 'text') {
-        setTestAlertMsg({
-          type: 'success',
-          text: `📱 Test Alert Triggered for ${dest}! "CouchTaterz Air Date Alert: Futurama Season 14 Episode 1 premieres on Hulu!"${pushNote}`
+    try {
+      if (alertPreference === 'email') {
+        const res = await fetch('/api/reminders/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: dest,
+            boardId: currentUser?.id || 'default'
+          })
         });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          const pushNote = pushSent ? " (Web Push alert also dispatched to your browser!)" : "";
+          setTestAlertMsg({
+            type: 'success',
+            text: `📧 Email Alert Dispatched to ${dest}! [${data.showTitle} ${data.episode}] ${data.message}${pushNote}`
+          });
+        } else {
+          setTestAlertMsg({
+            type: 'error',
+            text: data.error || 'Failed to dispatch email reminder.'
+          });
+        }
       } else {
+        const pushNote = pushSent ? " (Web Push Notification dispatched to your browser!)" : "";
         setTestAlertMsg({
           type: 'success',
-          text: `📧 Test Alert Triggered for ${dest}! "CouchTaterz Air Date Alert: Futurama Season 14 Episode 1 premieres on Hulu!"${pushNote}`
+          text: `📱 Test Alert Triggered for ${dest}! "CouchTaterz Air Date Alert: Silo Season 3 Episode 8 premieres on Apple TV!"${pushNote}`
         });
       }
-    }, 600);
+    } catch (err: any) {
+      setTestAlertMsg({
+        type: 'error',
+        text: err?.message || 'Error connecting to reminder service.'
+      });
+    } finally {
+      setIsSendingTest(false);
+    }
   };
 
   // Expanded Demographics & Granular Location
@@ -285,7 +309,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   const [restoreLoading, setRestoreLoading] = useState(false);
   const [restoreError, setRestoreError] = useState<string | null>(null);
 
-  const isJulio = currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com';
+  const isJulio = currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com' || currentUser?.email?.trim().toLowerCase() === 'julio@couchtaterz.com' || currentUser?.id === 'default' || currentUser?.id === 'user-julio' || currentUser?.name?.trim().toLowerCase() === 'julio';
 
   const handleConfirmDelete = () => {
     if (isJulio) {
@@ -434,6 +458,18 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
     };
 
     onToggleWorkflowGuide(localShowWorkflowGuide);
+    // Direct sync to /api/users/profile to ensure immediate persistence across server and Firestore
+    fetch('/api/users/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        avatarUrl: finalAvatarUrl
+      })
+    }).catch(err => console.error("Failed to sync profile directly:", err));
+
     onSave(updatedUser, updatedPrefs);
     onClose();
   };

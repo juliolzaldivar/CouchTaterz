@@ -3,19 +3,19 @@
     "userId": "default",
     "name": "Julio",
     "email": "juliozaldivar@gmail.com",
-    "lastLoginAt": "2026-08-19T13:46:36.834Z",
-    "lastActiveAt": "2026-08-19T13:49:14.798Z",
-    "totalTimeSpentSeconds": 79796,
-    "sessionCount": 106
+    "lastLoginAt": "2026-08-24T19:55:41.895Z",
+    "lastActiveAt": "2026-08-24T19:55:42.471Z",
+    "totalTimeSpentSeconds": 144924,
+    "sessionCount": 340
   },
   "user-julio": {
     "userId": "user-julio",
     "name": "Julio",
     "email": "juliozaldivar@gmail.com",
-    "lastLoginAt": "2026-08-19T13:46:36.834Z",
-    "lastActiveAt": "2026-08-19T13:49:14.798Z",
-    "totalTimeSpentSeconds": 73558,
-    "sessionCount": 74
+    "lastLoginAt": "2026-08-24T19:55:41.895Z",
+    "lastActiveAt": "2026-08-24T19:55:42.471Z",
+    "totalTimeSpentSeconds": 106122,
+    "sessionCount": 191
   },
   "user-julian-7667": {
     "userId": "user-julian-7667",
@@ -57,28 +57,28 @@
     "userId": "user-lilyann-4290",
     "name": "LilyAnn",
     "email": "lilyann@taterz.com",
-    "lastLoginAt": "2026-08-14T06:25:24.367Z",
-    "lastActiveAt": "2026-08-14T07:25:24.367Z",
-    "totalTimeSpentSeconds": 8700,
-    "sessionCount": 6
+    "lastLoginAt": "2026-08-23T00:17:18.112Z",
+    "lastActiveAt": "2026-08-23T00:17:47.371Z",
+    "totalTimeSpentSeconds": 8754,
+    "sessionCount": 9
   },
   "user-ejc-2841": {
     "userId": "user-ejc-2841",
     "name": "EJC",
     "email": "ejc@taterz.com",
-    "lastLoginAt": "2026-08-13T06:25:24.367Z",
-    "lastActiveAt": "2026-08-13T07:25:24.367Z",
-    "totalTimeSpentSeconds": 14400,
-    "sessionCount": 11
+    "lastLoginAt": "2026-08-23T00:15:36.516Z",
+    "lastActiveAt": "2026-08-23T00:15:55.624Z",
+    "totalTimeSpentSeconds": 14850,
+    "sessionCount": 14
   },
   "user-greg-3842": {
     "userId": "user-greg-3842",
     "name": "Greg",
     "email": "greg@taterz.com",
-    "lastLoginAt": "2026-08-12T06:25:24.367Z",
-    "lastActiveAt": "2026-08-12T07:25:24.367Z",
-    "totalTimeSpentSeconds": 5400,
-    "sessionCount": 4
+    "lastLoginAt": "2026-08-23T00:16:04.812Z",
+    "lastActiveAt": "2026-08-23T00:16:44.717Z",
+    "totalTimeSpentSeconds": 5440,
+    "sessionCount": 5
   },
   "user-hyunjin-6821": {
     "userId": "user-hyunjin-6821",
@@ -88,5 +88,14 @@
     "lastActiveAt": "2026-08-16T06:27:32.042Z",
     "totalTimeSpentSeconds": 7200,
     "sessionCount": 7
+  },
+  "user-bob-5649": {
+    "userId": "user-bob-5649",
+    "name": "bob",
+    "email": "bob@couchtaterz.com",
+    "lastLoginAt": "2026-08-24T19:55:37.438Z",
+    "lastActiveAt": "2026-08-24T19:56:38.368Z",
+    "totalTimeSpentSeconds": 70,
+    "sessionCount": 1
   }
 }

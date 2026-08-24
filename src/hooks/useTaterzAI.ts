@@ -14,20 +14,20 @@ const STORAGE_PRO_KEY = 'taterz_pro';
 
 export function getShowWelcomeMessage(show?: TvShow | null): string {
   if (!show) {
-    return "Yo, AskTaterz so you don't have to waste 45 minutes scrolling through Netflix.\n\nHere’s the deal:\n\n**Show Intelligence**: Get zero-spoiler Catch-Ups for active shows, Series Briefings for upcoming titles, and full Series Refreshers for completed shows.\n\n**Group Peacekeeping**: Trying to pick a movie with three other picky people? Hand me the remotes, I’ll find something nobody hates.\n\n**Vibe Search**: Skip the endless categories. Just tell me if you want \"mind-bending sci-fi\" or \"trashy reality TV to numb my brain,\" and I'll queue it up.";
+    return "Yo, Ask Spudz so you don't have to waste 45 minutes scrolling through streaming apps.\n\nHere’s the deal:\n\n**Show Intelligence**: Get zero-spoiler Catch-Ups for active shows, Series Briefings for upcoming titles, and full Series Refreshers for completed shows.\n\n**Group Peacekeeping**: Trying to pick a movie with three other picky people? Hand me the remotes, I’ll find something nobody hates.\n\n**Vibe Search**: Skip the endless categories. Just tell me if you want \"mind-bending sci-fi\" or \"trashy reality TV to numb my brain,\" and I'll queue it up.";
   }
 
   if (show.status === 'Backlog') {
-    return `Yo, I’m Taterz! Ready to start **${show.title}**?\n\nClick **Get Briefing** above to receive a zero-spoiler Series Briefing covering the core premise, vibe, and key characters before you start watching—or ask me anything below!`;
+    return `Yo, I’m Spudz! Ready to start **${show.title}**?\n\nClick **Get Briefing** above to receive a zero-spoiler Series Briefing covering the core premise, vibe, and key characters before you start watching—or ask me anything below!`;
   }
 
   if (show.status === 'Completed') {
-    return `Yo, I’m Taterz! Looking for a Series Refresher for **${show.title}**?\n\nClick **Get Refresher** above for a full Series Refresher covering the overarching plot arc, character transformations, and finale legacy—or ask me anything below!`;
+    return `Yo, I’m Spudz! Looking for a Series Refresher for **${show.title}**?\n\nClick **Get Refresher** above for a full Series Refresher covering the overarching plot arc, character transformations, and finale legacy—or ask me anything below!`;
   }
 
   const season = show.latestWatched?.season || 1;
   const episode = show.latestWatched?.episode || 1;
-  return `Yo, I’m Taterz! Need to Catch Up on **${show.title}**?\n\nClick **Generate Recap** above for a zero-spoiler Catch-Up up to Season ${season}, Episode ${episode}—or ask me anything below!`;
+  return `Yo, I’m Spudz! Need to Catch Up on **${show.title}**?\n\nClick **Generate Recap** above for a zero-spoiler Catch-Up up to Season ${season}, Episode ${episode}—or ask me anything below!`;
 }
 
 export const GENERAL_WELCOME_MSG = getShowWelcomeMessage(null);
@@ -219,9 +219,9 @@ export function useTaterzAI(options?: UseTaterzAIOptions) {
 
         if (!res.ok) {
           if (data.isLimitReached) {
-            setError("You've used your 3 free AskTaterz credits this week. Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks.");
+            setError("You've used your 3 free Spudz AI credits this week. Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks.");
           } else {
-            throw new Error(data.error || 'Failed to generate AskTaterz response');
+            throw new Error(data.error || 'Failed to generate Spudz response');
           }
           return;
         }
@@ -243,8 +243,8 @@ export function useTaterzAI(options?: UseTaterzAIOptions) {
 
         setMessages((prev) => [...prev, botMessage]);
       } catch (err: any) {
-        console.error('AskTaterz execution error:', err);
-        setError(err.message || 'An unexpected error occurred while reaching AskTaterz.');
+        console.error('Spudz AI execution error:', err);
+        setError(err.message || 'An unexpected error occurred while reaching Spudz.');
       } finally {
         setIsLoading(false);
       }

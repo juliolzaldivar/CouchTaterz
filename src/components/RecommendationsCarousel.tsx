@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TvShow, UserPreferences, StreamingService, User } from '../types';
 import { normalizeShowTitle, getCanonicalShowTitle } from '../utils/titleUtils';
 import { 
@@ -51,17 +51,9 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   const [prefActors, setPrefActors] = useState(preferences.actors.join(', '));
   const [prefDirectors, setPrefDirectors] = useState(preferences.directors.join(', '));
 
-  // Determine if we should open the taste profile on load (first-time access)
-  useEffect(() => {
-    const key = currentUser?.id 
-      ? `coughtater_seen_taste_profile_${currentUser.id}` 
-      : `coughtater_seen_taste_profile_generic`;
-    const hasSeen = localStorage.getItem(key) === 'true';
-    if (!hasSeen) {
-      setIsEditingTaste(true);
-      localStorage.setItem(key, 'true');
-    }
-  }, [currentUser?.id]);
+  // State to track if we've already run a recommendation query
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const inFlightRef = useRef(false);
 
   // Sync state with preferences when they change
   useEffect(() => {
@@ -70,8 +62,12 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
     setPrefDirectors(preferences.directors.join(', '));
   }, [preferences]);
 
-  // State to track if we've already run a recommendation query
-  const [hasGenerated, setHasGenerated] = useState(false);
+  // Check if explicit custom taste preferences exist
+  const hasExplicitPrefs = Boolean(
+    (preferences?.genres && preferences.genres.length > 0) ||
+    (preferences?.actors && preferences.actors.length > 0) ||
+    (preferences?.directors && preferences.directors.length > 0)
+  );
 
   // Automatically rotate recommendations if we have any
   useEffect(() => {
@@ -82,7 +78,16 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
     return () => clearInterval(interval);
   }, [recommendations.length]);
 
+  // Automatically generate default recommendations examining user's library and reviews
+  useEffect(() => {
+    if (!hasGenerated && !inFlightRef.current && recommendations.length === 0) {
+      generateRecommendations();
+    }
+  }, [hasGenerated, recommendations.length]);
+
   const generateRecommendations = async (customPrefs?: UserPreferences) => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setIsLoading(true);
     setHasGenerated(true);
     try {
@@ -100,15 +105,16 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
         const data = await response.json();
         const existingTitles = new Set((shows || []).map(s => normalizeShowTitle(s.title)));
         const filtered = Array.isArray(data) ? data.filter((rec: any) => !existingTitles.has(normalizeShowTitle(rec.title))) : [];
-        setRecommendations(filtered);
+        setRecommendations(filtered.length > 0 ? filtered : (Array.isArray(data) ? data : []));
         setActiveIndex(0);
       } else {
-        console.error('Failed to retrieve AI recommendations');
+        console.warn('AI recommendations service note: Using fallback curated suggestions.');
       }
     } catch (err) {
-      console.error('Error generating AI suggestions:', err);
+      console.warn('AI recommendations network note:', err);
     } finally {
       setIsLoading(false);
+      inFlightRef.current = false;
     }
   };
 
@@ -169,20 +175,35 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   return (
     <div className="space-y-3">
       {/* Title Header with Profile Config toggle */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-blue-400" />
-          <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
-            AI-POWERED RECOMMENDATIONS
-          </h3>
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <h3 className="text-xs font-black uppercase tracking-wider text-slate-500">
+              AI-POWERED RECOMMENDATIONS
+            </h3>
+          </div>
+
+          {/* Taste Source Indicator */}
+          {hasExplicitPrefs ? (
+            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+              Custom Taste Profile
+            </span>
+          ) : shows && shows.length > 0 ? (
+            <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              Auto-tuned from your {shows.length} library shows & reviews
+            </span>
+          ) : null}
         </div>
         
         <button
           onClick={() => setIsEditingTaste(!isEditingTaste)}
-          className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold border rounded-lg transition-all ${
+          className={`flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold border rounded-lg transition-all cursor-pointer ${
             isEditingTaste
               ? 'bg-blue-600 text-white border-transparent shadow'
-              : 'bg-[#1A1D23] border-white/5 text-slate-400 hover:text-white hover:bg-[#262A33]'
+              : theme === 'dark'
+                ? 'bg-[#1A1D23] border-white/5 text-slate-400 hover:text-white hover:bg-[#262A33]'
+                : 'bg-white border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 shadow-sm'
           }`}
         >
           <Sliders className="w-3.5 h-3.5" />
@@ -326,7 +347,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
               <Sparkles className="w-6 h-6" />
             </div>
             <div className="max-w-md space-y-1 z-10">
-              <h4 className={`text-sm font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>Ask Spudz Suggestions</h4>
+              <h4 className={`text-sm font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-slate-200' : 'text-slate-900'}`}>Spudz AI Suggestions</h4>
               <p className={`text-xs leading-relaxed ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
                 Connect your unique watchlists, ratings, custom notes, and favorite director preferences with Gemini Flash to generate 5 real, customized television suggestions.
               </p>
@@ -427,7 +448,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
                 {/* Custom AI Reasoning */}
                 <div className="p-3 rounded-2xl bg-blue-950/40 border border-blue-500/20">
                   <p className="text-xs md:text-xs text-blue-200 leading-relaxed font-medium">
-                    <span className="font-extrabold text-blue-400 uppercase tracking-widest text-[9px] block mb-0.5">Ask Spudz Reason:</span>
+                    <span className="font-extrabold text-amber-400 uppercase tracking-widest text-[9px] block mb-0.5">SPUDZ SAYS:</span>
                     &ldquo;{currentRec.reason}&rdquo;
                   </p>
                 </div>

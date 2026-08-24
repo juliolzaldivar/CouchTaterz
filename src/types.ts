@@ -60,6 +60,8 @@ export interface TvShow {
   isStarter?: boolean;
   redundancyVerified?: boolean;
   redundancyCheckedAt?: string;
+  updatedAt?: string;
+  reviewUpdatedAt?: string;
   createdAt: string;
 }
 
@@ -100,6 +102,7 @@ export interface UserPreferences {
 
 export interface AppNotification {
   id: string;
+  type?: 'alert' | 'recommendation' | 'message';
   senderId?: string;
   senderName: string;
   senderAvatarUrl?: string;

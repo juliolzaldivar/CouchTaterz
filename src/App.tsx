@@ -20,9 +20,12 @@ import { PreferencesModal } from './components/PreferencesModal';
 import { QueueOnboardingModal } from './components/QueueOnboardingModal';
 import { OnboardingWalkthrough } from './components/OnboardingWalkthrough';
 import { UserAdminModal } from './components/UserAdminModal';
+import { AdminImpersonationBar } from './components/AdminImpersonationBar';
 import { SocialStoryCardModal } from './components/SocialStoryCardModal';
 import { SoftGateAuthModal } from './components/SoftGateAuthModal';
 import { TaterzAvatarBuilderModal } from './components/TaterzAvatarBuilderModal';
+import { ProductGuidePage } from './components/ProductGuidePage';
+import { logOutUser } from './firebase';
 import { 
   getFriendsData, 
   fetchFriendsDataAsync, 
@@ -33,12 +36,13 @@ import {
   FriendRequestDetail 
 } from './utils/friendsStorage';
 import { normalizeShowTitle, isSameShowTitle, getCanonicalShowTitle } from './utils/titleUtils';
+import { JULIO_OFFICIAL_AVATAR } from './utils/taterAvatarUtils';
 
 // Helper checks for Julio and user equality
 const isUserJulio = (user?: { id?: string; email?: string; name?: string; isAdmin?: boolean; isPro?: boolean } | null) => {
   if (!user) return false;
   const email = user.email?.trim().toLowerCase();
-  if (email === 'juliozaldivar@gmail.com') return true;
+  if (email === 'juliozaldivar@gmail.com' || email === 'julio@couchtaterz.com' || email === 'julio@taterz.com') return true;
   if (user.id === 'default' || user.id === 'user-julio') return true;
   if (user.name?.trim().toLowerCase() === 'julio' && (!user.id || user.id === 'default' || user.id === 'user-julio' || user.id.startsWith('user-julio-'))) return true;
   return false;
@@ -87,7 +91,10 @@ import {
   Send,
   Shield,
   LogIn,
-  UserCheck
+  UserCheck,
+  Bell,
+  Radio,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
@@ -100,6 +107,7 @@ const normalizeClientBoardId = (id: string): string => {
   const clean = id.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
   if (clean === 'julio' || clean === 'user-julio' || clean === 'default') return 'default';
   if (clean === 'ejc' || clean === 'user-ejc' || clean === 'user-ejc-2841') return 'user-ejc-2841';
+  if (clean === 'stef' || clean === 'user-stef' || clean === 'user-stef-4912') return 'user-stef-4912';
   if (clean === 'kris' || clean === 'user-kris' || clean === 'user-kris-5139') return 'user-kris-5139';
   if (clean === 'rafael' || clean === 'user-rafael' || clean === 'user-rafael-9639') return 'user-rafael-9639';
   if (clean === 'annadee' || clean === 'lily' || clean === 'user-lily-9367') return 'user-lily-9367';
@@ -107,12 +115,25 @@ const normalizeClientBoardId = (id: string): string => {
   if (clean === 'lilyann' || clean === 'user-lilyann-4290') return 'user-lilyann-4290';
   if (clean === 'greg' || clean === 'user-greg' || clean === 'user-greg-3842') return 'user-greg-3842';
   if (clean === 'hyunjin' || clean === 'user-hyunjin' || clean === 'user-hyunjin-6821') return 'user-hyunjin-6821';
+  if (clean === 'doug' || clean === 'user-doug' || clean === 'doug-briskie' || clean === 'user-doug-briskie' || clean === 'user-doug-briskie-5088' || clean === 'user-doug-5821') return 'user-doug-5821';
   return clean;
 };
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(() => {
     const saved = localStorage.getItem('coughtater_user');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
+
+  const [adminImpersonator, setAdminImpersonator] = useState<User | null>(() => {
+    const saved = localStorage.getItem('coughtater_admin_impersonator');
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -156,24 +177,27 @@ export default function App() {
   // Self-heal corrupted user IDs from localStorage on load
   useEffect(() => {
     if (currentUser) {
-      const isJulioAccount = currentUser.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' || currentUser.id === 'default' || currentUser.id === 'user-julio';
+      const isJulioAccount = !adminImpersonator && (currentUser.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' || currentUser.id === 'default' || currentUser.id === 'user-julio');
       const isLegacyEjc = currentUser.id === 'user-ejc' || currentUser.id === 'ejc';
+      const isLegacyStef = currentUser.id === 'user-stef' || currentUser.id === 'stef';
       const isLegacyKris = currentUser.id === 'user-kris' || currentUser.id === 'kris' || currentUser.id === 'user-kris-vance';
       const isLegacyRafael = currentUser.id === 'user-rafael' || currentUser.id === 'rafael' || currentUser.id === 'user-rafael-gomez';
       const isLegacyGreg = currentUser.id === 'user-greg' || (currentUser.id !== 'user-greg-3842' && currentUser.email?.toLowerCase() === 'greg@taterz.com');
       const isLegacyHyunjin = currentUser.id === 'user-hyunjin' || (currentUser.id !== 'user-hyunjin-6821' && (currentUser.email?.toLowerCase() === 'hyunjin@taterz.com' || currentUser.name?.toLowerCase().trim() === 'hyunjin'));
       const isLegacyJulian = currentUser.id === 'user-julian' || (currentUser.id !== 'user-julian-7667' && currentUser.email?.toLowerCase() === 'julian@taterz.com');
       const isLegacyLilyann = currentUser.id === 'user-lilyann' || (currentUser.id !== 'user-lilyann-4290' && currentUser.email?.toLowerCase() === 'lilyann@taterz.com');
+      const isLegacyDoug = currentUser.id === 'user-doug' || currentUser.id === 'doug' || currentUser.id === 'user-doug-briskie-5088' || currentUser.id === 'user-doug-briskie' || (currentUser.id !== 'user-doug-5821' && (currentUser.email?.toLowerCase() === 'doug.briskie@icloud.com' || currentUser.email?.toLowerCase() === 'doug@coughtater.com' || currentUser.name?.toLowerCase().trim() === 'doug' || currentUser.name?.toLowerCase().trim() === 'doug briskie'));
 
       if (isJulioAccount) {
         localStorage.setItem('couchtaterz_is_pro', 'true');
-        if (currentUser.id !== 'default' || currentUser.email !== 'juliozaldivar@gmail.com' || !currentUser.isPro || !currentUser.isAdmin) {
+        const hasLegacyPotatoAvatar = currentUser.avatarUrl?.startsWith('data:image') || currentUser.avatarUrl?.includes('seed=Julio');
+        if (currentUser.id !== 'default' || !currentUser.isPro || !currentUser.isAdmin || !currentUser.avatarUrl || hasLegacyPotatoAvatar) {
           const correctedUser = {
             ...currentUser,
             id: 'default',
-            name: 'Julio',
-            email: 'juliozaldivar@gmail.com',
-            avatarUrl: currentUser.avatarUrl || 'https://api.dicebear.com/7.x/pixel-art/svg?seed=SuperFan',
+            name: currentUser.name || 'Julio',
+            email: currentUser.email || 'julio@couchtaterz.com',
+            avatarUrl: JULIO_OFFICIAL_AVATAR,
             isPro: true,
             isAdmin: true
           };
@@ -182,17 +206,22 @@ export default function App() {
           setBoardId('default');
         }
       } else if (isLegacyEjc) {
-        const correctedUser = { ...currentUser, id: 'user-ejc-2841', name: 'EJC', email: 'ejc@taterz.com' };
+        const correctedUser = { ...currentUser, id: 'user-ejc-2841', name: currentUser.name || 'EJC', email: 'ejc@taterz.com' };
         setCurrentUser(correctedUser);
         localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
         setBoardId('user-ejc-2841');
+      } else if (isLegacyStef) {
+        const correctedUser = { ...currentUser, id: 'user-stef-4912', name: currentUser.name || 'Stef', email: 'stef@taterz.com' };
+        setCurrentUser(correctedUser);
+        localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+        setBoardId('user-stef-4912');
       } else if (isLegacyGreg) {
-        const correctedUser = { ...currentUser, id: 'user-greg-3842', name: 'Greg', email: 'greg@taterz.com' };
+        const correctedUser = { ...currentUser, id: 'user-greg-3842', name: currentUser.name || 'Greg', email: 'greg@taterz.com' };
         setCurrentUser(correctedUser);
         localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
         setBoardId('user-greg-3842');
       } else if (isLegacyHyunjin) {
-        const correctedUser = { ...currentUser, id: 'user-hyunjin-6821', name: 'Hyunjin', email: 'hyunjin@taterz.com', avatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Hyunjin' };
+        const correctedUser = { ...currentUser, id: 'user-hyunjin-6821', name: currentUser.name || 'Hyunjin', email: 'hyunjin@taterz.com' };
         setCurrentUser(correctedUser);
         localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
         setBoardId('user-hyunjin-6821');
@@ -216,9 +245,20 @@ export default function App() {
         setCurrentUser(correctedUser);
         localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
         setBoardId('user-lilyann-4290');
+      } else if (isLegacyDoug) {
+        const correctedUser = {
+          ...currentUser,
+          id: 'user-doug-5821',
+          name: currentUser.name || 'Doug Briskie',
+          email: 'doug.briskie@icloud.com',
+          avatarUrl: currentUser.avatarUrl || 'https://api.dicebear.com/7.x/pixel-art/svg?seed=DougBriskie'
+        };
+        setCurrentUser(correctedUser);
+        localStorage.setItem('coughtater_user', JSON.stringify(correctedUser));
+        setBoardId('user-doug-5821');
       }
     }
-  }, [currentUser]);
+  }, [currentUser, adminImpersonator]);
 
   // Keep currentUserShows and currentUserPrefs in sync
   useEffect(() => {
@@ -247,7 +287,7 @@ export default function App() {
               setCurrentUserPrefs(data.preferences);
             }
             // Auto-heal / sync custom avatar from server & Firestore if available
-            if (data.owner?.avatarUrl && data.owner.avatarUrl !== currentUser.avatarUrl && !data.owner.avatarUrl.includes('seed=SuperFan') && !data.owner.avatarUrl.includes('seed=Julio')) {
+            if (data.owner?.avatarUrl && data.owner.avatarUrl !== currentUser.avatarUrl && !currentUser.avatarUrl) {
               const updatedUser = { ...currentUser, avatarUrl: data.owner.avatarUrl };
               setCurrentUser(updatedUser);
               localStorage.setItem('coughtater_user', JSON.stringify(updatedUser));
@@ -485,6 +525,58 @@ export default function App() {
   // Custom Taterz Avatar Studio State
   const [isAvatarStudioOpen, setIsAvatarStudioOpen] = useState(false);
 
+  // Feature Guide & Field Manual Modal State
+  const [isFeatureGuideOpen, setIsFeatureGuideOpen] = useState<boolean>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return (
+        params.get('guide') === 'true' || 
+        window.location.hash === '#guide' || 
+        window.location.pathname.startsWith('/guide') ||
+        window.location.pathname.startsWith('/help') ||
+        window.location.pathname.startsWith('/docs')
+      );
+    } catch (e) {
+      return false;
+    }
+  });
+
+  // Auto-open guide if ?guide=true, #guide, /guide, /help, /docs in URL
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const isGuideRoute = 
+        params.get('guide') === 'true' || 
+        window.location.hash === '#guide' || 
+        window.location.pathname.startsWith('/guide') ||
+        window.location.pathname.startsWith('/help') ||
+        window.location.pathname.startsWith('/docs');
+      if (isGuideRoute) {
+        setIsFeatureGuideOpen(true);
+      }
+    } catch (e) {}
+  }, []);
+
+  const handleNavigateFromGuide = (target: 'add_show' | 'calendar' | 'spudz_ai' | 'buddies' | 'avatar' | 'stats' | 'preferences') => {
+    setIsFeatureGuideOpen(false);
+    if (target === 'add_show') {
+      setAddModalInitialTab('search');
+      setIsAddOpen(true);
+    } else if (target === 'calendar') {
+      setIsCalendarOpen(true);
+    } else if (target === 'spudz_ai') {
+      handleOpenTaterzAiGeneral();
+    } else if (target === 'buddies') {
+      setIsShareOpen(true);
+    } else if (target === 'avatar') {
+      setIsAvatarStudioOpen(true);
+    } else if (target === 'stats') {
+      setIsStatsOpen(true);
+    } else if (target === 'preferences') {
+      setIsPreferencesOpen(true);
+    }
+  };
+
   const handleOpenStoryCard = (show: TvShow, reason: 'completed' | 'high_rating' | 'manual' = 'manual') => {
     setStoryModalShow(show);
     setStoryTriggerReason(reason);
@@ -570,7 +662,7 @@ export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   // Lock body scroll whenever any modal or panel overlay is active to eliminate background thrashing/flicker
-  const isAnyModalOpen = isAddOpen || isShareOpen || isManageActiveOpen || isCalendarOpen || isStatsOpen || isPreferencesOpen || isAdminOpen || showQueueOnboarding;
+  const isAnyModalOpen = isAddOpen || isShareOpen || isManageActiveOpen || isCalendarOpen || isStatsOpen || isPreferencesOpen || isAdminOpen || showQueueOnboarding || isAvatarStudioOpen || isStoryModalOpen || isSoftGateOpen;
 
   useEffect(() => {
     if (isAnyModalOpen) {
@@ -832,21 +924,32 @@ export default function App() {
     }
   }, [board?.id]);
 
-  // Sync all family boards from the backend whenever logged in, searching family, or opening add modal
+  // Sync all family boards from the backend whenever user logs in or switches account
+  const lastFamilyBoardsFetchRef = useRef<number>(0);
   useEffect(() => {
     let isMounted = true;
     let retryTimer: NodeJS.Timeout;
 
     const loadFamilyBoards = (attempt = 1) => {
       if (!currentUser) return;
+      // Debounce if fetched within the last 8 seconds
+      const now = Date.now();
+      if (now - lastFamilyBoardsFetchRef.current < 8000 && attempt === 1) {
+        return;
+      }
+      lastFamilyBoardsFetchRef.current = now;
       setIsLoadingFamilyBoards(true);
 
       fetch('/api/boards?all=true')
         .then(res => {
           if (res.ok) return res.json();
+          if (res.status === 429) {
+            // Transient rate limit backoff
+            return null;
+          }
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         })
-        .then((data: Record<string, Board>) => {
+        .then((data: Record<string, Board> | null) => {
           if (isMounted && data && typeof data === 'object') {
             setFamilyBoards(data);
             setIsLoadingFamilyBoards(false);
@@ -856,6 +959,8 @@ export default function App() {
                 return prev;
               });
             }
+          } else if (isMounted) {
+            setIsLoadingFamilyBoards(false);
           }
         })
         .catch(err => {
@@ -863,9 +968,9 @@ export default function App() {
           if (attempt < 3) {
             retryTimer = setTimeout(() => {
               if (isMounted) loadFamilyBoards(attempt + 1);
-            }, 1500);
+            }, attempt * 2000);
           } else {
-            console.error("Failed to load family boards after retries:", err?.message || err);
+            console.warn("Family boards sync note:", err?.message || err);
             setIsLoadingFamilyBoards(false);
           }
         });
@@ -879,7 +984,7 @@ export default function App() {
       isMounted = false;
       if (retryTimer) clearTimeout(retryTimer);
     };
-  }, [currentUser, searchFamily, isAddOpen]);
+  }, [currentUser?.id]);
 
   // Load board code from URL query parameter
   useEffect(() => {
@@ -949,29 +1054,17 @@ export default function App() {
           if (!isSubscribed) return;
 
           let finalBoard = data;
-          // Only sync local cache back to server if it's the user's OWN board
-          if (localSaved && currentUser && (boardId === currentUser.id || boardId === 'default' || boardId === 'user-julio')) {
+          if (localSaved) {
             try {
-              const parsedLocal = JSON.parse(localSaved);
-              if (parsedLocal && Array.isArray(parsedLocal.shows) && Array.isArray(data.shows)) {
-                const localTime = new Date(parsedLocal.updatedAt || 0).getTime();
-                const serverTime = new Date(data.updatedAt || 0).getTime();
-
-                // Merge local reviews and ratings with server shows so reviews are never lost
-                if (localTime > serverTime) {
-                  finalBoard = parsedLocal;
-                  await fetch('/api/boards', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(finalBoard),
-                  });
-                } else {
-                  finalBoard = data;
-                }
+              const localParsed = JSON.parse(localSaved);
+              const localTime = new Date(localParsed.updatedAt || 0).getTime();
+              const serverTime = new Date(data.updatedAt || 0).getTime();
+              if (localTime > serverTime && localParsed.shows) {
+                finalBoard = localParsed;
               }
             } catch (e) {}
           }
-          
+
           setBoard(finalBoard);
           localStorage.setItem(localKey, JSON.stringify(finalBoard));
           setFamilyBoards(prev => ({ ...prev, [boardId]: finalBoard }));
@@ -1079,15 +1172,16 @@ export default function App() {
   }, [board]);
 
   // Sync board updates back to server
-  const saveBoardToServer = async (updatedShows: TvShow[], customName?: string) => {
+  const saveBoardToServer = async (updatedShows: TvShow[], customName?: string, deletedShowId?: string) => {
     if (!board) return;
     try {
       const nowIso = new Date().toISOString();
-      const updatedBoard: Board = {
+      const updatedBoard: Board & { deletedShowId?: string } = {
         ...board,
         name: customName || board.name,
         shows: updatedShows,
-        updatedAt: nowIso
+        updatedAt: nowIso,
+        ...(deletedShowId ? { deletedShowId } : {})
       };
       
       // Optimistic update
@@ -1098,7 +1192,11 @@ export default function App() {
 
       const res = await fetch('/api/boards', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-User-Email': currentUser?.email || '',
+          'X-User-Id': currentUser?.id || ''
+        },
         body: JSON.stringify(updatedBoard),
       });
 
@@ -1133,7 +1231,11 @@ export default function App() {
 
     fetch('/api/boards', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-User-Email': currentUser?.email || '',
+        'X-User-Id': currentUser?.id || ''
+      },
       body: JSON.stringify(updatedBoard),
     }).catch(err => console.error("Failed to save board preferences:", err));
   };
@@ -1269,7 +1371,12 @@ export default function App() {
       triggerCompletionConfetti(updatedShow);
     }
 
-    const updatedShows = board.shows.map(s => s.id === updatedShow.id ? updatedShow : s);
+    const showWithTimestamp: TvShow = {
+      ...updatedShow,
+      updatedAt: updatedShow.updatedAt || new Date().toISOString()
+    };
+
+    const updatedShows = board.shows.map(s => s.id === updatedShow.id ? showWithTimestamp : s);
     saveBoardToServer(updatedShows);
   };
 
@@ -1278,7 +1385,7 @@ export default function App() {
     if (!board) return;
 
     const updatedShows = board.shows.filter(s => s.id !== id);
-    saveBoardToServer(updatedShows);
+    saveBoardToServer(updatedShows, undefined, id);
   };
 
   // Change board / join family board
@@ -1676,13 +1783,69 @@ export default function App() {
 
   // Handle logout
   const handleLogout = () => {
+    logOutUser().catch(() => {});
     setCurrentUser(null);
     setBoard(null);
     setBoardId('default');
+    setAdminImpersonator(null);
     localStorage.removeItem('coughtater_user');
+    localStorage.removeItem('couchtater_user_email');
+    localStorage.removeItem('coughtater_admin_impersonator');
     const params = new URLSearchParams(window.location.search);
     params.delete('board');
     window.history.replaceState({}, '', `${window.location.pathname}`);
+  };
+
+  // Handle Admin Impersonation (Option A)
+  const handleImpersonateUser = (targetUser: any) => {
+    if (!targetUser || !targetUser.id) return;
+    
+    // Remember the original admin
+    let adminToSave = adminImpersonator;
+    if (!adminToSave && currentUser && isUserJulio(currentUser)) {
+      adminToSave = {
+        id: 'default',
+        name: currentUser.name || 'Julio',
+        email: currentUser.email || 'julio@couchtaterz.com',
+        avatarUrl: JULIO_OFFICIAL_AVATAR,
+        isPro: true,
+        isAdmin: true,
+        createdAt: currentUser.createdAt || new Date().toISOString()
+      };
+      setAdminImpersonator(adminToSave);
+      localStorage.setItem('coughtater_admin_impersonator', JSON.stringify(adminToSave));
+    }
+    
+    const targetUserId = normalizeClientBoardId(targetUser.id);
+    const updatedTarget: User = {
+      ...targetUser,
+      id: targetUserId,
+      name: targetUser.name || 'Tester',
+      email: targetUser.email || `${targetUserId}@taterz.com`,
+      avatarUrl: targetUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${targetUser.name || targetUserId}`,
+      createdAt: targetUser.createdAt || new Date().toISOString()
+    };
+    setCurrentUser(updatedTarget);
+    localStorage.setItem('coughtater_user', JSON.stringify(updatedTarget));
+    setBoardId(targetUserId);
+  };
+
+  const handleExitImpersonation = () => {
+    const adminUser: User = adminImpersonator || {
+      id: 'default',
+      name: 'Julio',
+      email: 'julio@couchtaterz.com',
+      avatarUrl: JULIO_OFFICIAL_AVATAR,
+      isPro: true,
+      isAdmin: true,
+      createdAt: new Date().toISOString()
+    };
+    
+    setCurrentUser(adminUser);
+    localStorage.setItem('coughtater_user', JSON.stringify(adminUser));
+    localStorage.removeItem('coughtater_admin_impersonator');
+    setAdminImpersonator(null);
+    setBoardId('default');
   };
 
   // Handle delete profile and start over
@@ -2044,6 +2207,31 @@ export default function App() {
     return list;
   }, [familyBoards, board, allUsers, friendsState, currentUser]);
 
+  if (isFeatureGuideOpen) {
+    const handleCloseGuide = () => {
+      setIsFeatureGuideOpen(false);
+      try {
+        if (window.location.pathname.startsWith('/guide') || window.location.pathname.startsWith('/help') || window.location.pathname.startsWith('/docs') || window.location.search.includes('guide=true')) {
+          window.history.pushState({}, '', '/');
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    return (
+      <ProductGuidePage
+        onBack={handleCloseGuide}
+        onNavigateTo={(target) => {
+          handleCloseGuide();
+          handleNavigateFromGuide(target);
+        }}
+        onLaunchApp={handleCloseGuide}
+        isLoggedIn={!!currentUser}
+      />
+    );
+  }
+
   const isSharedRoute = window.location.pathname.startsWith('/list/') || window.location.pathname.startsWith('/p/') || window.location.search.includes('board=') || window.location.search.includes('list=') || boardId !== 'default';
   if (!currentUser && boardId === 'default' && !isSharedRoute) {
     return <LoginPage onLogin={handleLogin} />;
@@ -2263,6 +2451,19 @@ export default function App() {
       theme === 'dark' ? 'dark bg-[#0F1115] text-slate-100' : 'bg-neutral-50 text-neutral-900'
     }`}>
       
+      {/* Admin Impersonation Mode Bar (Option A - active during impersonation) */}
+      {adminImpersonator !== null && currentUser && (
+        <AdminImpersonationBar
+          currentUser={currentUser}
+          adminImpersonator={adminImpersonator}
+          allUsers={allUsers}
+          onSwitchTester={handleImpersonateUser}
+          onExitTestMode={handleExitImpersonation}
+          onOpenAdminModal={() => setIsAdminOpen(true)}
+          theme={theme}
+        />
+      )}
+
       {/* Master Container */}
       <div className="max-w-7xl mx-auto px-4 py-6 md:px-8 space-y-6">
         
@@ -2460,24 +2661,6 @@ export default function App() {
             <div className="flex items-center gap-1.5 sm:gap-2.5 ml-auto shrink-0">
               {currentUser ? (
                 <>
-                  {isUserJulio(currentUser) && (
-                    <>
-                      <button
-                        onClick={() => setIsAdminOpen(true)}
-                        className="bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 font-extrabold text-[10px] sm:text-[11px] rounded-xl px-2.5 py-1 sm:py-1.5 flex items-center gap-1.5 border border-indigo-500/30 transition-all cursor-pointer shrink-0 shadow-2xs active:scale-95"
-                        title="Central User Administration & Community Insights Dashboard"
-                      >
-                        <Shield className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-                        <span className="hidden sm:inline">User Admin</span>
-                        <span className="sm:hidden">Admin</span>
-                      </button>
-
-                      <span className="text-slate-300 dark:text-slate-800">|</span>
-                    </>
-                  )}
-
-
-
                   <button
                     onClick={() => setIsPreferencesOpen(true)}
                     className="flex items-center gap-1.5 cursor-pointer hover:opacity-85 active:scale-98 transition-all group"
@@ -2497,6 +2680,15 @@ export default function App() {
                     <span className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors max-w-[100px] sm:max-w-none truncate">{currentUser.name}</span>
                   </button>
 
+                  {/* CouchTaterz Manual / Product Guide Trigger */}
+                  <button
+                    onClick={() => setIsFeatureGuideOpen(true)}
+                    className="p-1 sm:p-1.5 rounded-xl hover:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-blue-400 transition-all cursor-pointer shrink-0 flex items-center justify-center border border-transparent hover:border-blue-500/30"
+                    title="CouchTaterz User Guide & Feature Manual"
+                  >
+                    <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+
                   <span className="text-slate-300 dark:text-slate-800">|</span>
 
                   <button
@@ -2510,16 +2702,25 @@ export default function App() {
                   </button>
                 </>
               ) : (
-                <button
-                  onClick={() => {
-                    window.location.href = '/';
-                  }}
-                  className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
-                  title="Sign in to CouchTaterz"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Sign In</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsFeatureGuideOpen(true)}
+                    className="p-1 sm:p-1.5 rounded-xl text-slate-400 hover:text-blue-400 transition-all cursor-pointer shrink-0 flex items-center justify-center"
+                    title="CouchTaterz User Guide & Feature Manual"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      window.location.href = '/';
+                    }}
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-xs px-3 py-1.5 rounded-xl transition flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                    title="Sign in to CouchTaterz"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Sign In</span>
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -2546,6 +2747,21 @@ export default function App() {
 
             {/* Core Tools Panel */}
             <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* User Admin Trigger - Shield Only (No Text) */}
+              {isUserJulio(currentUser) && (
+                <button
+                  onClick={() => setIsAdminOpen(true)}
+                  className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer shadow-md ${
+                    theme === 'dark'
+                      ? 'bg-gradient-to-br from-indigo-500/25 via-purple-600/30 to-violet-700/30 border-purple-400/50 text-purple-300 hover:text-white hover:border-purple-300 hover:shadow-purple-500/25'
+                      : 'bg-gradient-to-br from-indigo-500 via-purple-600 to-violet-700 border-purple-400 text-white hover:opacity-90 shadow-purple-500/30'
+                  }`}
+                  title="Central User Administration & Community Insights Dashboard"
+                >
+                  <Shield className="w-4 h-4 text-purple-300 dark:text-purple-200" />
+                </button>
+              )}
+
               {/* Toggle Theme */}
               <button
                 onClick={toggleTheme}
@@ -2798,8 +3014,10 @@ export default function App() {
                         </div>
                       </div>
 
-                      <div className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
-                        <span className="text-orange-400">💡 Pro-Tip:</span> Move shows instantly between these pipelines by toggling their Status controls on any Show Card below!
+                      <div className="pt-1 border-t border-white/5">
+                        <div className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
+                          <span className="text-orange-400">💡 Pro-Tip:</span> Move shows instantly between pipelines using the Status controls on any Show Card!
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -3375,21 +3593,22 @@ export default function App() {
                         ? 'bg-gradient-to-r from-amber-500/15 to-yellow-500/15 hover:from-amber-500/25 hover:to-yellow-500/25 text-amber-300 border-amber-500/25 shadow-[0_0_12px_rgba(245,158,11,0.15)]'
                         : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-500/80 shadow-md shadow-amber-500/20'
                     }`}
-                    title="Open AskTaterz"
+                    title="Ask Spudz"
                   >
                     <Bot className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-amber-400' : 'text-white'}`} />
-                    <span>AskTaterz</span>
+                    <span>Ask Spudz</span>
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Tater Recommendations & Direct Messages Alert */}
+            {/* Tater Recommendations, Alerts & Direct Messages */}
             <AnimatePresence>
               {activeNotifications.length > 0 && (
                 <div className="space-y-4 mb-6">
                   {activeNotifications.map((notif, nIdx) => {
-                    const isShowRec = !!notif.show;
+                    const isSystemAlert = notif.senderId === 'system-alerts' || notif.type === 'alert' || (notif.senderName && notif.senderName.toLowerCase().includes('alert'));
+                    const isShowRec = !isSystemAlert && !!notif.show;
                     return (
                       <motion.div
                         key={notif.id ? `notif-${notif.id}-${nIdx}` : `notif-idx-${nIdx}`}
@@ -3400,7 +3619,11 @@ export default function App() {
                         className="overflow-hidden"
                       >
                         <div className={`p-4 sm:p-5 border rounded-2xl relative overflow-hidden transition-all shadow-md ${
-                          isShowRec
+                          isSystemAlert
+                            ? (theme === 'dark'
+                                ? 'bg-[#151922] border-sky-500/30 shadow-sky-950/10'
+                                : 'bg-sky-50/90 border-sky-200 shadow-sky-100/50')
+                            : isShowRec
                             ? (theme === 'dark'
                                 ? 'bg-[#1A1D23] border-amber-500/25 shadow-amber-950/5'
                                 : 'bg-white border-amber-200 shadow-amber-100/50')
@@ -3410,7 +3633,11 @@ export default function App() {
                         }`}>
                           {/* Tint Overlay */}
                           <div className={`absolute inset-0 pointer-events-none z-0 bg-gradient-to-r ${
-                            isShowRec
+                            isSystemAlert
+                              ? (theme === 'dark'
+                                  ? 'from-sky-500/10 via-sky-500/5 to-transparent'
+                                  : 'from-sky-100/60 to-transparent')
+                              : isShowRec
                               ? (theme === 'dark'
                                   ? 'from-amber-500/10 via-amber-500/5 to-transparent'
                                   : 'from-amber-50 to-transparent')
@@ -3419,18 +3646,18 @@ export default function App() {
                                   : 'from-purple-100/50 to-transparent')
                           }`} />
 
-                          {/* Show Banner Image Layer fading in from right (only for show recommendations) */}
+                          {/* Show Banner Image Layer fading in from right (only for show recommendations or alerts with show) */}
                           {notif.show && (
                             <div className="absolute right-0 top-0 bottom-0 w-2/5 sm:w-1/2 pointer-events-none overflow-hidden z-0">
                               <img
                                 src={getShowBannerImage(notif.show)}
                                 alt={notif.show.title || 'Show'}
-                                className="w-full h-full object-cover opacity-30 md:opacity-40 transition-opacity"
+                                className="w-full h-full object-cover opacity-25 md:opacity-35 transition-opacity"
                                 referrerPolicy="no-referrer"
                               />
                               <div className={`absolute inset-0 bg-gradient-to-r ${
                                 theme === 'dark'
-                                  ? 'from-[#1A1D23] via-[#1A1D23]/40 to-transparent'
+                                  ? (isSystemAlert ? 'from-[#151922] via-[#151922]/50 to-transparent' : 'from-[#1A1D23] via-[#1A1D23]/40 to-transparent')
                                   : 'from-white via-white/40 to-transparent'
                               }`} />
                             </div>
@@ -3449,15 +3676,63 @@ export default function App() {
                           </div>
                           
                           <div className="flex items-start gap-4 pr-6 relative z-10">
-                            <img
-                              src={notif.senderAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(notif.senderName || 'Buddy')}`}
-                              alt={notif.senderName}
-                              className={`w-10 h-10 rounded-full border shrink-0 mt-0.5 bg-[#0F1115] ${
-                                isShowRec ? 'border-amber-500/30' : 'border-purple-500/40'
-                              }`}
-                            />
+                            {isSystemAlert ? (
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
+                                theme === 'dark' 
+                                  ? 'bg-sky-500/20 text-sky-400 border-sky-500/40 shadow-sm shadow-sky-950/40' 
+                                  : 'bg-sky-100 text-sky-600 border-sky-300 shadow-sm'
+                              }`}>
+                                <Bell className="w-5 h-5 animate-pulse" />
+                              </div>
+                            ) : (
+                              <img
+                                src={notif.senderAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(notif.senderName || 'Buddy')}`}
+                                alt={notif.senderName}
+                                className={`w-10 h-10 rounded-full border shrink-0 mt-0.5 bg-[#0F1115] ${
+                                  isShowRec ? 'border-amber-500/30' : 'border-purple-500/40'
+                                }`}
+                              />
+                            )}
                             <div className="flex-1 space-y-3">
-                              {notif.show ? (
+                              {isSystemAlert ? (
+                                <>
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                                        theme === 'dark' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-sky-100 text-sky-800 border border-sky-200'
+                                      }`}>
+                                        <Radio className="w-3 h-3 text-sky-400" />
+                                        <span>Air Date Alert</span>
+                                      </span>
+                                    </div>
+                                    <p className={`text-[13px] font-bold leading-relaxed mt-1.5 ${
+                                      theme === 'dark' ? 'text-slate-100' : 'text-neutral-900'
+                                    }`}>
+                                      {notif.message ? (
+                                        notif.message.replace(/^🔔\s*/, '')
+                                      ) : notif.show ? (
+                                        <>Reminder: New episode of <span className="text-sky-400 underline font-extrabold">{notif.show.title}</span> is scheduled to air soon!</>
+                                      ) : (
+                                        'You have an upcoming air date alert.'
+                                      )}
+                                    </p>
+                                  </div>
+
+                                  <div className="flex gap-2 flex-wrap items-center pt-0.5">
+                                    <button
+                                      onClick={() => handleDismissNotification(notif.id)}
+                                      className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer active:scale-95 flex items-center gap-1.5 ${
+                                        theme === 'dark'
+                                          ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-sm shadow-sky-950/30'
+                                          : 'bg-sky-600 hover:bg-sky-700 text-white shadow-sm'
+                                      }`}
+                                    >
+                                      <Check className="w-3.5 h-3.5" />
+                                      <span>Dismiss Alert</span>
+                                    </button>
+                                  </div>
+                                </>
+                              ) : notif.show ? (
                                 <>
                                   <div>
                                     <h3 className={`text-xs font-black uppercase tracking-wider ${
@@ -3534,9 +3809,9 @@ export default function App() {
                                 </>
                               )}
 
-                              {/* Animated Inline Reply Box */}
+                              {/* Animated Inline Reply Box (only for user recommendations and direct messages) */}
                               <AnimatePresence>
-                                {replyingNotifId === notif.id && (
+                                {!isSystemAlert && replyingNotifId === notif.id && (
                                   <motion.div
                                     initial={{ opacity: 0, height: 0, marginTop: 0 }}
                                     animate={{ opacity: 1, height: 'auto', marginTop: 10 }}
@@ -4080,10 +4355,10 @@ export default function App() {
       {/* Floating Action Buttons for all screens (Mobile, Tablet & Desktop) - hidden when any modal is active so they never block modal close buttons or actions */}
       {!(isAddOpen || isShareOpen || isCalendarOpen || isPreferencesOpen || isManageActiveOpen || isStatsOpen || showQueueOnboarding || isChatOpen) && (
         <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-3.5 items-end pointer-events-auto">
-          {/* AI Scout Button */}
+          {/* AI Companion Floating Action Button */}
           <div className="relative flex items-center group">
             <span className="absolute right-14 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-amber-300 border border-amber-500/20 shadow-2xl">
-              AskTATERZ AI
+              ASK SPUDZ
             </span>
             <button
               onClick={handleOpenTaterzAiGeneral}
@@ -4092,7 +4367,7 @@ export default function App() {
                   ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 border-amber-500/30 shadow-[0_0_18px_rgba(245,158,11,0.25)]'
                   : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
               }`}
-              title="Open AskTaterz"
+              title="Ask Spudz"
             >
               <Bot className={`w-5 h-5 ${theme === 'dark' ? 'text-amber-400' : 'text-white'}`} />
             </button>
@@ -4227,6 +4502,7 @@ export default function App() {
               handleJoinBoard(targetUserId);
               setIsAdminOpen(false);
             }}
+            onImpersonateUser={handleImpersonateUser}
             onDeleteUserProfile={(targetUserId) => {
               if (boardId === targetUserId) {
                 handleJoinBoard(currentUser.id);
@@ -4341,7 +4617,7 @@ export default function App() {
                 {completedShowToast.title}
               </h4>
               <p className="text-[10px] text-slate-400 leading-normal mt-1">
-                Officially added to your <span className="text-emerald-400 font-bold">Library</span> pipeline! Keep on munching those couch taters! 🥔🏆✨
+                Officially added to your <span className="text-emerald-400 font-bold">Library</span> pipeline! Keep on streaming with CouchTaterz! 🥔🏆✨
               </p>
             </div>
 

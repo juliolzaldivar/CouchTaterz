@@ -1,0 +1,3011 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CouchTaterz — User Guide & Interactive Manual</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:italic,normal&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- D3.js v7 for Real Interactive Force Graph -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    :root {
+      --bg-canvas: #0c0d0e;
+      --surface-card: #151719;
+      --surface-elevated: #1e2023;
+      --surface-highlight: #272a2f;
+      --border-subtle: #24272c;
+      --border-focus: #373b43;
+      --border-accent: rgba(229, 154, 89, 0.4);
+      --text-primary: #f2f3f5;
+      --text-secondary: #949aa4;
+      --text-muted: #616773;
+      --accent-warm: #e59a59;
+      --accent-warm-light: #f5b985;
+      --accent-soft: rgba(229, 154, 89, 0.12);
+      --accent-glow: rgba(229, 154, 89, 0.05);
+      --accent-green: #34d399;
+      --accent-blue: #60a5fa;
+      --accent-purple: #c084fc;
+      --pill-bg: #1c1f24;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Ambient Glow Background */
+    .ambient-glow {
+      position: fixed;
+      top: -15vw;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70vw;
+      height: 40vw;
+      background: radial-gradient(circle, rgba(229, 154, 89, 0.09) 0%, rgba(12, 13, 14, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .ambient-glow-secondary {
+      position: fixed;
+      bottom: 10vw;
+      right: 5%;
+      width: 45vw;
+      height: 30vw;
+      background: radial-gradient(circle, rgba(96, 165, 250, 0.04) 0%, rgba(12, 13, 14, 0) 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Layout Shell */
+    .container {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header & Nav */
+    header {
+      padding: 2.75rem 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      text-decoration: none;
+      color: var(--text-primary);
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #e59a59 0%, #a46332 100%);
+      display: grid;
+      place-items: center;
+      color: #0c0d0e;
+      box-shadow: 0 4px 12px rgba(229, 154, 89, 0.25);
+    }
+
+    .brand-name {
+      font-weight: 700;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: var(--pill-bg);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-subtle);
+      font-weight: 600;
+    }
+
+    .btn-return {
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: var(--accent-warm);
+      text-decoration: none;
+      padding: 6px 14px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(229, 154, 89, 0.3);
+      border-radius: var(--radius-sm);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-return:hover {
+      background: rgba(229, 154, 89, 0.2);
+      border-color: var(--accent-warm);
+      transform: translateY(-1px);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 5.5rem 0 4rem;
+      max-width: 840px;
+    }
+
+    .hero-eyebrow {
+      color: var(--accent-warm);
+      font-size: 0.875rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .hero h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(2.8rem, 5.5vw, 4.25rem);
+      line-height: 1.08;
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      color: var(--accent-warm);
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      font-weight: 400;
+    }
+
+    /* Quick jump pill bar */
+    .quick-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px dashed var(--border-subtle);
+    }
+
+    .nav-pill {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-decoration: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .nav-pill:hover {
+      color: var(--accent-warm);
+      border-color: var(--accent-warm);
+      background: var(--surface-elevated);
+      transform: translateY(-1px);
+    }
+
+    /* Content Modules */
+    .manual-section {
+      padding: 4.5rem 0;
+      border-top: 1px solid var(--border-subtle);
+      display: grid;
+      grid-template-columns: 280px 1fr;
+      gap: 3rem;
+    }
+
+    .section-meta {
+      position: sticky;
+      top: 2.5rem;
+      height: fit-content;
+    }
+
+    .section-index {
+      font-family: 'Instrument Serif', serif;
+      font-size: 1.6rem;
+      color: var(--accent-warm);
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+    }
+
+    .section-meta h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.75rem;
+      line-height: 1.25;
+    }
+
+    .section-meta p {
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.55;
+    }
+
+    /* Feature Grid & Cards */
+    .cards-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .card:hover {
+      border-color: var(--border-focus);
+      background: var(--surface-elevated);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-soft);
+      color: var(--accent-warm);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .card-icon.blue {
+      background: rgba(96, 165, 250, 0.15);
+      color: var(--accent-blue);
+    }
+
+    .card-icon.purple {
+      background: rgba(192, 132, 252, 0.15);
+      color: var(--accent-purple);
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .card-content {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .feature-list {
+      margin-top: 1rem;
+      list-style: none;
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.625rem;
+      font-size: 0.9375rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .feature-list li i {
+      color: var(--accent-warm);
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    /* Inline Callout */
+    .callout {
+      background: var(--accent-glow);
+      border: 1px solid rgba(229, 154, 89, 0.25);
+      border-radius: var(--radius-md);
+      padding: 1.25rem 1.5rem;
+      margin-top: 1.25rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .callout-icon {
+      color: var(--accent-warm);
+      margin-top: 2px;
+      flex-shrink: 0;
+    }
+
+    .callout-text {
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .callout-text strong {
+      color: var(--accent-warm);
+    }
+
+    /* Interactive Demo Container */
+    .interactive-demo-container {
+      margin-top: 1.5rem;
+      background: #111315;
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 1.5rem;
+      box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    .demo-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--accent-warm);
+      background: var(--accent-soft);
+      padding: 3px 8px;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(229, 154, 89, 0.25);
+    }
+
+    /* =========================================================================
+       SECTION 01 DEMO: ADD SHOWS & BUDDY'S PICKS MODAL SIMULATOR
+       ========================================================================= */
+    .demo-add-modal {
+      background: #181a1d;
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.6);
+    }
+
+    .demo-add-header {
+      background: #1f2227;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .demo-stage-targets {
+      display: inline-flex;
+      background: #111315;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .demo-stage-btn {
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      border: 1px solid transparent;
+      background: transparent;
+      transition: all 0.15s ease;
+    }
+
+    .demo-stage-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .demo-stage-btn.active.watching {
+      background: #2563eb;
+      color: #fff;
+      border-color: #60a5fa;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    }
+
+    .demo-stage-btn.active.up-next {
+      background: #d97706;
+      color: #fff;
+      border-color: #fbbf24;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.4);
+    }
+
+    .demo-stage-btn.active.watched {
+      background: #059669;
+      color: #fff;
+      border-color: #34d399;
+      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.4);
+    }
+
+    .demo-add-btn-blue {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: 1px solid #60a5fa;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+      transition: all 0.2s ease;
+    }
+
+    .demo-add-btn-blue:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.5);
+    }
+
+    .demo-modal-tabs {
+      display: flex;
+      background: #141619;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .demo-modal-tab {
+      flex: 1;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .demo-modal-tab.active {
+      color: var(--accent-warm);
+      border-bottom-color: var(--accent-warm);
+      background: rgba(229, 154, 89, 0.05);
+      font-weight: 700;
+    }
+
+    .demo-modal-body {
+      padding: 1.25rem;
+    }
+
+    .demo-search-input-wrap {
+      position: relative;
+      margin-bottom: 1rem;
+    }
+
+    .demo-search-input {
+      width: 100%;
+      background: #111315;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 9px 12px 9px 36px;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .demo-search-input:focus {
+      border-color: var(--accent-warm);
+    }
+
+    .demo-search-icon {
+      position: absolute;
+      left: 11px;
+      top: 10px;
+      color: var(--text-muted);
+    }
+
+    .demo-show-result-list {
+      display: grid;
+      gap: 0.75rem;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .demo-show-result-row {
+      background: #141619;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      transition: all 0.15s ease;
+    }
+
+    .demo-show-result-row:hover {
+      border-color: var(--border-focus);
+      background: #1c1f24;
+    }
+
+    .demo-row-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .demo-row-poster {
+      width: 36px;
+      height: 48px;
+      border-radius: 4px;
+      background: #2563eb;
+      display: grid;
+      place-items: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .demo-row-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .demo-row-sub {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .demo-btn-add-action {
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: var(--accent-soft);
+      color: var(--accent-warm);
+      border: 1px solid rgba(229, 154, 89, 0.3);
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .demo-btn-add-action:hover {
+      background: var(--accent-warm);
+      color: #0c0d0e;
+      transform: scale(1.03);
+    }
+
+    .demo-btn-add-action.added {
+      background: rgba(52, 211, 153, 0.15);
+      border-color: var(--accent-green);
+      color: var(--accent-green);
+    }
+
+    /* Buddy Picks List */
+    .demo-buddy-pick-card {
+      background: #141619;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border-left: 3px solid #3b82f6;
+    }
+
+    .demo-pick-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .demo-picker-user {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .demo-picker-avatar {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 1px solid var(--accent-blue);
+    }
+
+    .demo-pick-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .demo-pick-quote {
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      font-style: italic;
+    }
+
+    /* =========================================================================
+       SECTION 02 DEMO: SHOW CARD STEPPER & SPUDS AI CHAT
+       ========================================================================= */
+    .demo-show-card {
+      background: #181a1d;
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      transition: all 0.2s ease;
+    }
+
+    .demo-show-card:hover {
+      border-color: var(--accent-warm);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .demo-card-top {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .demo-poster {
+      width: 64px;
+      height: 92px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #1e1b4b 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 6px;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .demo-poster::before {
+      content: "🍎 Apple TV+";
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      font-size: 0.55rem;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .demo-card-details {
+      flex: 1;
+    }
+
+    .demo-card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+
+    .demo-rt-badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      padding: 2px 6px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .demo-genres {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 8px;
+    }
+
+    .demo-genre-pill {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      background: #202327;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Episode Stepper */
+    .demo-stepper-box {
+      background: #121416;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .demo-stepper-info {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .demo-stepper-sub {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    .demo-stepper-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-btn-step {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: #24272c;
+      border: 1px solid #373b43;
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: all 0.15s ease;
+    }
+
+    .demo-btn-step:hover {
+      background: var(--accent-warm);
+      color: #000;
+      border-color: var(--accent-warm);
+      transform: scale(1.05);
+    }
+
+    .demo-progress-bar-bg {
+      height: 6px;
+      background: #22252a;
+      border-radius: 3px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .demo-progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #e59a59, #f59e0b);
+      width: 40%;
+      transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    /* Spuds AI Chat Visual */
+    .demo-spuds-chat {
+      margin-top: 1rem;
+      background: #131518;
+      border: 1px solid rgba(229, 154, 89, 0.3);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+    }
+
+    .demo-spuds-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .demo-spuds-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-warm);
+    }
+
+    .demo-shield-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--accent-green);
+      background: rgba(52, 211, 153, 0.1);
+      border: 1px solid rgba(52, 211, 153, 0.25);
+      padding: 2px 7px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .demo-spuds-prompt-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 0.85rem;
+    }
+
+    .demo-prompt-chip {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      background: #1c1f24;
+      border: 1px solid var(--border-subtle);
+      border-radius: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-prompt-chip:hover, .demo-prompt-chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent-warm);
+      color: var(--accent-warm);
+    }
+
+    .demo-spuds-response {
+      font-size: 0.82rem;
+      color: #e2e8f0;
+      background: #191c20;
+      padding: 0.75rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent-warm);
+      line-height: 1.5;
+      min-height: 48px;
+      transition: opacity 0.2s ease;
+    }
+
+    /* =========================================================================
+       SECTION 03 DEMO: HERO BANNER & QUEUES
+       ========================================================================= */
+    .demo-hero-banner {
+      background: linear-gradient(180deg, rgba(20, 24, 33, 0.9) 0%, rgba(12, 14, 18, 0.98) 100%), #141821;
+      border: 1px solid #2b3342;
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .demo-hero-banner::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 200px;
+      height: 100%;
+      background: radial-gradient(circle at center right, rgba(96, 165, 250, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .demo-hero-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .demo-hero-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .demo-hero-ep {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+    }
+
+    .demo-hero-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .demo-btn-play {
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: #fff;
+      color: #000;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+
+    .demo-btn-play:hover {
+      background: var(--accent-warm);
+      transform: scale(1.02);
+    }
+
+    .demo-btn-mark {
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-btn-mark:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .demo-queue-tabs {
+      display: flex;
+      gap: 4px;
+      background: #151719;
+      padding: 4px;
+      border-radius: 8px;
+      margin-top: 1rem;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .demo-queue-tab {
+      flex: 1;
+      text-align: center;
+      padding: 6px 10px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-queue-tab.active {
+      background: #24272c;
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .demo-queue-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 0.75rem;
+    }
+
+    .demo-queue-item {
+      background: #181a1d;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.75rem;
+    }
+
+    .demo-queue-item strong {
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .demo-queue-item span {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+    }
+
+    /* =========================================================================
+       SECTION 04 DEMO: CALENDAR STRIP & CHRONOLOGICAL LIST
+       ========================================================================= */
+    .demo-cal-toggle-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 0.75rem;
+    }
+
+    .demo-cal-view-toggle {
+      display: inline-flex;
+      background: #111315;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 2px;
+      gap: 2px;
+    }
+
+    .demo-cal-toggle-btn {
+      padding: 4px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      border: 1px solid transparent;
+      background: transparent;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .demo-cal-toggle-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #60a5fa;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    }
+
+    .demo-cal-list-card {
+      background: #181b22;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .demo-cal-list-card:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+      background: #1c2028;
+    }
+
+    .demo-cal-thumb-wrap {
+      position: relative;
+      width: 88px;
+      aspect-ratio: 16 / 10;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #0e1015;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
+    }
+
+    .demo-cal-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .demo-cal-thumb-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .demo-cal-thumb-pill {
+      position: absolute;
+      bottom: 3px;
+      left: 3px;
+      font-size: 0.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 1px 4px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .demo-cal-badge-ep {
+      font-size: 0.68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 1px 5px;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      letter-spacing: 0.05em;
+    }
+
+    .demo-cal-strip {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-top: 0.5rem;
+    }
+
+    .demo-cal-day {
+      background: #17191c;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 8px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-cal-day:hover, .demo-cal-day.active {
+      border-color: #60a5fa;
+      background: rgba(37, 99, 235, 0.15);
+    }
+
+    .demo-cal-day.has-release {
+      border-color: rgba(96, 165, 250, 0.4);
+      background: rgba(37, 99, 235, 0.08);
+    }
+
+    .demo-cal-name {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+
+    .demo-cal-num {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 2px 0;
+    }
+
+    .demo-cal-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: #60a5fa;
+      margin: 0 auto;
+    }
+
+    .demo-cal-preview {
+      margin-top: 0.75rem;
+      background: #17191c;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      gap: 0.75rem;
+    }
+
+    .demo-cal-list-container {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .demo-cal-list-row {
+      background: #17191c;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      transition: all 0.15s ease;
+    }
+
+    .demo-cal-list-row:hover {
+      border-color: var(--border-focus);
+      background: #1c1f24;
+    }
+
+    .demo-cal-platform-tag {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+    }
+
+    .demo-cal-countdown-tag {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: #111315;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+    }
+
+    .demo-cal-countdown-tag.imminent {
+      background: rgba(37, 99, 235, 0.2);
+      border-color: rgba(96, 165, 250, 0.4);
+      color: #93c5fd;
+    }
+
+    .demo-btn-export {
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(37, 99, 235, 0.15);
+      color: #93c5fd;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .demo-btn-export:hover {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .demo-btn-export:hover {
+      background: var(--accent-warm);
+      color: #000;
+    }
+
+    /* =========================================================================
+       SECTION 05 DEMO: REAL INTERACTIVE D3 FORCE NETWORK GRAPH
+       ========================================================================= */
+    .demo-d3-wrapper {
+      background: #121417;
+      border: 1px solid var(--border-focus);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .demo-d3-toolbar {
+      padding: 0.75rem 1rem;
+      background: #171a1e;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .demo-d3-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-d3-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .demo-graph-filter-btn {
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: #20242a;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-graph-filter-btn.active, .demo-graph-filter-btn:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent-warm);
+      color: var(--accent-warm);
+    }
+
+    .demo-graph-zoom-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: #20242a;
+      border: 1px solid var(--border-subtle);
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+    }
+
+    .demo-graph-zoom-btn:hover {
+      background: var(--border-focus);
+    }
+
+    .demo-d3-canvas-wrap {
+      position: relative;
+      height: 380px;
+      width: 100%;
+      background: #0f1114;
+      overflow: hidden;
+      cursor: grab;
+    }
+
+    .demo-d3-canvas-wrap:active {
+      cursor: grabbing;
+    }
+
+    #d3-network-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* Side Inspector Overlay for Graph */
+    .demo-graph-inspector {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      right: 12px;
+      background: rgba(22, 25, 30, 0.95);
+      border: 1px solid var(--border-focus);
+      backdrop-filter: blur(8px);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+      transition: all 0.2s ease;
+      z-index: 10;
+    }
+
+    .demo-inspector-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .demo-inspector-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 2px solid var(--accent-warm);
+    }
+
+    .demo-inspector-name {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .demo-inspector-sub {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+    }
+
+    /* =========================================================================
+       SECTION 06 DEMO: PIXEL ART DICEBEAR STUDIO
+       ========================================================================= */
+    .demo-pixel-studio {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 1.25rem;
+      align-items: center;
+    }
+
+    .demo-pixel-avatar-frame {
+      width: 140px;
+      height: 140px;
+      background: #181a1d;
+      border: 2px solid var(--border-focus);
+      border-radius: var(--radius-md);
+      display: grid;
+      place-items: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .demo-pixel-avatar-img {
+      width: 110px;
+      height: 110px;
+      image-rendering: pixelated;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .demo-pixel-avatar-frame.animating .demo-pixel-avatar-img {
+      transform: scale(1.15) rotate(5deg);
+    }
+
+    .demo-pixel-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .demo-seed-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .demo-seed-btn {
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 5px 10px;
+      background: #1c1f24;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .demo-seed-btn:hover, .demo-seed-btn.active {
+      background: var(--accent-soft);
+      border-color: var(--accent-warm);
+      color: var(--accent-warm);
+    }
+
+    .demo-randomize-btn {
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 7px 14px;
+      background: linear-gradient(135deg, #e59a59 0%, #b45309 100%);
+      color: #0c0d0e;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      width: fit-content;
+    }
+
+    .demo-randomize-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(229, 154, 89, 0.35);
+    }
+
+    .demo-taste-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 0.5rem;
+    }
+
+    .demo-taste-tag {
+      font-size: 0.72rem;
+      padding: 3px 9px;
+      border-radius: 12px;
+      background: #1c1f24;
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+
+    .demo-taste-tag.selected {
+      background: rgba(96, 165, 250, 0.15);
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* Toast Notification for Demos */
+    .demo-toast {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: #1e2126;
+      color: #fff;
+      border: 1px solid var(--accent-warm);
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .demo-toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 4rem 0;
+      margin-top: 4rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 860px) {
+      .manual-section {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+      }
+      .section-meta {
+        position: static;
+      }
+      .demo-pixel-studio {
+        grid-template-columns: 1fr;
+      }
+      .demo-queue-list {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="ambient-glow"></div>
+  <div class="ambient-glow-secondary"></div>
+
+  <!-- Interactive Toast Notification -->
+  <div id="demo-toast" class="demo-toast">
+    <i data-lucide="check-circle" style="width: 16px; height: 16px; color: var(--accent-warm);"></i>
+    <span id="demo-toast-msg">Action simulated!</span>
+  </div>
+
+  <div class="container">
+    
+    <!-- Top Nav -->
+    <header>
+      <a href="/" class="brand">
+        <div class="brand-mark">
+          <i data-lucide="tv" style="width: 20px; height: 20px;"></i>
+        </div>
+        <span class="brand-name">CouchTaterz</span>
+      </a>
+      <div class="header-actions">
+        <span class="badge">Interactive User Guide</span>
+        <a href="/" class="btn-return">
+          <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+          Open App
+        </a>
+      </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-eyebrow">
+        <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
+        Interactive Guide & Operational Manual
+      </div>
+      <h1>Social tracking, zero spoilers, <em>pure television.</em></h1>
+      <p>
+        Welcome to CouchTaterz. Master your TV tracking in minutes: discover shows directly or borrow friend favorites, step through episodes with spoiler-free AI assistance, explore the live D3 social graph, and customize your retro pixel studio.
+      </p>
+
+      <div class="quick-nav">
+        <a href="#add-shows" class="nav-pill">
+          <i data-lucide="plus-circle" style="width: 13px; height: 13px;"></i> 01 Adding Content & Shows
+        </a>
+        <a href="#dashboard" class="nav-pill">
+          <i data-lucide="layers" style="width: 13px; height: 13px;"></i> 02 Dashboard & Queues
+        </a>
+        <a href="#show-cards" class="nav-pill">
+          <i data-lucide="sliders" style="width: 13px; height: 13px;"></i> 03 Show Cards & Spuds
+        </a>
+        <a href="#navigation" class="nav-pill">
+          <i data-lucide="calendar" style="width: 13px; height: 13px;"></i> 04 Navigation & Calendars
+        </a>
+        <a href="#social" class="nav-pill">
+          <i data-lucide="users" style="width: 13px; height: 13px;"></i> 05 Binge Network & Social
+        </a>
+        <a href="#profile" class="nav-pill">
+          <i data-lucide="user-check" style="width: 13px; height: 13px;"></i> 06 Profile & Pixel Studio
+        </a>
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 01: Adding Content & Shows (Discovery + Buddy's Picks Tab)
+         ========================================================================= -->
+    <section class="manual-section" id="add-shows">
+      <div class="section-meta">
+        <div class="section-index">01</div>
+        <h2>Adding Content & Shows</h2>
+        <p>Two primary discovery pathways allow you to curate and populate your active rotation without clutter: search millions of titles in the global catalog, or leverage your Binge Buddies network through two frictionless friend-vetted borrowing methods.</p>
+      </div>
+      <div class="cards-stack">
+        
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="plus-circle" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">Two Core Pathways & Three Direct Entry Points</h3>
+          </div>
+          <div class="card-content">
+            CouchTaterz is designed for rapid, friction-free show discovery. You can curate your queue across two primary discovery pathways (featuring three direct entry points):
+          </div>
+          <ul class="feature-list">
+            <li>
+              <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+              <span><strong>1. Pathway 1: Global Search ("+ Add Shows" Modal):</strong> Open the global catalog modal from the dashboard header or bottom nav. Search millions of titles with instant auto-suggestions, Rotten Tomatoes scores (e.g., 🍅 98%), and platform badges (Apple TV+, Hulu, Max, Netflix).</span>
+            </li>
+            <li>
+              <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+              <span><strong>2A. Pathway 2A: Social Discovery via "Buddy's Picks" Tab:</strong> Inside the Add Shows modal, switch to the <strong>Buddy's Picks</strong> tab. Browse trusted titles recommended and rated by your inner circle (like Julio, AnnaDee, and Rafael) and add them to your queue with a single click.</span>
+            </li>
+            <li>
+              <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+              <span><strong>2B. Pathway 2B: Social Discovery via Friends' Dashboards:</strong> Switch directly to any connected friend's dashboard using the <strong>Binge Buddies</strong> dropdown in the top header. As you explore what your buddies are watching or have queued up, click the <strong>"+"</strong> button directly on any show card to instantly copy it into your own queue.</span>
+            </li>
+          </ul>
+
+          <div class="callout">
+            <i data-lucide="info" class="callout-icon" style="width: 18px; height: 18px;"></i>
+            <div class="callout-text">
+              <strong>Queue Targeting:</strong> When adding any title, choose which queue it lands in (<span style="color: #60a5fa; font-weight: 700;">Watching</span>, <span style="color: #fbbf24; font-weight: 700;">Up Next</span>, or <span style="color: #34d399; font-weight: 700;">Watched</span>). <em>For an in-depth breakdown of tier filters, episode trackers, and air banner states, see Section 02 below.</em>
+            </div>
+          </div>
+
+          <!-- Interactive Add Show & Buddy's Picks Sandbox -->
+          <div class="interactive-demo-container">
+            <div class="demo-badge">
+              <i data-lucide="play" style="width: 11px; height: 11px;"></i>
+              Interactive Example: Add Show & Buddy's Picks Modal Simulator
+            </div>
+
+            <div class="demo-add-modal">
+              <div class="demo-add-header">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span id="manual-stage-dot" style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; box-shadow: 0 0 8px rgba(59, 130, 246, 0.6); display: inline-block;"></span>
+                  <span style="font-size: 0.85rem; font-weight: 700; color: #fff;">
+                    Add Title to Your Watchboard
+                  </span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 0.72rem; color: var(--text-secondary);">Target Queue:</span>
+                  <div class="demo-stage-targets">
+                    <button id="stage-btn-watching" class="demo-stage-btn active watching" onclick="setManualTargetStage('Watching')">Watching</button>
+                    <button id="stage-btn-upnext" class="demo-stage-btn up-next" onclick="setManualTargetStage('Up Next')">Up Next</button>
+                    <button id="stage-btn-watched" class="demo-stage-btn watched" onclick="setManualTargetStage('Watched')">Watched</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabs: Search vs Buddy's Picks -->
+              <div class="demo-modal-tabs">
+                <div id="tab-search-btn" class="demo-modal-tab active" onclick="switchAddTab('search')">
+                  <i data-lucide="search" style="width: 14px; height: 14px;"></i>
+                  Search Global Catalog
+                </div>
+                <div id="tab-picks-btn" class="demo-modal-tab" onclick="switchAddTab('picks')">
+                  <i data-lucide="users" style="width: 14px; height: 14px;"></i>
+                  Buddy's Picks Tab
+                </div>
+              </div>
+
+              <div class="demo-modal-body">
+                
+                <!-- Tab 1: Global Search -->
+                <div id="demo-tab-search-content">
+                  <div class="demo-search-input-wrap">
+                    <i data-lucide="search" class="demo-search-icon" style="width: 16px; height: 16px;"></i>
+                    <input 
+                      type="text" 
+                      id="demo-search-box" 
+                      class="demo-search-input" 
+                      placeholder="Type show title (e.g. Severance, Shōgun, The Bear)..."
+                      value="Severance"
+                      oninput="filterDemoSearchResults(this.value)"
+                    />
+                  </div>
+
+                  <div id="demo-search-results" class="demo-show-result-list">
+                    <div class="demo-show-result-row">
+                      <div class="demo-row-info">
+                        <div class="demo-row-poster">SEV</div>
+                        <div>
+                          <div class="demo-row-title">Severance</div>
+                          <div class="demo-row-sub">
+                            <span>🍎 Apple TV+</span> &bull; 
+                            <span style="color: #f87171;">🍅 98%</span> &bull; 
+                            <span>Sci-Fi / Thriller</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button class="demo-btn-add-action" onclick="borrowShow(this, 'Severance', 'Watching')">
+                        <i data-lucide="plus" style="width: 13px; height: 13px;"></i> + Add to Watching
+                      </button>
+                    </div>
+
+                    <div class="demo-show-result-row">
+                      <div class="demo-row-info">
+                        <div class="demo-row-poster" style="background: #059669;">BEAR</div>
+                        <div>
+                          <div class="demo-row-title">The Bear</div>
+                          <div class="demo-row-sub">
+                            <span>🟢 Hulu</span> &bull; 
+                            <span style="color: #f87171;">🍅 99%</span> &bull; 
+                            <span>Culinary Drama</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button class="demo-btn-add-action" onclick="borrowShow(this, 'The Bear', 'Up Next')">
+                        <i data-lucide="clock" style="width: 13px; height: 13px;"></i> + Add to Up Next
+                      </button>
+                    </div>
+
+                    <div class="demo-show-result-row">
+                      <div class="demo-row-info">
+                        <div class="demo-row-poster" style="background: #7c3aed;">SHOG</div>
+                        <div>
+                          <div class="demo-row-title">Shōgun</div>
+                          <div class="demo-row-sub">
+                            <span>🟢 Hulu / FX</span> &bull; 
+                            <span style="color: #f87171;">🍅 99%</span> &bull; 
+                            <span>Historical Drama</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button class="demo-btn-add-action" onclick="borrowShow(this, 'Shōgun', 'Up Next')">
+                        <i data-lucide="clock" style="width: 13px; height: 13px;"></i> + Add to Up Next
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tab 2: Buddy's Picks -->
+                <div id="demo-tab-picks-content" style="display: none;">
+                  <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem;">
+                    Shows recommended and scored by your active Binge Buddies:
+                  </div>
+
+                  <!-- Pick 1 -->
+                  <div class="demo-buddy-pick-card">
+                    <div class="demo-pick-header">
+                      <div class="demo-picker-user">
+                        <img class="demo-picker-avatar" src="https://api.dicebear.com/9.x/pixel-art/svg?seed=LazyPotato_3661&backgroundColor=1e293b&hairColor%5B%5D=261308&glassesProbability=0&mouth%5B%5D=happy04&eyes%5B%5D=variant08&eyesColor%5B%5D=48210a&clothing%5B%5D=variant03&clothingColor%5B%5D=141414&hatProbability=0&beardProbability=100&beard%5B%5D=variant01&accessoriesProbability=0" alt="Julio" />
+                        <strong style="color: #fff;">Julio</strong> recommended:
+                      </div>
+                      <span style="font-size: 0.75rem; font-weight: 700; color: #fbbf24;">⭐ 9.8 / 10</span>
+                    </div>
+                    <div class="demo-pick-content">
+                      <div>
+                        <strong style="color: #fff; font-size: 0.92rem;">Severance (Season 2)</strong>
+                        <div class="demo-pick-quote">"The season premiere is pure genius. Incredible cinematography."</div>
+                      </div>
+                      <button class="demo-btn-add-action" onclick="borrowShow(this, 'Severance (from Julio)', 'Watching')">
+                        <i data-lucide="bookmark-plus" style="width: 13px; height: 13px;"></i> Borrow Pick
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Pick 2 -->
+                  <div class="demo-buddy-pick-card" style="border-left-color: #ec4899;">
+                    <div class="demo-pick-header">
+                      <div class="demo-picker-user">
+                        <img class="demo-picker-avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=AnnaDee" alt="AnnaDee" />
+                        <strong style="color: #fff;">AnnaDee</strong> recommended:
+                      </div>
+                      <span style="font-size: 0.75rem; font-weight: 700; color: #fbbf24;">⭐ 9.5 / 10</span>
+                    </div>
+                    <div class="demo-pick-content">
+                      <div>
+                        <strong style="color: #fff; font-size: 0.92rem;">The Bear (Season 3)</strong>
+                        <div class="demo-pick-quote">"Intense kitchen pacing. Episode 1 montage was breathtaking."</div>
+                      </div>
+                      <button class="demo-btn-add-action" onclick="borrowShow(this, 'The Bear (from AnnaDee)', 'Up Next')">
+                        <i data-lucide="bookmark-plus" style="width: 13px; height: 13px;"></i> Borrow Pick
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Pick 3 -->
+                  <div class="demo-buddy-pick-card" style="border-left-color: #10b981;">
+                    <div class="demo-pick-header">
+                      <div class="demo-picker-user">
+                        <img class="demo-picker-avatar" src="https://api.dicebear.com/7.x/pixel-art/svg?seed=Rafael" alt="Rafael" />
+                        <strong style="color: #fff;">Rafael</strong> recommended:
+                      </div>
+                      <span style="font-size: 0.75rem; font-weight: 700; color: #fbbf24;">⭐ 9.2 / 10</span>
+                    </div>
+                    <div class="demo-pick-content">
+                      <div>
+                        <strong style="color: #fff; font-size: 0.92rem;">The White Lotus (Season 3)</strong>
+                        <div class="demo-pick-quote">"Thailand setting is gorgeous. Sharp social satire."</div>
+                      </div>
+                      <button class="demo-btn-add-action" onclick="borrowShow(this, 'The White Lotus (from Rafael)', 'Up Next')">
+                        <i data-lucide="bookmark-plus" style="width: 13px; height: 13px;"></i> Borrow Pick
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 02: Dashboard & Queues
+         ========================================================================= -->
+    <section class="manual-section" id="dashboard">
+      <div class="section-meta">
+        <div class="section-index">02</div>
+        <h2>Dashboard & Queues</h2>
+        <p>Intelligent triage for what’s on now and what’s waiting.</p>
+      </div>
+      <div class="cards-stack">
+        
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="sparkles" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">Dynamic Hero Banner</h3>
+          </div>
+          <div class="card-content">
+            Automatically surfaces your immediate next episode across all active subscriptions, showing premiere airtimes, premises, and direct streaming links.
+          </div>
+
+          <!-- Interactive Hero Banner & Queues Demo -->
+          <div class="interactive-demo-container">
+            <div class="demo-badge">
+              <i data-lucide="tv" style="width: 11px; height: 11px;"></i>
+              Interactive Example: Hero Banner & Queue Tiers
+            </div>
+
+            <div class="demo-hero-banner">
+              <div class="demo-hero-tag">
+                <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
+                Up Next In Your Active Queue &bull; Max
+              </div>
+              <div class="demo-hero-title">The Last of Us (Season 2)</div>
+              <div class="demo-hero-ep">Episode 1: "Future Days" &bull; Premieres Sunday 9:00 PM EST</div>
+              <div class="demo-hero-actions">
+                <button class="demo-btn-play" onclick="showToast('Launching HBO Max playback...')">
+                  <i data-lucide="play" style="width: 14px; height: 14px;"></i> Play Next
+                </button>
+                <button class="demo-btn-mark" onclick="showToast('Marked Season 2 Episode 1 as watched!')">
+                  ✓ Mark Watched
+                </button>
+              </div>
+            </div>
+
+            <!-- Queue Tabs Switcher -->
+            <div class="demo-queue-tabs">
+              <div class="demo-queue-tab active" onclick="switchQueueTab('watching', this)">Watching (3)</div>
+              <div class="demo-queue-tab" onclick="switchQueueTab('upnext', this)">Up Next (8)</div>
+              <div class="demo-queue-tab" onclick="switchQueueTab('watched', this)">Watched (42)</div>
+            </div>
+
+            <div id="demo-queue-content" class="demo-queue-list">
+              <div class="demo-queue-item">
+                <strong>Severance</strong>
+                <span>S2:E4 &bull; Apple TV+</span>
+              </div>
+              <div class="demo-queue-item">
+                <strong>Shōgun</strong>
+                <span>S1:E8 &bull; Hulu</span>
+              </div>
+              <div class="demo-queue-item">
+                <strong>The Bear</strong>
+                <span>S3:E6 &bull; Hulu</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="layers" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">The Three Queue Tiers</h3>
+          </div>
+          <ul class="feature-list">
+            <li>
+              <i data-lucide="play" style="width: 16px; height: 16px;"></i>
+              <span><strong>Watching:</strong> Active priorities. Gives your AI assistant clear boundary limits to prevent spoilers and push live release alerts.</span>
+            </li>
+            <li>
+              <i data-lucide="clock" style="width: 16px; height: 16px;"></i>
+              <span><strong>Up Next:</strong> Your organized backlog. Automatically stages shows until space clears in your active rotation.</span>
+            </li>
+            <li>
+              <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
+              <span><strong>Watched:</strong> Completed series history for long-term ratings, rewatch tracking, and friend recommendations.</span>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 03: Show Cards & Spuds AI
+         ========================================================================= -->
+    <section class="manual-section" id="show-cards">
+      <div class="section-meta">
+        <div class="section-index">03</div>
+        <h2>Show Cards & Spuds AI</h2>
+        <p>Granular episode tracking meets mathematical spoiler protection.</p>
+      </div>
+      <div class="cards-stack">
+        
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="sliders" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">Card Actions & Logging</h3>
+          </div>
+          <div class="card-content">
+            Manage individual titles with zero friction through progressive episode counters, custom micro-reviews, and direct streaming shortcuts:
+          </div>
+          <ul class="feature-list">
+            <li>
+              <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+              <span><strong>Card Header:</strong> Quick delete, send to a buddy, share reviews to social media, or launch deep-linked streaming apps.</span>
+            </li>
+            <li>
+              <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+              <span><strong>Progress & Reviews:</strong> Update season/episode selectors, record 1–2 sentence micro-takes, or submit 0–10 overall ratings.</span>
+            </li>
+          </ul>
+
+          <!-- Interactive Show Card Demo -->
+          <div class="interactive-demo-container">
+            <div class="demo-badge">
+              <i data-lucide="play" style="width: 11px; height: 11px;"></i>
+              Interactive Example: Live Show Card Stepper
+            </div>
+
+            <div class="demo-show-card">
+              <div class="demo-card-top">
+                <div class="demo-poster">SEVERANCE</div>
+                <div class="demo-card-details">
+                  <div class="demo-card-title">
+                    <span>Severance</span>
+                    <span class="demo-rt-badge">🍅 98% Fresh</span>
+                  </div>
+                  <div class="demo-genres">
+                    <span class="demo-genre-pill">Sci-Fi Thriller</span>
+                    <span class="demo-genre-pill">Workplace</span>
+                    <span class="demo-genre-pill">⭐ 9.6 / 10</span>
+                  </div>
+                  <p style="font-size: 0.78rem; color: var(--text-secondary); line-height: 1.4;">
+                    Mark Scout leads a team at Lumon Industries whose employees have undergone a severance procedure.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Interactive Stepper -->
+              <div class="demo-stepper-box">
+                <div>
+                  <div class="demo-stepper-info">
+                    Season 2 &bull; <span id="demo-ep-label">Episode 4 of 10</span>
+                  </div>
+                  <div class="demo-stepper-sub" id="demo-ep-title">"The Grimlo Memo" (Tracked to S2:E4)</div>
+                  <div class="demo-progress-bar-bg">
+                    <div id="demo-progress-fill" class="demo-progress-bar-fill" style="width: 40%;"></div>
+                  </div>
+                </div>
+
+                <div class="demo-stepper-controls">
+                  <button class="demo-btn-step" onclick="adjustEpisode(-1)" title="Previous Episode">-</button>
+                  <button class="demo-btn-step" onclick="adjustEpisode(1)" title="Next Episode">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Spuds AI Card -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="bot" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">Catch Up with Spuds (AI Companion)</h3>
+          </div>
+          <div class="card-content">
+            Spuds automatically reads your exact viewing state. Ask for character recaps, plot reminders, or related recommendations without ever risking future spoilers.
+          </div>
+
+          <!-- Interactive Spuds AI Chat Sandbox -->
+          <div class="interactive-demo-container">
+            <div class="demo-badge">
+              <i data-lucide="bot" style="width: 11px; height: 11px;"></i>
+              Interactive Example: Spoiler Shield Chat
+            </div>
+
+            <div class="demo-spuds-chat">
+              <div class="demo-spuds-header">
+                <div class="demo-spuds-title">
+                  <i data-lucide="sparkles" style="width: 14px; height: 14px;"></i>
+                  Spuds AI Companion
+                </div>
+                <div class="demo-shield-badge">
+                  <i data-lucide="shield-check" style="width: 12px; height: 12px;"></i>
+                  <span id="demo-spuds-boundary">Shield Active: Locked to S2:E4</span>
+                </div>
+              </div>
+
+              <div class="demo-spuds-prompt-chips">
+                <button class="demo-prompt-chip active" onclick="askSpuds('recap')">💡 Recap recent events</button>
+                <button class="demo-prompt-chip" onclick="askSpuds('helly')">🔍 Who is Helly R.?</button>
+                <button class="demo-prompt-chip" onclick="askSpuds('next')">⏱️ When does Ep 5 air?</button>
+              </div>
+
+              <div id="demo-spuds-output" class="demo-spuds-response">
+                <strong>Spuds:</strong> As of S2:E4, Mark is attempting to decode the contraband manual smuggled out of Macrodata Refinement while Dylan questions Cobel's new protocol. (No plot points beyond S2:E4 revealed!)
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 04 (Originally 4): Navigation & Calendars
+         ========================================================================= -->
+    <section class="manual-section" id="navigation">
+      <div class="section-meta">
+        <div class="section-index">04</div>
+        <h2>Navigation & Calendars</h2>
+        <p>Tools designed to track airtimes and sync real-world schedules.</p>
+      </div>
+      <div class="cards-stack">
+        
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="calendar" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">Release Calendar & Schedules</h3>
+          </div>
+          <div class="card-content">
+            Track upcoming episodes across all your streaming services. Choose between the visual <strong>Month Matrix Grid</strong> to spot multi-day premiere clusters or the <strong>Chronological List View</strong> for an ordered upcoming release feed, complete with direct 1-click export to <strong>Google, iOS, or Outlook</strong> calendars.
+          </div>
+
+          <!-- Interactive Calendar / List Demo -->
+          <div class="interactive-demo-container">
+            <div class="demo-cal-toggle-bar">
+              <div class="demo-badge" style="margin-bottom: 0;">
+                <i data-lucide="calendar" style="width: 11px; height: 11px;"></i>
+                Interactive Example: Air Date Radar
+              </div>
+
+              <!-- View Switcher Toggle -->
+              <div class="demo-cal-view-toggle">
+                <button id="btn-cal-grid" class="demo-cal-toggle-btn" onclick="toggleCalView('grid')">
+                  <i data-lucide="calendar-days" style="width: 12px; height: 12px;"></i> Calendar Grid
+                </button>
+                <button id="btn-cal-list" class="demo-cal-toggle-btn active" onclick="toggleCalView('list')">
+                  <i data-lucide="list-filter" style="width: 12px; height: 12px;"></i> Chronological List
+                </button>
+              </div>
+            </div>
+
+            <!-- View 1: Calendar Strip -->
+            <div id="demo-cal-view-grid" style="display: none;">
+              <div class="demo-cal-strip">
+                <div class="demo-cal-day" onclick="selectCalDay('Mon', 'No scheduled drops', this)">
+                  <div class="demo-cal-name">Mon</div>
+                  <div class="demo-cal-num">24</div>
+                </div>
+                <div class="demo-cal-day" onclick="selectCalDay('Tue', 'No scheduled drops', this)">
+                  <div class="demo-cal-name">Tue</div>
+                  <div class="demo-cal-num">25</div>
+                </div>
+                <div class="demo-cal-day has-release" onclick="selectCalDay('Wed', 'The Bear S3:E7 (Hulu)', this)">
+                  <div class="demo-cal-name">Wed</div>
+                  <div class="demo-cal-num">26</div>
+                  <div class="demo-cal-dot"></div>
+                </div>
+                <div class="demo-cal-day" onclick="selectCalDay('Thu', 'No scheduled drops', this)">
+                  <div class="demo-cal-name">Thu</div>
+                  <div class="demo-cal-num">27</div>
+                </div>
+                <div class="demo-cal-day active has-release" onclick="selectCalDay('Fri', 'Severance S2:E5 (Apple TV+)', this)">
+                  <div class="demo-cal-name">Fri</div>
+                  <div class="demo-cal-num">28</div>
+                  <div class="demo-cal-dot"></div>
+                </div>
+                <div class="demo-cal-day" onclick="selectCalDay('Sat', 'No scheduled drops', this)">
+                  <div class="demo-cal-name">Sat</div>
+                  <div class="demo-cal-num">29</div>
+                </div>
+                <div class="demo-cal-day has-release" onclick="selectCalDay('Sun', 'The White Lotus S3:E2 (Max)', this)">
+                  <div class="demo-cal-name">Sun</div>
+                  <div class="demo-cal-num">30</div>
+                  <div class="demo-cal-dot"></div>
+                </div>
+              </div>
+
+              <div class="demo-cal-preview">
+                <div>
+                  <strong id="demo-cal-title" style="color: #fff;">Severance &bull; Season 2, Episode 5</strong>
+                  <div id="demo-cal-sub" style="font-size: 0.72rem; color: var(--text-secondary);">Friday &bull; 9:00 PM EST on Apple TV+</div>
+                </div>
+                <button class="demo-btn-export" onclick="showToast('Exported Severance S2:E5 to Google Calendar (.ics)')">
+                  <i data-lucide="download" style="width: 12px; height: 12px;"></i> Export Sync
+                </button>
+              </div>
+            </div>
+
+            <!-- View 2: Chronological List (Default) -->
+            <div id="demo-cal-view-list" style="display: block;">
+              <div class="demo-cal-list-container">
+                
+                <!-- Airing This Week Group -->
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 4px;">
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block;"></span>
+                  <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #6ee7b7;">Airing This Week (2)</span>
+                </div>
+
+                <!-- Show 1: Severance -->
+                <div class="demo-cal-list-card">
+                  <div class="demo-cal-thumb-wrap">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNACrAMoLkgMH0e47maB2DZ7OeMG3ZWBtuheU7rgkUdg&s=10" alt="Severance" class="demo-cal-thumb-img" />
+                    <div class="demo-cal-thumb-overlay"></div>
+                    <span class="demo-cal-thumb-pill" style="background: rgba(30, 41, 59, 0.9); color: #cbd5e1; border-color: rgba(255,255,255,0.15);">Apple TV+</span>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                      <strong style="color: #fff; font-size: 0.85rem; font-weight: 800;">Severance</strong>
+                      <span class="demo-cal-badge-ep">S2E5</span>
+                    </div>
+                    <div style="font-size: 0.72rem; font-weight: 600; color: #cbd5e1; margin-top: 2px;">
+                      "The Grim Barbarity"
+                    </div>
+                    <div style="font-size: 0.68rem; font-weight: 700; color: #34d399; margin-top: 3px;">
+                      Tonight at 9:00 PM &bull; Fri, Feb 28
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                      <button class="demo-btn-export" style="background: #2563eb; color: #fff; border-color: #60a5fa;" onclick="showToast('Marked Severance S2:E5 as Watched!')">
+                        <i data-lucide="check" style="width: 11px; height: 11px;"></i> Watched
+                      </button>
+                      <button class="demo-btn-export" onclick="showToast('Exported Severance S2:E5 to calendar (.ics)')">
+                        <i data-lucide="calendar" style="width: 11px; height: 11px;"></i> Sync
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Show 2: The Bear -->
+                <div class="demo-cal-list-card">
+                  <div class="demo-cal-thumb-wrap">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxpFNAmFk_IZGbaryDs3GkM5lnyWEjGt6USNocYJPA&s=10" alt="The Bear" class="demo-cal-thumb-img" />
+                    <div class="demo-cal-thumb-overlay"></div>
+                    <span class="demo-cal-thumb-pill" style="background: rgba(6, 78, 59, 0.9); color: #6ee7b7; border-color: rgba(52, 211, 153, 0.3);">Hulu</span>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                      <strong style="color: #fff; font-size: 0.85rem; font-weight: 800;">The Bear</strong>
+                      <span class="demo-cal-badge-ep">S3E7</span>
+                    </div>
+                    <div style="font-size: 0.72rem; font-weight: 600; color: #cbd5e1; margin-top: 2px;">
+                      "Legacy"
+                    </div>
+                    <div style="font-size: 0.68rem; font-weight: 700; color: #fcd34d; margin-top: 3px;">
+                      In 3 Days &bull; Wed, Mar 4
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                      <button class="demo-btn-export" onclick="showToast('Exported The Bear S3:E7 to calendar (.ics)')">
+                        <i data-lucide="calendar" style="width: 11px; height: 11px;"></i> Sync
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Airing Next Week Group -->
+                <div style="display: flex; align-items: center; gap: 6px; margin-top: 8px;">
+                  <span style="width: 6px; height: 6px; border-radius: 50%; background: #60a5fa; display: inline-block;"></span>
+                  <span style="font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #93c5fd;">Airing Next Week (1)</span>
+                </div>
+
+                <!-- Show 3: The White Lotus -->
+                <div class="demo-cal-list-card">
+                  <div class="demo-cal-thumb-wrap">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS4CAM-wqcRw4IGHQqCO8buc7syl9Xps3udfelzvffwiQ&s=10" alt="The White Lotus" class="demo-cal-thumb-img" />
+                    <div class="demo-cal-thumb-overlay"></div>
+                    <span class="demo-cal-thumb-pill" style="background: rgba(49, 46, 129, 0.9); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.3);">Max</span>
+                  </div>
+                  <div style="flex: 1; min-width: 0;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px;">
+                      <strong style="color: #fff; font-size: 0.85rem; font-weight: 800;">The White Lotus</strong>
+                      <span class="demo-cal-badge-ep">S3E2</span>
+                    </div>
+                    <div style="font-size: 0.72rem; font-weight: 600; color: #cbd5e1; margin-top: 2px;">
+                      "Special Offerings"
+                    </div>
+                    <div style="font-size: 0.68rem; font-weight: 700; color: #94a3b8; margin-top: 3px;">
+                      Next Sunday &bull; Sun, Mar 8
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 6px; margin-top: 6px;">
+                      <button class="demo-btn-export" onclick="showToast('Exported The White Lotus S3:E2 to calendar (.ics)')">
+                        <i data-lucide="calendar" style="width: 11px; height: 11px;"></i> Sync
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 05 (Originally 5): Social & Real D3 Network Graph
+         ========================================================================= -->
+    <section class="manual-section" id="social">
+      <div class="section-meta">
+        <div class="section-index">05</div>
+        <h2>Binge Network & Social Graph</h2>
+        <p>Interactive force-directed visualization of your circle and shared shows.</p>
+      </div>
+      <div class="cards-stack">
+        
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon purple"><i data-lucide="share-2" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">The Real-Time Interactive Binge Network</h3>
+          </div>
+          <div class="card-content">
+            CouchTaterz features a live, physical D3 graph engine that links you, your Binge Buddies, and the shows you mutually watch. Drag nodes, zoom in/out, or click any node to inspect their profile:
+          </div>
+
+          <div class="callout">
+            <i data-lucide="info" class="callout-icon" style="width: 18px; height: 18px;"></i>
+            <div class="callout-text">
+              <strong>Pre-seeded Connection:</strong> Every new account starts with <strong>Julio</strong> connected. Expand from 5 up to 10 connections based on your tier.
+            </div>
+          </div>
+
+          <!-- REAL INTERACTIVE D3 FORCE GRAPH -->
+          <div class="interactive-demo-container">
+            <div class="demo-badge">
+              <i data-lucide="sparkles" style="width: 11px; height: 11px;"></i>
+              Live D3.js Force Simulation: Drag & Click Nodes
+            </div>
+
+            <div class="demo-d3-wrapper">
+              
+              <!-- D3 Toolbar -->
+              <div class="demo-d3-toolbar">
+                <div class="demo-d3-title">
+                  <i data-lucide="activity" style="width: 14px; height: 14px; color: var(--accent-purple);"></i>
+                  Binge Social & Content Force Graph
+                </div>
+
+                <div class="demo-d3-controls">
+                  <button class="demo-graph-filter-btn active" onclick="setD3Filter('all', this)">All Nodes</button>
+                  <button class="demo-graph-filter-btn" onclick="setD3Filter('friends', this)">Buddies Only</button>
+                  <button class="demo-graph-filter-btn" onclick="setD3Filter('shows', this)">Shows Only</button>
+                  
+                  <div style="width: 1px; height: 16px; background: var(--border-subtle); margin: 0 2px;"></div>
+                  
+                  <button class="demo-graph-zoom-btn" onclick="zoomD3Graph(1.2)" title="Zoom In">+</button>
+                  <button class="demo-graph-zoom-btn" onclick="zoomD3Graph(0.8)" title="Zoom Out">-</button>
+                  <button class="demo-graph-zoom-btn" onclick="resetD3Graph()" title="Reset Zoom">⟲</button>
+                </div>
+              </div>
+
+              <!-- D3 Canvas SVG Container -->
+              <div class="demo-d3-canvas-wrap" id="d3-container">
+                <svg id="d3-network-svg"></svg>
+
+                <!-- Live Node Inspector Card Overlay -->
+                <div id="demo-graph-inspector" class="demo-graph-inspector">
+                  <div class="demo-inspector-info">
+                    <img id="demo-inspector-avatar" class="demo-inspector-avatar" src="https://api.dicebear.com/9.x/pixel-art/svg?seed=LazyPotato_3661&backgroundColor=1e293b&hairColor%5B%5D=261308&glassesProbability=0&mouth%5B%5D=happy04&eyes%5B%5D=variant08&eyesColor%5B%5D=48210a&clothing%5B%5D=variant03&clothingColor%5B%5D=141414&hatProbability=0&beardProbability=100&beard%5B%5D=variant01&accessoriesProbability=0" alt="Avatar" />
+                    <div>
+                      <div id="demo-inspector-name" class="demo-inspector-name">Julio (Connected Buddy)</div>
+                      <div id="demo-inspector-sub" class="demo-inspector-sub">Streaming Severance S2:E4 &bull; 9.8 Rating &bull; Online Now</div>
+                    </div>
+                  </div>
+                  <button class="demo-btn-export" onclick="showToast('Direct message simulated to selected buddy!')">
+                    <i data-lucide="message-square" style="width: 12px; height: 12px;"></i> Ping Buddy
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
+            <!-- Graph Legend -->
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem; font-size: 0.72rem; color: var(--text-secondary);">
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span>
+                Host / You Node
+              </span>
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+                Online Buddy Node
+              </span>
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <span style="width: 10px; height: 10px; border-radius: 50%; background: #8b5cf6; display: inline-block;"></span>
+                Tracked TV Show Node
+              </span>
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <span style="width: 16px; height: 2px; background: #6366f1; display: inline-block;"></span>
+                Friendship Link
+              </span>
+              <span style="display: flex; align-items: center; gap: 4px;">
+                <span style="width: 16px; height: 2px; background: #10b981; border-top: 1px dashed #10b981; display: inline-block;"></span>
+                Watching Link
+              </span>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- =========================================================================
+         SECTION 06 (Originally 2): Profile & Preferences
+         ========================================================================= -->
+    <section class="manual-section" id="profile">
+      <div class="section-meta">
+        <div class="section-index">06</div>
+        <h2>Profile & Preferences</h2>
+        <p>Customization, privacy controls, and fine-tuning recommendation engines.</p>
+      </div>
+      <div class="cards-stack">
+        
+        <div class="card">
+          <div class="card-header">
+            <div class="card-icon"><i data-lucide="user-check" style="width: 20px; height: 20px;"></i></div>
+            <h3 class="card-title">Account Architecture & Custom Pixel Studio</h3>
+          </div>
+          <ul class="feature-list">
+            <li>
+              <i data-lucide="smile" style="width: 16px; height: 16px;"></i>
+              <span><strong>Customized Pixel Art DiceBear Builder:</strong> Craft your personalized 8-bit retro avatar using our integrated DiceBear pixel art generator—fine-tune custom seeds, hair styles, accessories, sunglasses, mood expressions, and rich color palettes with instant SVG preview.</span>
+            </li>
+            <li>
+              <i data-lucide="sliders-horizontal" style="width: 16px; height: 16px;"></i>
+              <span><strong>AI Taste Profile:</strong> Tag favorite eras, specific genres, and narrative tones to train Spuds on your tastes.</span>
+            </li>
+            <li>
+              <i data-lucide="tv-2" style="width: 16px; height: 16px;"></i>
+              <span><strong>Streaming Provider Manager:</strong> Toggle provider subscriptions to filter availability across your feed.</span>
+            </li>
+            <li>
+              <i data-lucide="shield-alert" style="width: 16px; height: 16px;"></i>
+              <span><strong>Data Privacy:</strong> Full export tools and 1-click permanent account deletion.</span>
+            </li>
+          </ul>
+
+          <!-- Interactive Pixel Art DiceBear Sandbox -->
+          <div class="interactive-demo-container">
+            <div class="demo-badge">
+              <i data-lucide="sparkles" style="width: 11px; height: 11px;"></i>
+              Interactive Example: DiceBear Pixel Art Generator
+            </div>
+
+            <div class="demo-pixel-studio">
+              <div class="demo-pixel-avatar-frame" id="demo-avatar-frame">
+                <img 
+                  id="demo-pixel-img" 
+                  class="demo-pixel-avatar-img" 
+                  src="https://api.dicebear.com/9.x/pixel-art/svg?seed=LazyPotato_3661&backgroundColor=1e293b&hairColor%5B%5D=261308&glassesProbability=0&mouth%5B%5D=happy04&eyes%5B%5D=variant08&eyesColor%5B%5D=48210a&clothing%5B%5D=variant03&clothingColor%5B%5D=141414&hatProbability=0&beardProbability=100&beard%5B%5D=variant01&accessoriesProbability=0" 
+                  alt="Customized DiceBear Avatar" 
+                />
+              </div>
+
+              <div class="demo-pixel-controls">
+                <div style="font-size: 0.8rem; font-weight: 700; color: #fff;">
+                  Seed Presets & Character Generation
+                </div>
+
+                <div class="demo-seed-row">
+                  <button class="demo-seed-btn active" onclick="setDicebearSeed('Julio', this)">Julio</button>
+                  <button class="demo-seed-btn" onclick="setDicebearSeed('SpudMaster', this)">SpudMaster</button>
+                  <button class="demo-seed-btn" onclick="setDicebearSeed('CyberTater', this)">CyberTater</button>
+                  <button class="demo-seed-btn" onclick="setDicebearSeed('BingeQueen', this)">BingeQueen</button>
+                  <button class="demo-seed-btn" onclick="setDicebearSeed('RetroSam', this)">RetroSam</button>
+                </div>
+
+                <button class="demo-randomize-btn" onclick="randomizeDicebear()">
+                  <i data-lucide="shuffle" style="width: 14px; height: 14px;"></i>
+                  Randomize Pixel Avatar
+                </button>
+
+                <div style="margin-top: 0.5rem;">
+                  <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+                    Interactive AI Taste Tags (Click to toggle):
+                  </span>
+                  <div class="demo-taste-tags">
+                    <span class="demo-taste-tag selected" onclick="toggleTaste(this)">Sci-Fi Mystery</span>
+                    <span class="demo-taste-tag selected" onclick="toggleTaste(this)">Slow-burn Noir</span>
+                    <span class="demo-taste-tag" onclick="toggleTaste(this)">Dark Satire</span>
+                    <span class="demo-taste-tag" onclick="toggleTaste(this)">Cyberpunk</span>
+                    <span class="demo-taste-tag" onclick="toggleTaste(this)">90s Anime</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <div>
+        <strong>CouchTaterz</strong> &bull; Curated TV Tracking
+      </div>
+      <div>
+        <a href="/" style="color: var(--accent-warm); text-decoration: none; font-weight: 600;">Return to Dashboard &rarr;</a>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Interactive Scripts -->
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+
+    // Toast Utility
+    function showToast(msg) {
+      const toast = document.getElementById('demo-toast');
+      const toastMsg = document.getElementById('demo-toast-msg');
+      toastMsg.innerText = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    // SECTION 01: Add Shows & Stage Targeting
+    let currentManualStage = 'Watching';
+
+    function setManualTargetStage(stage) {
+      currentManualStage = stage;
+      const dot = document.getElementById('manual-stage-dot');
+      const btnWatching = document.getElementById('stage-btn-watching');
+      const btnUpNext = document.getElementById('stage-btn-upnext');
+      const btnWatched = document.getElementById('stage-btn-watched');
+
+      btnWatching.className = 'demo-stage-btn' + (stage === 'Watching' ? ' active watching' : '');
+      btnUpNext.className = 'demo-stage-btn' + (stage === 'Up Next' ? ' active up-next' : '');
+      btnWatched.className = 'demo-stage-btn' + (stage === 'Watched' ? ' active watched' : '');
+
+      if (stage === 'Watching') {
+        dot.style.background = '#3b82f6';
+        dot.style.boxShadow = '0 0 8px rgba(59, 130, 246, 0.6)';
+      } else if (stage === 'Up Next') {
+        dot.style.background = '#f59e0b';
+        dot.style.boxShadow = '0 0 8px rgba(245, 158, 11, 0.6)';
+      } else {
+        dot.style.background = '#10b981';
+        dot.style.boxShadow = '0 0 8px rgba(16, 185, 129, 0.6)';
+      }
+    }
+
+    function switchAddTab(tab) {
+      const searchTabBtn = document.getElementById('tab-search-btn');
+      const picksTabBtn = document.getElementById('tab-picks-btn');
+      const searchContent = document.getElementById('demo-tab-search-content');
+      const picksContent = document.getElementById('demo-tab-picks-content');
+
+      if (tab === 'search') {
+        searchTabBtn.classList.add('active');
+        picksTabBtn.classList.remove('active');
+        searchContent.style.display = 'block';
+        picksContent.style.display = 'none';
+      } else {
+        picksTabBtn.classList.add('active');
+        searchTabBtn.classList.remove('active');
+        picksContent.style.display = 'block';
+        searchContent.style.display = 'none';
+      }
+    }
+
+    function filterDemoSearchResults(query) {
+      const rows = document.querySelectorAll('.demo-show-result-row');
+      const q = query.toLowerCase();
+      rows.forEach(r => {
+        const text = r.innerText.toLowerCase();
+        r.style.display = text.includes(q) ? 'flex' : 'none';
+      });
+    }
+
+    function borrowShow(btn, showTitle, targetQueue) {
+      btn.innerHTML = '✓ Added to ' + targetQueue;
+      btn.classList.add('added');
+      showToast(`Added "${showTitle}" to your ${targetQueue} queue!`);
+    }
+
+    // SECTION 02: Episode Stepper
+    let currentEp = 4;
+    const totalEps = 10;
+    const epTitles = [
+      "Good News About Hell",
+      "Half Loop",
+      "In Perpetuity",
+      "The Grimlo Memo",
+      "The You You Are",
+      "Hide and Seek",
+      "Defiant Jazz",
+      "What's for Dinner?",
+      "The We We Are",
+      "Cold Harbor"
+    ];
+
+    function adjustEpisode(delta) {
+      currentEp = Math.max(1, Math.min(totalEps, currentEp + delta));
+      document.getElementById('demo-ep-label').innerText = `Episode ${currentEp} of ${totalEps}`;
+      document.getElementById('demo-ep-title').innerText = `"${epTitles[currentEp - 1]}" (Tracked to S2:E${currentEp})`;
+      
+      const pct = (currentEp / totalEps) * 100;
+      document.getElementById('demo-progress-fill').style.width = pct + '%';
+      
+      document.getElementById('demo-spuds-boundary').innerText = `Shield Active: Locked to S2:E${currentEp}`;
+      showToast(`Updated Severance progress to Season 2 Episode ${currentEp}`);
+    }
+
+    // Spuds AI Sandbox
+    const spudsResponses = {
+      recap: "As of S2:E4, Mark is attempting to decode the contraband manual smuggled out of Macrodata Refinement while Dylan questions Cobel's new protocol. (No plot points beyond S2:E4 revealed!)",
+      helly: "Helly R. is Mark's severed coworker who entered MDR in Season 1. Up to S2:E4, her outie's true identity is known to you, and she continues to challenge Lumon's strict corporate boundaries.",
+      next: "Episode 5 ('The You You Are') is scheduled to air this coming Friday at 9:00 PM EST on Apple TV+."
+    };
+
+    function askSpuds(key) {
+      const chips = document.querySelectorAll('.demo-prompt-chip');
+      chips.forEach(c => c.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const out = document.getElementById('demo-spuds-output');
+      out.style.opacity = '0.3';
+      setTimeout(() => {
+        out.innerHTML = `<strong>Spuds:</strong> ${spudsResponses[key]}`;
+        out.style.opacity = '1';
+      }, 150);
+    }
+
+    // SECTION 03: Queue Switcher
+    const queueData = {
+      watching: [
+        { title: "Severance", sub: "S2:E4 • Apple TV+" },
+        { title: "Shōgun", sub: "S1:E8 • Hulu" },
+        { title: "The Bear", sub: "S3:E6 • Hulu" }
+      ],
+      upnext: [
+        { title: "The Last of Us", sub: "Season 2 • Max" },
+        { title: "White Lotus", sub: "Season 3 • Max" },
+        { title: "Slow Horses", sub: "Season 4 • Apple TV+" }
+      ],
+      watched: [
+        { title: "Succession", sub: "All 4 Seasons • Max" },
+        { title: "Better Call Saul", sub: "All 6 Seasons • Netflix" },
+        { title: "Dark", sub: "All 3 Seasons • Netflix" }
+      ]
+    };
+
+    function switchQueueTab(tier, tabEl) {
+      document.querySelectorAll('.demo-queue-tab').forEach(t => t.classList.remove('active'));
+      tabEl.classList.add('active');
+
+      const items = queueData[tier];
+      const container = document.getElementById('demo-queue-content');
+      container.innerHTML = items.map(it => `
+        <div class="demo-queue-item">
+          <strong>${it.title}</strong>
+          <span>${it.sub}</span>
+        </div>
+      `).join('');
+    }
+
+    // SECTION 04: Calendar Day Selection & View Mode Toggle
+    function toggleCalView(mode) {
+      const gridView = document.getElementById('demo-cal-view-grid');
+      const listView = document.getElementById('demo-cal-view-list');
+      const btnGrid = document.getElementById('btn-cal-grid');
+      const btnList = document.getElementById('btn-cal-list');
+
+      if (mode === 'grid') {
+        gridView.style.display = 'block';
+        listView.style.display = 'none';
+        btnGrid.classList.add('active');
+        btnList.classList.remove('active');
+      } else {
+        gridView.style.display = 'none';
+        listView.style.display = 'block';
+        btnGrid.classList.remove('active');
+        btnList.classList.add('active');
+      }
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    function selectCalDay(dayName, dropInfo, el) {
+      document.querySelectorAll('.demo-cal-day').forEach(d => d.classList.remove('active'));
+      el.classList.add('active');
+
+      document.getElementById('demo-cal-title').innerText = dropInfo;
+      document.getElementById('demo-cal-sub').innerText = `${dayName} • Scheduled Drop`;
+    }
+
+    // =========================================================================
+    // SECTION 05: REAL INTERACTIVE D3 FORCE-DIRECTED GRAPH
+    // =========================================================================
+    const d3Nodes = [
+      { id: "u_you", label: "You (Host)", type: "user", isYou: true, isOnline: true, seed: "Julio", stats: "4 Active Shows • 4 Buddies", score: "Host Account" },
+      { id: "u_julio", label: "Julio", type: "user", isOnline: true, seed: "Julio", stats: "Watching Severance S2:E4 • ⭐ 9.8", currentShow: "Severance", score: "9.8" },
+      { id: "u_annadee", label: "AnnaDee", type: "user", isOnline: true, seed: "AnnaDee", stats: "Watching The Bear S3 • ⭐ 9.5", currentShow: "The Bear", score: "9.5" },
+      { id: "u_rafael", label: "Rafael", type: "user", isOnline: false, seed: "Rafael", stats: "Watching White Lotus • ⭐ 9.2", currentShow: "The White Lotus", score: "9.2" },
+      { id: "u_ejc", label: "EJC", type: "user", isOnline: true, seed: "EJC", stats: "Watching Shōgun • ⭐ 9.9", currentShow: "Shōgun", score: "9.9" },
+      { id: "s_severance", label: "Severance", type: "show", viewers: 4, rt: "98%", platform: "Apple TV+" },
+      { id: "s_bear", label: "The Bear", type: "show", viewers: 3, rt: "99%", platform: "Hulu" },
+      { id: "s_shogun", label: "Shōgun", type: "show", viewers: 3, rt: "99%", platform: "Hulu / FX" },
+      { id: "s_tlou", label: "The Last of Us", type: "show", viewers: 2, rt: "96%", platform: "Max" },
+      { id: "s_whitelotus", label: "The White Lotus", type: "show", viewers: 2, rt: "94%", platform: "Max" }
+    ];
+
+    const d3Links = [
+      // Friend links
+      { source: "u_you", target: "u_julio", relationship: "friend" },
+      { source: "u_you", target: "u_annadee", relationship: "friend" },
+      { source: "u_you", target: "u_rafael", relationship: "friend" },
+      { source: "u_you", target: "u_ejc", relationship: "friend" },
+      { source: "u_julio", target: "u_annadee", relationship: "friend" },
+      // Watch links
+      { source: "u_you", target: "s_severance", relationship: "watch", status: "Watching" },
+      { source: "u_julio", target: "s_severance", relationship: "watch", status: "Watching" },
+      { source: "u_annadee", target: "s_severance", relationship: "watch", status: "Watching" },
+      { source: "u_ejc", target: "s_severance", relationship: "watch", status: "Watching" },
+      { source: "u_you", target: "s_bear", relationship: "watch", status: "Watching" },
+      { source: "u_annadee", target: "s_bear", relationship: "watch", status: "Watching" },
+      { source: "u_ejc", target: "s_shogun", relationship: "watch", status: "Watching" },
+      { source: "u_you", target: "s_shogun", relationship: "watch", status: "Watching" },
+      { source: "u_rafael", target: "s_whitelotus", relationship: "watch", status: "Watching" },
+      { source: "u_you", target: "s_tlou", relationship: "watch", status: "Watching" },
+      { source: "u_julio", target: "s_tlou", relationship: "watch", status: "Watching" }
+    ];
+
+    let d3Simulation = null;
+    let d3SvgGroup = null;
+    let d3Zoom = null;
+    let activeD3Filter = 'all';
+
+    function initD3Graph() {
+      const svg = d3.select("#d3-network-svg");
+      const container = document.getElementById("d3-container");
+      if (!container || !svg.node()) return;
+
+      const width = container.clientWidth || 700;
+      const height = container.clientHeight || 380;
+
+      svg.selectAll("*").remove();
+
+      // Zoom setup
+      d3SvgGroup = svg.append("g").attr("class", "d3-root-group");
+      d3Zoom = d3.zoom()
+        .scaleExtent([0.3, 3])
+        .on("zoom", (event) => {
+          d3SvgGroup.attr("transform", event.transform);
+        });
+
+      svg.call(d3Zoom);
+
+      // Simulation
+      d3Simulation = d3.forceSimulation(d3Nodes)
+        .force("link", d3.forceLink(d3Links).id(d => d.id).distance(d => d.relationship === 'friend' ? 110 : 80))
+        .force("charge", d3.forceManyBody().strength(-240))
+        .force("center", d3.forceCenter(width / 2, height / 2))
+        .force("collide", d3.forceCollide().radius(d => d.type === 'user' ? 32 : 24));
+
+      // Filter nodes based on active filter
+      const visibleNodes = d3Nodes.filter(n => {
+        if (activeD3Filter === 'friends') return n.type === 'user';
+        if (activeD3Filter === 'shows') return n.type === 'show';
+        return true;
+      });
+
+      const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
+      const visibleLinks = d3Links.filter(l => {
+        const s = typeof l.source === 'object' ? l.source.id : l.source;
+        const t = typeof l.target === 'object' ? l.target.id : l.target;
+        return visibleNodeIds.has(s) && visibleNodeIds.has(t);
+      });
+
+      // Render links
+      const link = d3SvgGroup.append("g")
+        .selectAll("line")
+        .data(visibleLinks)
+        .enter().append("line")
+        .attr("stroke", d => d.relationship === 'friend' ? '#6366f1' : '#10b981')
+        .attr("stroke-opacity", d => d.relationship === 'friend' ? 0.7 : 0.45)
+        .attr("stroke-width", d => d.relationship === 'friend' ? 2 : 1.5)
+        .attr("stroke-dasharray", d => d.relationship === 'watch' ? '4,3' : 'none');
+
+      // Render nodes
+      const node = d3SvgGroup.append("g")
+        .selectAll(".node")
+        .data(visibleNodes)
+        .enter().append("g")
+        .attr("class", "node")
+        .attr("cursor", "pointer")
+        .call(d3.drag()
+          .on("start", (event, d) => {
+            if (!event.active) d3Simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+          })
+          .on("drag", (event, d) => {
+            d.fx = event.x;
+            d.fy = event.y;
+          })
+          .on("end", (event, d) => {
+            if (!event.active) d3Simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+          })
+        )
+        .on("click", (event, d) => {
+          inspectD3Node(d);
+        });
+
+      // Node circles & visuals
+      node.each(function(d) {
+        const el = d3.select(this);
+
+        if (d.type === 'user') {
+          // User node circle
+          el.append("circle")
+            .attr("r", d.isYou ? 22 : 18)
+            .attr("fill", d.isYou ? "#3b82f6" : (d.isOnline ? "#1e293b" : "#1e2023"))
+            .attr("stroke", d.isYou ? "#60a5fa" : (d.isOnline ? "#10b981" : "#475569"))
+            .attr("stroke-width", d.isOnline ? 2.5 : 1.5);
+
+          // Online status dot
+          if (d.isOnline) {
+            el.append("circle")
+              .attr("cx", 13)
+              .attr("cy", -13)
+              .attr("r", 4.5)
+              .attr("fill", "#10b981")
+              .attr("stroke", "#0f172a")
+              .attr("stroke-width", 1.5);
+          }
+
+          // User text initial
+          el.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "central")
+            .attr("font-size", "11px")
+            .attr("font-weight", "800")
+            .attr("fill", "#ffffff")
+            .text(d.label.charAt(0));
+
+        } else {
+          // Show node circle
+          el.append("circle")
+            .attr("r", 16)
+            .attr("fill", "#7c3aed")
+            .attr("stroke", "#c084fc")
+            .attr("stroke-width", 2);
+
+          // TV icon
+          el.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "central")
+            .attr("font-size", "10px")
+            .text("📺");
+
+          // Viewer count badge
+          const badgeG = el.append("g").attr("transform", "translate(11, -11)");
+          badgeG.append("circle").attr("r", 7).attr("fill", "#ef4444");
+          badgeG.append("text")
+            .attr("text-anchor", "middle")
+            .attr("dominant-baseline", "central")
+            .attr("font-size", "8.5px")
+            .attr("font-weight", "800")
+            .attr("fill", "#fff")
+            .text(d.viewers);
+        }
+
+        // Label below
+        el.append("text")
+          .attr("dy", d.type === 'user' ? 30 : 26)
+          .attr("text-anchor", "middle")
+          .attr("font-size", "10.5px")
+          .attr("font-weight", "700")
+          .attr("fill", "#f1f5f9")
+          .text(d.label);
+      });
+
+      d3Simulation.on("tick", () => {
+        link
+          .attr("x1", d => d.source.x)
+          .attr("y1", d => d.source.y)
+          .attr("x2", d => d.target.x)
+          .attr("y2", d => d.target.y);
+
+        node.attr("transform", d => `translate(${d.x}, ${d.y})`);
+      });
+    }
+
+    const JULIO_AVATAR = "https://api.dicebear.com/9.x/pixel-art/svg?seed=LazyPotato_3661&backgroundColor=1e293b&hairColor%5B%5D=261308&glassesProbability=0&mouth%5B%5D=happy04&eyes%5B%5D=variant08&eyesColor%5B%5D=48210a&clothing%5B%5D=variant03&clothingColor%5B%5D=141414&hatProbability=0&beardProbability=100&beard%5B%5D=variant01&accessoriesProbability=0";
+
+    function inspectD3Node(node) {
+      const inspector = document.getElementById("demo-graph-inspector");
+      const nameEl = document.getElementById("demo-inspector-name");
+      const subEl = document.getElementById("demo-inspector-sub");
+      const avatarEl = document.getElementById("demo-inspector-avatar");
+
+      if (node.type === 'user') {
+        nameEl.innerText = `${node.label} ${node.isYou ? '(Host Account)' : '(Connected Buddy)'}`;
+        subEl.innerText = `${node.stats} • ${node.isOnline ? '🟢 Online' : '⚪ Offline'}`;
+        if (node.isYou || (node.label && node.label.toLowerCase().includes('julio')) || node.seed === 'Julio') {
+          avatarEl.src = JULIO_AVATAR;
+        } else {
+          avatarEl.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${node.seed || node.label}`;
+        }
+      } else {
+        nameEl.innerText = `${node.label} (${node.platform})`;
+        subEl.innerText = `${node.viewers} Buddies Watching • 🍅 ${node.rt} Rotten Tomatoes`;
+        avatarEl.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${node.label}`;
+      }
+      inspector.style.display = 'flex';
+      showToast(`Inspecting node: ${node.label}`);
+    }
+
+    function setD3Filter(filter, btn) {
+      activeD3Filter = filter;
+      document.querySelectorAll('.demo-graph-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      initD3Graph();
+    }
+
+    function zoomD3Graph(factor) {
+      if (!d3Zoom) return;
+      d3.select("#d3-network-svg").transition().duration(250).call(d3Zoom.scaleBy, factor);
+    }
+
+    function resetD3Graph() {
+      if (!d3Zoom) return;
+      d3.select("#d3-network-svg").transition().duration(350).call(d3Zoom.transform, d3.zoomIdentity);
+    }
+
+    // Initialize D3 on load & resize
+    window.addEventListener('load', () => {
+      initD3Graph();
+    });
+    window.addEventListener('resize', () => {
+      initD3Graph();
+    });
+
+    // =========================================================================
+    // SECTION 06: DiceBear Pixel Studio
+    // =========================================================================
+    function setDicebearSeed(seed, btn) {
+      document.querySelectorAll('.demo-seed-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      const img = document.getElementById('demo-pixel-img');
+      const frame = document.getElementById('demo-avatar-frame');
+
+      frame.classList.add('animating');
+      if (seed === 'Julio') {
+        img.src = JULIO_AVATAR;
+      } else {
+        img.src = `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(seed)}`;
+      }
+      
+      setTimeout(() => {
+        frame.classList.remove('animating');
+      }, 250);
+
+      showToast(`Generated avatar for seed: "${seed}"`);
+    }
+
+    const randomSeeds = ['NeonPotato', 'PixelSam', 'StreamKing', 'BingeHero', 'ArcadeTater', 'RetroVibe', 'Spudzilla'];
+    function randomizeDicebear() {
+      const seed = randomSeeds[Math.floor(Math.random() * randomSeeds.length)] + Math.floor(Math.random() * 99);
+      setDicebearSeed(seed, null);
+    }
+
+    function toggleTaste(tagEl) {
+      tagEl.classList.toggle('selected');
+      const isSelected = tagEl.classList.contains('selected');
+      showToast(`${isSelected ? 'Added' : 'Removed'} taste tag: ${tagEl.innerText}`);
+    }
+  </script>
+</body>
+</html>

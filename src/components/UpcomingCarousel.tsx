@@ -23,7 +23,8 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
   // Helper to parse date string safely (returns null if invalid or falsy)
   const parseAirDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return null;
-    const parts = dateStr.split('-');
+    const cleanStr = dateStr.split('T')[0];
+    const parts = cleanStr.split('-');
     if (parts.length === 3) {
       const year = parseInt(parts[0], 10);
       const month = parseInt(parts[1], 10) - 1; // 0-based
@@ -138,7 +139,7 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
         {/* Background Couch Image */}
         <div className="absolute inset-0 w-full h-full pointer-events-none">
           <img
-            src="/couch-bg.jpg"
+            src="/couch-bg.svg"
             alt="Couch background"
             className="w-full h-full object-cover filter brightness-[0.9] contrast-[1.05]"
             style={{ objectPosition: 'center 40%' }}

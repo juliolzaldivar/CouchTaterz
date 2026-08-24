@@ -151,8 +151,8 @@ export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
                 <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   <h2 className="font-black text-base sm:text-xl tracking-tight truncate flex items-center gap-1.5 uppercase">
                     <span>
-                      <span className="text-amber-400">ASK</span>
-                      <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>TATERZ</span>
+                      <span className="text-amber-400">ASK </span>
+                      <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>SPUDZ</span>
                     </span>
                     <Sparkles className="w-3.5 h-3.5 text-amber-400 hidden xs:inline shrink-0" />
                   </h2>
@@ -427,11 +427,11 @@ export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
 
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/25 text-[10px] font-black uppercase tracking-wider mb-2">
                   <Sparkles className="w-3 h-3 text-amber-400" />
-                  <span>AskTaterz Concierge</span>
+                  <span>Spudz AI Concierge</span>
                 </div>
 
                 <h3 className="text-base sm:text-2xl font-black tracking-tight text-white mb-1.5">
-                  What are we watching today, Tater?
+                  What are we watching today, couch potato?
                 </h3>
                 <p className={`text-xs sm:text-sm max-w-md mx-auto mb-6 leading-relaxed ${
                   theme === 'dark' ? 'text-slate-400' : 'text-slate-600'
@@ -592,7 +592,7 @@ export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
                 <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-2xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center animate-spin">
                   <RefreshCw className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
                 </div>
-                <span>AskTaterz is processing query...</span>
+                <span>Spudz is processing query...</span>
               </div>
             )}
 
@@ -651,7 +651,7 @@ export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
                   ? 'Limit reached. Upgrade to Pro...'
                   : activeIntentTab === 'natural_search'
                   ? 'e.g. "Dark comedy under 30-min..."'
-                  : 'AskTaterz anything about TV...'
+                  : 'Ask Spudz anything about TV...'
               }
               className={`flex-1 py-2.5 px-3 sm:py-3 sm:px-4 rounded-xl sm:rounded-2xl border text-xs sm:text-sm font-medium outline-none transition disabled:opacity-50 ${
                 theme === 'dark'

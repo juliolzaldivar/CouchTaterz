@@ -35,10 +35,8 @@ export const CORE_BUDDY_IDS = [
 
 export const getFriendsData = (userId: string): FriendsData => {
   if (!userId) {
-    return { friends: [JULIO_USER_ID], pendingSent: [], pendingReceived: [] };
+    return { friends: [], pendingSent: [], pendingReceived: [] };
   }
-
-  const isJulio = userId === JULIO_USER_ID || userId === 'user-julio';
 
   try {
     const raw = localStorage.getItem(`${STORAGE_PREFIX}${userId}`);
@@ -47,27 +45,14 @@ export const getFriendsData = (userId: string): FriendsData => {
       if (!Array.isArray(parsed.friends)) parsed.friends = [];
       if (!Array.isArray(parsed.pendingSent)) parsed.pendingSent = [];
       if (!Array.isArray(parsed.pendingReceived)) parsed.pendingReceived = [];
-
-      // Ensure core buddies are always included ONLY for Julio
-      if (isJulio) {
-        CORE_BUDDY_IDS.forEach(id => {
-          if (!parsed.friends.includes(id) && id !== userId && id !== JULIO_USER_ID && id !== 'user-julio') {
-            parsed.friends.push(id);
-          }
-        });
-        parsed.friends = parsed.friends.filter(fId => fId !== userId && fId !== JULIO_USER_ID && fId !== 'user-julio');
-      } else if (!parsed.friends.includes(JULIO_USER_ID)) {
-        parsed.friends.push(JULIO_USER_ID);
-      }
       return parsed;
     }
   } catch (e) {
     console.error('Error loading friends data:', e);
   }
 
-  // Default state for new user: connected ONLY with Julio
   const defaultData: FriendsData = {
-    friends: isJulio ? [...CORE_BUDDY_IDS] : [JULIO_USER_ID],
+    friends: [],
     pendingSent: [],
     pendingReceived: []
   };
@@ -79,8 +64,6 @@ export const getFriendsData = (userId: string): FriendsData => {
 export const fetchFriendsDataAsync = async (userId: string): Promise<FriendsData> => {
   if (!userId) return getFriendsData(userId);
 
-  const isJulio = userId === JULIO_USER_ID || userId === 'user-julio';
-
   try {
     const res = await fetch(`/api/friends/${encodeURIComponent(userId)}`);
     if (res.ok) {
@@ -89,19 +72,10 @@ export const fetchFriendsDataAsync = async (userId: string): Promise<FriendsData
       if (!Array.isArray(serverData.pendingSent)) serverData.pendingSent = [];
       if (!Array.isArray(serverData.pendingReceived)) serverData.pendingReceived = [];
 
-      // Merge with local storage
-      const local = getFriendsData(userId);
-      const requiredFriends = isJulio ? [...CORE_BUDDY_IDS] : [JULIO_USER_ID];
-      const mergedFriends = Array.from(new Set([
-        ...serverData.friends, 
-        ...local.friends, 
-        ...requiredFriends
-      ])).filter(id => id !== userId && !(isJulio && (id === JULIO_USER_ID || id === 'user-julio' || id === 'default')));
-      
       const mergedData: FriendsData = {
-        friends: mergedFriends,
-        pendingSent: Array.from(new Set([...serverData.pendingSent, ...local.pendingSent])),
-        pendingReceived: serverData.pendingReceived.length > 0 ? serverData.pendingReceived : local.pendingReceived
+        friends: serverData.friends.filter(id => id !== userId),
+        pendingSent: serverData.pendingSent,
+        pendingReceived: serverData.pendingReceived
       };
 
       saveFriendsData(userId, mergedData);
@@ -210,9 +184,7 @@ export const respondToFriendRequest = (
       } else if (action === 'cancel') {
         userData.pendingSent = userData.pendingSent.filter(id => id !== targetUserId);
       } else if (action === 'unfriend') {
-        if (targetUserId !== JULIO_USER_ID) {
-          userData.friends = userData.friends.filter(id => id !== targetUserId);
-        }
+        userData.friends = userData.friends.filter(id => id !== targetUserId);
       }
       saveFriendsData(userId, userData);
     }
@@ -247,11 +219,8 @@ export const respondToFriendRequest = (
       (typeof item === 'string' ? item : item.fromUserId) !== userId
     );
   } else if (action === 'unfriend') {
-    // Keep Julio connected
-    if (targetUserId !== JULIO_USER_ID) {
-      userData.friends = userData.friends.filter(id => id !== targetUserId);
-      targetData.friends = targetData.friends.filter(id => id !== userId);
-    }
+    userData.friends = userData.friends.filter(id => id !== targetUserId);
+    targetData.friends = targetData.friends.filter(id => id !== userId);
   }
 
   saveFriendsData(userId, userData);

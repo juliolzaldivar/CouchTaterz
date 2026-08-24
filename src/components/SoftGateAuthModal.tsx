@@ -36,6 +36,7 @@ export const SoftGateAuthModal: React.FC<SoftGateAuthModalProps> = ({
         id: `user-${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.floor(1000 + Math.random() * 9000)}`,
         name: cleanName,
         email: generatedEmail,
+        avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(cleanName)}`,
         createdAt: new Date().toISOString(),
       };
 
@@ -53,11 +54,12 @@ export const SoftGateAuthModal: React.FC<SoftGateAuthModalProps> = ({
     setIsSubmitting(true);
     setTimeout(() => {
       const randomId = Math.floor(1000 + Math.random() * 9000);
+      const googleDisplayName = name.trim() || `TaterFriend_${randomId}`;
       const googleUser: User = {
         id: `user-google-${randomId}`,
-        name: name.trim() || `TaterFriend_${randomId}`,
+        name: googleDisplayName,
         email: email.trim() || `user_${randomId}@gmail.com`,
-        avatarUrl: `https://api.dicebear.com/7.x/bottts/svg?seed=Tater_${randomId}`,
+        avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(googleDisplayName)}`,
         createdAt: new Date().toISOString(),
       };
 

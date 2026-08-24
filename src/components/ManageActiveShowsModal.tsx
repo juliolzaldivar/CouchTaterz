@@ -10,6 +10,8 @@ import { X, Trash2, Calendar, Tv, Check, Save, HelpCircle, Film, RefreshCw } fro
 import { motion } from 'motion/react';
 import { SERVICE_COLORS } from './ShowCard';
 
+import { resolveNextUpcomingEpisode } from '../utils/showSchedules';
+
 interface ManageActiveShowsModalProps {
   shows: TvShow[];
   onUpdateShow: (updatedShow: TvShow) => void;
@@ -26,8 +28,8 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
   onClose,
   theme = 'dark',
 }) => {
-  // Filter active shows: nextEpisode exists and not concluded
-  const activeShows = shows.filter((s) => s.nextEpisode && !s.concluded);
+  // Filter active shows: nextEpisode exists or currently Watching, and not concluded
+  const activeShows = shows.filter((s) => (s.nextEpisode || s.status === 'Watching') && !s.concluded);
 
   // Maintain local state for the active show currently being edited
   const [editingShowId, setEditingShowId] = useState<string | null>(null);
@@ -40,13 +42,16 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
   const [editAirDate, setEditAirDate] = useState('');
 
   const handleStartEdit = (show: TvShow) => {
+    const calculatedNext = resolveNextUpcomingEpisode(show);
+    const targetNext = show.nextEpisode || calculatedNext;
+
     setEditingShowId(show.id);
     setEditTitle(show.title);
     setEditService(show.streamingService);
-    setEditSeason(show.nextEpisode?.season || 1);
-    setEditEpisode(show.nextEpisode?.episode || 1);
-    setEditEpTitle(show.nextEpisode?.title || '');
-    setEditAirDate(show.nextEpisode?.airDate ? show.nextEpisode.airDate.split('T')[0] : '');
+    setEditSeason(targetNext?.season || (show.latestWatched?.season ? show.latestWatched.season : 1));
+    setEditEpisode(targetNext?.episode || (show.latestWatched?.episode ? show.latestWatched.episode + 1 : 1));
+    setEditEpTitle(targetNext?.title || 'TBD');
+    setEditAirDate(targetNext?.airDate ? targetNext.airDate.split('T')[0] : new Date().toISOString().split('T')[0]);
   };
 
   const handleSaveEdit = (showId: string) => {
@@ -162,7 +167,9 @@ export const ManageActiveShowsModal: React.FC<ManageActiveShowsModalProps> = ({
                               {show.streamingService}
                             </span>
                             <span className="text-[10px] text-slate-400 font-medium truncate">
-                              S{show.nextEpisode?.season}E{show.nextEpisode?.episode} — {show.nextEpisode?.title}
+                              {show.nextEpisode 
+                                ? `S${show.nextEpisode.season}E${show.nextEpisode.episode} — ${show.nextEpisode.title || 'TBD'}`
+                                : 'No countdown set (Click Edit to set)'}
                             </span>
                           </div>
                         </div>
