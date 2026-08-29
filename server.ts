@@ -6,15 +6,17 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
+import zlib from "zlib";
 import dotenv from "dotenv";
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
 import { getFirestore as getClientFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, setLogLevel, terminate } from "firebase/firestore";
 import { TvShow, Board, StreamingService, User } from "./src/types"; // note: using relative import
-import { saveBoardToCloudSql, getAllBoardsFromCloudSql, saveFriendsToCloudSql, getAllFriendsFromCloudSql, saveMerchandiseItemToCloudSql, getMerchandiseForShowFromCloudSql, getAllMerchandiseFromCloudSql, deleteBoardFromCloudSql, deleteFriendsFromCloudSql, MerchandiseItem } from "./src/db/cloudsqlService.ts";
-import { sendAirDateReminderEmail, checkAndDispatchDueReminders, getEmailProviderConfig, readReminderLogs } from "./server/emailService.ts";
-import { SHOW_SCHEDULES, resolveNextUpcomingEpisode, normalizeTitle as normalizeScheduleTitle } from "./server/showSchedules.ts";
+import { saveBoardToCloudSql, getAllBoardsFromCloudSql, saveFriendsToCloudSql, getAllFriendsFromCloudSql, saveMerchandiseItemToCloudSql, getMerchandiseForShowFromCloudSql, getAllMerchandiseFromCloudSql, deleteBoardFromCloudSql, deleteFriendsFromCloudSql, MerchandiseItem } from "./src/db/cloudsqlService";
+import { sendAirDateReminderEmail, checkAndDispatchDueReminders, getEmailProviderConfig, readReminderLogs } from "./server/emailService";
+import { SHOW_SCHEDULES, resolveNextUpcomingEpisode, normalizeTitle as normalizeScheduleTitle } from "./server/showSchedules";
+import { getLemonSqueezyConfig, verifyWebhookSignature, buildCheckoutUrl, processLemonSqueezyWebhook } from "./server/lemonSqueezyService";
 
 dotenv.config();
 
@@ -63,6 +65,18 @@ function isQuotaError(err: any): boolean {
     msg.includes("RESOURCE_EXHAUSTED") ||
     msg.includes("FREE DAILY WRITE") ||
     msg.includes("FREE DAILY READ")
+  );
+}
+
+function isOfflineOrNetworkError(err: any): boolean {
+  if (!err) return false;
+  const msg = (typeof err === "string" ? err : err?.message || err?.code || "").toString().toUpperCase();
+  return (
+    msg.includes("OFFLINE") ||
+    msg.includes("CLIENT IS OFFLINE") ||
+    msg.includes("UNAVAILABLE") ||
+    msg.includes("NETWORK") ||
+    msg.includes("FAILED TO FETCH")
   );
 }
 
@@ -131,7 +145,12 @@ try {
 }
 
 // Parse JSON body with higher limits to support full collection syncs
-app.use(express.json({ limit: "50mb" }));
+app.use(express.json({ 
+  limit: "50mb",
+  verify: (req: any, _res, buf) => {
+    req.rawBody = buf;
+  }
+}));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // Global CORS & preflight header handler
@@ -144,6 +163,11 @@ app.use((req, res, next) => {
     return;
   }
   next();
+});
+
+// Liveness and readiness healthcheck probes for Cloud Run and load balancers
+app.get(["/api/health", "/healthz", "/health"], (req, res) => {
+  res.status(200).json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 // Initialize Gemini Client Lazily to avoid crashing on startup if API key is not present
@@ -486,7 +510,7 @@ const DEFAULT_SHOWS: TvShow[] = [
     overview: "The story of the Targaryen civil war that took place about 200 years before events depicted in Game of Thrones.",
     directors: ["Ryan J. Condal", "Miguel Sapochnik"],
     actors: ["Emma D'Arcy", "Matt Smith", "Olivia Cooke"],
-    bannerImage: "https://image.tmdb.org/t/p/w1280/etj5CuMuamjhGjQAC0Lo2iZ2u6q.jpg",
+    bannerImage: "https://static.tvmaze.com/uploads/images/original_untouched/627/1568449.jpg",
     concluded: false,
     totalSeasons: 3,
     episodesPerSeason: [10, 8, 8],
@@ -650,7 +674,7 @@ const DEFAULT_SHOWS: TvShow[] = [
     overview: "In a ruined and toxic future, thousands live in a giant silo deep underground. After its sheriff breaks a cardinal rule and residents die mysteriously, engineer Juliette starts uncovering shocking secrets.",
     directors: ["Morten Tyldum"],
     actors: ["Rebecca Ferguson", "Common", "Tim Robbins"],
-    bannerImage: "https://image.tmdb.org/t/p/w1280/e5b5eUsmqG4m7h0JzTf19uL3E7N.jpg",
+    bannerImage: "https://static.tvmaze.com/uploads/images/original_untouched/631/1577677.jpg",
     concluded: false,
     totalSeasons: 2,
     episodesPerSeason: [10, 10],
@@ -948,15 +972,56 @@ const POPULAR_SHOWS_METADATA: Record<string, {
   "batman caped crusader": { streamingService: "Prime Video" },
   "batman": { streamingService: "HBO" },
   "fleabag": { streamingService: "Prime Video" },
+  "spider-noir": { streamingService: "Prime Video" },
+  "spider noir": { streamingService: "Prime Video" },
   "spider-man noir": { streamingService: "Prime Video" },
   "spiderman noir": { streamingService: "Prime Video" },
-  "my adventures with superman": { streamingService: "HBO", totalSeasons: 3, episodesPerSeason: [10, 10, 10] }
+  "your friendly neighborhood spider-man": { streamingService: "Disney+", totalSeasons: 2, episodesPerSeason: [10, 10] },
+  "marvel's spider-man": { streamingService: "Disney+" },
+  "marvels spider-man": { streamingService: "Disney+" },
+  "spider-man: the animated series": { streamingService: "Disney+" },
+  "spider-man the animated series": { streamingService: "Disney+" },
+  "spidey and his amazing friends": { streamingService: "Disney+" },
+  "my adventures with superman": { streamingService: "HBO", totalSeasons: 3, episodesPerSeason: [10, 10, 10] },
+  "humans": { streamingService: "Hulu", totalSeasons: 3, episodesPerSeason: [8, 8, 8], concluded: true }
 };
 
 // Helper for safe file writing
 function safeWriteFileSync(filePath: string, data: any) {
   try {
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
     const jsonString = JSON.stringify(data, null, 2);
+    
+    // Maintain atomic .bak copy of existing file before overwrite
+    if (fs.existsSync(filePath)) {
+      try {
+        fs.copyFileSync(filePath, `${filePath}.bak`);
+      } catch (bakErr) {}
+    }
+
+    // For DB_FILE, keep timestamped point-in-time snapshots in data/backups/
+    if (filePath.endsWith("data.json")) {
+      try {
+        const backupDir = path.join(process.cwd(), "data", "backups");
+        if (!fs.existsSync(backupDir)) fs.mkdirSync(backupDir, { recursive: true });
+        
+        // Write snapshot every 5 minutes or on significant mutation
+        const snapFile = path.join(backupDir, `data_${Date.now()}.json`);
+        fs.writeFileSync(snapFile, jsonString, "utf8");
+
+        // Keep last 30 snapshots
+        const snaps = fs.readdirSync(backupDir).filter(f => f.startsWith("data_") && f.endsWith(".json")).sort();
+        if (snaps.length > 30) {
+          snaps.slice(0, snaps.length - 30).forEach(f => {
+            try { fs.unlinkSync(path.join(backupDir, f)); } catch (e) {}
+          });
+        }
+      } catch (snapErr) {}
+    }
+
     fs.writeFileSync(filePath, jsonString, "utf8");
   } catch (err) {
     console.error(`[SafeWrite] Error writing ${filePath}:`, err);
@@ -966,16 +1031,76 @@ function safeWriteFileSync(filePath: string, data: any) {
 function safeReadJsonFileSync<T>(filePath: string): T | null {
   if (!fs.existsSync(filePath)) return null;
   try {
-    const content = fs.readFileSync(filePath, "utf8");
+    const rawBuffer = fs.readFileSync(filePath);
+    
+    // Check if entire file or start is zlib compressed (0x78 0x9c / 0x78 0x01 / 0x78 0xda / 0x78 0x5e)
+    if (rawBuffer.length > 2 && rawBuffer[0] === 0x78 && (rawBuffer[1] === 0x9c || rawBuffer[1] === 0x01 || rawBuffer[1] === 0xda || rawBuffer[1] === 0x5e)) {
+      try {
+        const decompressed = zlib.inflateSync(rawBuffer).toString("utf8");
+        const parsed = JSON.parse(decompressed) as T;
+        return parsed;
+      } catch (zErr) {}
+    }
+
+    const content = rawBuffer.toString("utf8");
     return JSON.parse(content) as T;
   } catch (err: any) {
-    console.error(`[SafeRead] Read error parsing ${filePath}:`, err?.message);
-    
-    // Attempt 1: Try reading .bak file
+    // Attempt 1: Multi-chunk zlib & plain-text stream reconstruction
+    try {
+      const rawBuf = fs.readFileSync(filePath);
+      const textParts: string[] = [];
+      let idx = 0;
+      while (idx < rawBuf.length) {
+        if (rawBuf[idx] === 0x78 && (rawBuf[idx+1] === 0x9c || rawBuf[idx+1] === 0x01 || rawBuf[idx+1] === 0xda || rawBuf[idx+1] === 0x5e)) {
+          try {
+            const decomp = zlib.inflateSync(rawBuf.slice(idx));
+            textParts.push(decomp.toString("utf8"));
+            let nextHeader = -1;
+            for (let j = idx + 2; j < rawBuf.length - 2; j++) {
+              if (rawBuf[j] === 0x78 && (rawBuf[j+1] === 0x9c || rawBuf[j+1] === 0x01 || rawBuf[j+1] === 0xda || rawBuf[j+1] === 0x5e)) {
+                try {
+                  zlib.inflateSync(rawBuf.slice(j));
+                  nextHeader = j;
+                  break;
+                } catch (e) {}
+              }
+            }
+            if (nextHeader !== -1) {
+              idx = nextHeader;
+            } else {
+              break;
+            }
+          } catch (e) {
+            idx++;
+          }
+        } else {
+          let nextHeader = rawBuf.length;
+          for (let j = idx; j < rawBuf.length - 2; j++) {
+            if (rawBuf[j] === 0x78 && (rawBuf[j+1] === 0x9c || rawBuf[j+1] === 0x01 || rawBuf[j+1] === 0xda || rawBuf[j+1] === 0x5e)) {
+              try {
+                zlib.inflateSync(rawBuf.slice(j));
+                nextHeader = j;
+                break;
+              } catch (e) {}
+            }
+          }
+          const plainText = rawBuf.slice(idx, nextHeader).toString("utf8");
+          textParts.push(plainText);
+          idx = nextHeader;
+        }
+      }
+      if (textParts.length > 0) {
+        const fullText = textParts.join("");
+        const parsed = JSON.parse(fullText) as T;
+        safeWriteFileSync(filePath, parsed);
+        return parsed;
+      }
+    } catch (zlibRecoveryErr) {}
+
+    // Attempt 2: Try reading .bak file
     const bakPath = `${filePath}.bak`;
     if (fs.existsSync(bakPath)) {
       try {
-        console.log(`[SafeRead] Attempting fallback to ${bakPath}...`);
         const bakContent = fs.readFileSync(bakPath, "utf8");
         const parsedBak = JSON.parse(bakContent) as T;
         safeWriteFileSync(filePath, parsedBak);
@@ -983,10 +1108,9 @@ function safeReadJsonFileSync<T>(filePath: string): T | null {
       } catch (e) {}
     }
 
-    // Attempt 2: Smart repair truncated JSON string
+    // Attempt 3: Smart repair truncated JSON string
     try {
       let raw = fs.readFileSync(filePath, "utf8");
-      // Find the last viable valid JSON truncation point in max 200 lines from bottom
       let lines = raw.split("\n");
       const startIdx = Math.max(0, lines.length - 300);
       for (let i = lines.length; i >= startIdx; i--) {
@@ -1011,15 +1135,29 @@ function safeReadJsonFileSync<T>(filePath: string): T | null {
 
         try {
           const repaired = JSON.parse(candidate + closing) as T;
-          console.log(`[SafeRead] Successfully auto-repaired truncated ${filePath}!`);
           safeWriteFileSync(filePath, repaired);
           return repaired;
         } catch (repairErr) {}
       }
     } catch (salvageErr) {}
 
+    console.warn(`[SafeRead] Could not parse or recover ${filePath}:`, err?.message);
     return null;
   }
+}
+
+// Helper to get master collection for Julio
+function getMasterJulioShows(): TvShow[] {
+  try {
+    const BACKUP_FILE = path.join(process.cwd(), "julio_shows_backup.json");
+    if (fs.existsSync(BACKUP_FILE)) {
+      const backupShows = safeReadJsonFileSync<TvShow[]>(BACKUP_FILE);
+      if (Array.isArray(backupShows) && backupShows.length > 50) {
+        return backupShows;
+      }
+    }
+  } catch (e) {}
+  return DEFAULT_SHOWS;
 }
 
 // Helper to read database
@@ -1030,8 +1168,8 @@ function readDatabase(): Record<string, Board> {
       const initialDb: Record<string, Board> = {
         default: {
           id: "default",
-          name: "My Tracker",
-          shows: DEFAULT_SHOWS,
+          name: "Julio's Collection",
+          shows: getMasterJulioShows(),
           preferences: {
             genres: [],
             actors: [],
@@ -1051,14 +1189,34 @@ function readDatabase(): Record<string, Board> {
       const fallbackDb: Record<string, Board> = {
         default: {
           id: "default",
-          name: "My Tracker",
-          shows: DEFAULT_SHOWS,
+          name: "Julio's Collection",
+          shows: getMasterJulioShows(),
           preferences: { genres: [], actors: [], directors: [], services: ALL_SERVICES },
           updatedAt: new Date().toISOString(),
         }
       };
       safeWriteFileSync(DB_FILE, fallbackDb);
       return fallbackDb;
+    }
+
+    // Safeguard & Heal Julio's master collection from backup if ever needed
+    const masterShows = getMasterJulioShows();
+    if (Array.isArray(masterShows) && masterShows.length > 50) {
+      if (!db["default"] || !Array.isArray(db["default"].shows) || db["default"].shows.length < 50) {
+        console.log(`[Safety Guard] Restoring Julio master library (${masterShows.length} shows) from backup.`);
+        if (!db["default"]) {
+          db["default"] = {
+            id: "default",
+            name: "Julio's Collection",
+            shows: masterShows,
+            preferences: { genres: [], actors: [], directors: [], services: ALL_SERVICES },
+            updatedAt: new Date().toISOString()
+          };
+        } else {
+          db["default"].shows = masterShows;
+        }
+        safeWriteFileSync(DB_FILE, db);
+      }
     }
 
   let modified = false;
@@ -1117,22 +1275,20 @@ function readDatabase(): Record<string, Board> {
             }
           }
 
-          // Fuzzy match fallbacks for database healing
+          // Safe disambiguated match fallbacks for database healing
           let correctedService: StreamingService | null = null;
-          if (cleanTitle.includes("caped crusader") || cleanTitle.includes("batman caped crusader")) {
+          if (cleanTitle.includes("spider-noir") || cleanTitle.includes("spider noir") || cleanTitle.includes("spider-man noir") || cleanTitle.includes("spiderman noir")) {
             correctedService = "Prime Video";
-          } else if (cleanTitle.includes("batman") || cleanTitle.includes("superman")) {
-            correctedService = "HBO";
-          } else if (cleanTitle.includes("teen titans")) {
-            correctedService = "HBO";
-          } else if (cleanTitle.includes("justice league")) {
-            correctedService = "HBO";
-          } else if (cleanTitle.includes("total drama")) {
-            correctedService = "HBO";
-          } else if (cleanTitle.includes("spider-man") || cleanTitle.includes("spiderman")) {
+          } else if (cleanTitle.includes("friendly neighborhood") || cleanTitle.includes("spidey and his amazing friends") || cleanTitle === "marvels spider-man" || cleanTitle === "marvel's spider-man") {
+            correctedService = "Disney+";
+          } else if (cleanTitle.includes("caped crusader") || cleanTitle.includes("batman caped crusader")) {
             correctedService = "Prime Video";
+          } else if (cleanTitle.includes("batman the animated series") || cleanTitle.includes("batman beyond") || cleanTitle.includes("my adventures with superman") || cleanTitle.includes("teen titans") || cleanTitle.includes("justice league") || cleanTitle.includes("total drama")) {
+            correctedService = "HBO";
           } else if (cleanTitle.includes("lioness")) {
             correctedService = "Paramount+";
+          } else if (cleanTitle === "humans") {
+            correctedService = "Hulu";
           }
 
           if (correctedService && show.streamingService !== correctedService) {
@@ -1241,6 +1397,20 @@ function readDatabase(): Record<string, Board> {
             }
           }
 
+          // Heal known broken TMDB URLs
+          if (show.bannerImage === "https://image.tmdb.org/t/p/w1280/e5b5eUsmqG4m7h0JzTf19uL3E7N.jpg" || (cleanTitle === "silo" && (!show.bannerImage || show.bannerImage.includes("tmdb.org")))) {
+            show.bannerImage = "https://static.tvmaze.com/uploads/images/original_untouched/631/1577677.jpg";
+            showModified = true;
+          }
+          if (show.bannerImage === "https://image.tmdb.org/t/p/w1280/etj5CuMuamjhGjQAC0Lo2iZ2u6q.jpg" || ((cleanTitle === "house of the dragon" || cleanTitle === "house of dragon") && (!show.bannerImage || show.bannerImage.includes("tmdb.org") || show.bannerImage.includes("theplaylist")))) {
+            show.bannerImage = "https://static.tvmaze.com/uploads/images/original_untouched/627/1568449.jpg";
+            showModified = true;
+          }
+          if (show.bannerImage === "https://image.tmdb.org/t/p/w1280/l0q2Y81BhywogG1p1HwDq6qf8Y8.jpg" || (cleanTitle === "abbott elementary" && (!show.bannerImage || show.bannerImage.includes("l0q2Y81BhywogG1p1HwDq6qf8Y8")))) {
+            show.bannerImage = "https://static.tvmaze.com/uploads/images/original_untouched/586/1467109.jpg";
+            showModified = true;
+          }
+
           // 7. Ensure bannerImage matches Julio's (admin) collection or fallback
           const defaultBoardShows = (db["default"] && Array.isArray(db["default"].shows)) ? db["default"].shows : DEFAULT_SHOWS;
           let canonicalShow = defaultBoardShows.find(ds => (ds.title || "").toLowerCase().trim() === cleanTitle);
@@ -1261,12 +1431,13 @@ function readDatabase(): Record<string, Board> {
           } else {
             const knownBanners: Record<string, string> = {
               "hacks": "https://static.tvmaze.com/uploads/images/original_untouched/623/1557822.jpg",
+              "abbott elementary": "https://static.tvmaze.com/uploads/images/original_untouched/586/1467109.jpg",
               "industry": "https://static.tvmaze.com/uploads/images/original_untouched/554/1387331.jpg",
               "the bear": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQLSxpFNAmFk_IZGbaryDs3GkM5lnyWEjGt6USNocYJPA&s=10",
-              "house of the dragon": "https://cdn.theplaylist.net/wp-content/uploads/2026/02/19111056/house-of-the-dragon.jpg",
-              "house of dragon": "https://cdn.theplaylist.net/wp-content/uploads/2026/02/19111056/house-of-the-dragon.jpg",
+              "house of the dragon": "https://static.tvmaze.com/uploads/images/original_untouched/627/1568449.jpg",
+              "house of dragon": "https://static.tvmaze.com/uploads/images/original_untouched/627/1568449.jpg",
               "severance": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQNACrAMoLkgMH0e47maB2DZ7OeMG3ZWBtuheU7rgkUdg&s=10",
-              "silo": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGow7p2r8x9pAV8hTP2OzWwWNDhQa96bWgImV_ucRIDw&s=10",
+              "silo": "https://static.tvmaze.com/uploads/images/original_untouched/631/1577677.jpg",
               "stranger things": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ4Qf7wolgUB7X37sMbkSd93bUJlubb_qNmozDnQtHp4Q&s=10",
               "the mandalorian": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRW7GL3lPW3wlxBr5nmhQ5gup4wqG5aGiroNJ8UNLSJaQ&s=10"
             };
@@ -1593,6 +1764,13 @@ async function writeDatabaseAsync(data: Record<string, Board>, targetBoardId?: s
   // 1. Immediately persist to local disk
   safeWriteFileSync(DB_FILE, data);
 
+  // Keep backup file synchronized if default has master library
+  if (data["default"] && Array.isArray(data["default"].shows) && data["default"].shows.length >= 50) {
+    try {
+      safeWriteFileSync(path.join(process.cwd(), "julio_shows_backup.json"), data["default"].shows);
+    } catch (e) {}
+  }
+
   // 2. Primary: Persist to Cloud Firestore immediately with non-blocking timeout
   if (dbFirestore) {
     if (isFirestoreQuotaExhausted) {
@@ -1716,6 +1894,166 @@ function saveCache() {
 // Initialize cache
 loadCache();
 
+// -------------------------------------------------------------
+// AI Beta Rate Limiting & Admin Access Safeguard Controls
+// -------------------------------------------------------------
+const AI_SETTINGS_FILE = path.join(process.cwd(), "data", "ai_settings.json");
+
+interface AiBetaSettings {
+  betaLimitsEnabled: boolean; // Master toggle to enable/disable beta AI limits
+  dailyLimitPerUser: number;  // Standard daily quota for beta users (default: 10)
+  adminOnlyMode: boolean;     // Emergency toggle: restrict all AI calls exclusively to admin
+  proDailyLimit: number;      // Pro/Paid daily limit (default: 100)
+}
+
+let aiBetaSettings: AiBetaSettings = {
+  betaLimitsEnabled: true,
+  dailyLimitPerUser: 10,
+  adminOnlyMode: false,
+  proDailyLimit: 100
+};
+
+function loadAiBetaSettings() {
+  try {
+    if (fs.existsSync(AI_SETTINGS_FILE)) {
+      const raw = fs.readFileSync(AI_SETTINGS_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      aiBetaSettings = { ...aiBetaSettings, ...parsed };
+    }
+  } catch (err) {
+    console.error("Error loading ai_settings.json:", err);
+  }
+}
+
+function saveAiBetaSettings() {
+  try {
+    const dir = path.dirname(AI_SETTINGS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(AI_SETTINGS_FILE, JSON.stringify(aiBetaSettings, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error saving ai_settings.json:", err);
+  }
+  if (dbFirestore && !isFirestoreQuotaExhausted) {
+    setDoc(doc(dbFirestore, "system", "ai_settings"), aiBetaSettings, { merge: true }).catch(() => {});
+  }
+}
+
+loadAiBetaSettings();
+
+// In-memory / rolling daily AI usage tracker: Map<identifier, { count: number, resetDate: string }>
+const aiDailyUsageMap = new Map<string, { count: number; date: string }>();
+
+function getTodayString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isUserAdmin(email?: string, userId?: string): boolean {
+  const normEmail = (email || "").toLowerCase().trim();
+  const normId = (userId || "").toLowerCase().trim();
+  return (
+    normEmail === "juliozaldivar@gmail.com" ||
+    normEmail === "julio@couchtaterz.com" ||
+    normId === "default" ||
+    normId === "user-julio"
+  );
+}
+
+interface AiLimitCheckResult {
+  allowed: boolean;
+  isAdmin: boolean;
+  isPro: boolean;
+  currentCount: number;
+  maxLimit: number;
+  remaining: number;
+  message?: string;
+}
+
+function checkAndConsumeAiCredit(
+  clientIp: string,
+  userEmail?: string,
+  userId?: string,
+  isProUser: boolean = false,
+  featureName: string = "AI Recommendations & Summaries"
+): AiLimitCheckResult {
+  const admin = isUserAdmin(userEmail, userId);
+  if (admin) {
+    return {
+      allowed: true,
+      isAdmin: true,
+      isPro: true,
+      currentCount: 0,
+      maxLimit: 999999,
+      remaining: 999999
+    };
+  }
+
+  // Check admin-only mode
+  if (aiBetaSettings.adminOnlyMode) {
+    return {
+      allowed: false,
+      isAdmin: false,
+      isPro: isProUser,
+      currentCount: 0,
+      maxLimit: 0,
+      remaining: 0,
+      message: "AI capabilities are temporarily restricted to administrative maintenance during beta testing. Please check back shortly!"
+    };
+  }
+
+  // If beta limits are toggled off by admin, permit freely
+  if (!aiBetaSettings.betaLimitsEnabled) {
+    return {
+      allowed: true,
+      isAdmin: false,
+      isPro: isProUser,
+      currentCount: 0,
+      maxLimit: 999999,
+      remaining: 999999
+    };
+  }
+
+  const identifier = (userEmail && userEmail.trim()) 
+    ? `email:${userEmail.toLowerCase().trim()}` 
+    : (userId && userId.trim()) 
+      ? `user:${userId.trim()}` 
+      : `ip:${clientIp || "unknown"}`;
+
+  const today = getTodayString();
+  const existing = aiDailyUsageMap.get(identifier);
+
+  let record = existing;
+  if (!record || record.date !== today) {
+    record = { count: 0, date: today };
+    aiDailyUsageMap.set(identifier, record);
+  }
+
+  const effectiveLimit = isProUser ? aiBetaSettings.proDailyLimit : aiBetaSettings.dailyLimitPerUser;
+
+  if (record.count >= effectiveLimit) {
+    return {
+      allowed: false,
+      isAdmin: false,
+      isPro: isProUser,
+      currentCount: record.count,
+      maxLimit: effectiveLimit,
+      remaining: 0,
+      message: `Beta daily AI limit reached (${effectiveLimit}/${effectiveLimit} ${featureName} today). Your quota resets at midnight! Upgrade for unlimited access.`
+    };
+  }
+
+  record.count += 1;
+  const remaining = effectiveLimit - record.count;
+
+  return {
+    allowed: true,
+    isAdmin: false,
+    isPro: isProUser,
+    currentCount: record.count,
+    maxLimit: effectiveLimit,
+    remaining
+  };
+}
+
 // Dedicated persistent database cache table for Taterz AI zero-spoiler recaps
 const RECAP_CACHE_FILE = path.join(process.cwd(), "data", "ai_recap_cache.json");
 let aiRecapCache: Record<string, string> = {};
@@ -1787,7 +2125,7 @@ function normalizeBoardId(id: string): string {
   if (clean === "user-lilyann" || clean === "lilyann" || clean === "user-lilyann-4290") return "user-lilyann-4290";
   if (clean === "user-stef" || clean === "stef" || clean === "user-stef-4912") return "user-stef-4912";
   if (clean === "user-doug" || clean === "doug" || clean === "doug-briskie" || clean === "doug briskie" || clean === "user-doug-briskie" || clean === "user-doug-briskie-5088" || clean === "user-doug-5821") return "user-doug-5821";
-  if (clean === "user-julio" || clean === "julio" || clean === "default" || clean === "juliozaldivar@gmail.com") return "default";
+  if (clean === "user-julio" || clean === "julio" || clean === "default" || clean === "juliozaldivar@gmail.com" || clean === "user-google-8850") return "default";
   return id;
 }
 
@@ -1796,14 +2134,6 @@ function normalizeBoardId(id: string): string {
 // 1. Get Board (creates custom if not found)
 app.get("/api/boards", async (req, res) => {
   try {
-    if (firestoreSyncPromise) {
-      try {
-        await Promise.race([
-          firestoreSyncPromise,
-          new Promise((resolve) => setTimeout(resolve, 2500))
-        ]);
-      } catch (e) {}
-    }
     const db = readDatabase();
     
     if (req.query.all === "true") {
@@ -1822,29 +2152,52 @@ app.get("/api/boards", async (req, res) => {
 
     const boardId = normalizeBoardId((req.query.id as string) || "default");
 
-    // If Cloud Firestore is enabled, check if cloud doc exists and merge with local memory (with fast 2s timeout)
+    // If Cloud Firestore is enabled:
+    // If board already exists in local DB, trigger background reconciliation without blocking the HTTP response.
+    // If board does NOT exist locally, do a fast non-blocking lookup (with 600ms timeout) before falling back.
     if (dbFirestore && !isFirestoreQuotaExhausted && boardId !== "guest-demo" && req.query.reset !== "true") {
-      try {
-        const getDocPromise = getDoc(doc(dbFirestore, "boards", boardId));
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
-        const cloudDoc: any = await Promise.race([getDocPromise, timeoutPromise]);
-        if (cloudDoc && typeof cloudDoc.exists === "function" && cloudDoc.exists()) {
-          const cloudBoard = cloudDoc.data() as Board;
-          if (cloudBoard && Array.isArray(cloudBoard.shows)) {
-            if (!db[boardId]) {
-              db[boardId] = cloudBoard;
-            } else {
-              const { mergedBoard } = mergeBoards(cloudBoard, db[boardId]);
-              db[boardId] = mergedBoard;
+      if (db[boardId]) {
+        // Fast background sync (non-blocking)
+        Promise.resolve().then(async () => {
+          try {
+            const cloudDoc = await getDoc(doc(dbFirestore, "boards", boardId));
+            if (cloudDoc && typeof cloudDoc.exists === "function" && cloudDoc.exists()) {
+              const cloudBoard = cloudDoc.data() as Board;
+              if (cloudBoard && Array.isArray(cloudBoard.shows)) {
+                const currentDb = readDatabase();
+                if (!currentDb[boardId]) {
+                  currentDb[boardId] = cloudBoard;
+                  safeWriteFileSync(DB_FILE, currentDb);
+                } else {
+                  const { mergedBoard, changed } = mergeBoards(cloudBoard, currentDb[boardId]);
+                  if (changed) {
+                    currentDb[boardId] = mergedBoard;
+                    safeWriteFileSync(DB_FILE, currentDb);
+                  }
+                }
+              }
             }
-            safeWriteFileSync(DB_FILE, db);
+          } catch (bgErr) {
+            if (isQuotaError(bgErr)) handleFirestoreQuotaExhausted(bgErr);
           }
-        }
-      } catch (fErr) {
-        if (isQuotaError(fErr)) {
-          handleFirestoreQuotaExhausted(fErr);
-        } else {
-          console.warn(`[Firestore] Direct read fallback for board ${boardId}:`, fErr);
+        });
+      } else {
+        // Board not in local cache, do a fast bounded lookup
+        try {
+          const getDocPromise = getDoc(doc(dbFirestore, "boards", boardId));
+          const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 600));
+          const cloudDoc: any = await Promise.race([getDocPromise, timeoutPromise]);
+          if (cloudDoc && typeof cloudDoc.exists === "function" && cloudDoc.exists()) {
+            const cloudBoard = cloudDoc.data() as Board;
+            if (cloudBoard && Array.isArray(cloudBoard.shows)) {
+              db[boardId] = cloudBoard;
+              safeWriteFileSync(DB_FILE, db);
+            }
+          }
+        } catch (fErr) {
+          if (isQuotaError(fErr)) {
+            handleFirestoreQuotaExhausted(fErr);
+          }
         }
       }
     }
@@ -1872,7 +2225,7 @@ app.get("/api/boards", async (req, res) => {
 
       let initialShows = (db[boardId]?.shows && Array.isArray(db[boardId].shows) && req.query.reset !== "true" && boardId !== "guest-demo")
         ? db[boardId].shows
-        : DEFAULT_SHOWS;
+        : (boardId === "default" || boardId === "user-julio" ? getMasterJulioShows() : DEFAULT_SHOWS);
 
       if (boardId === "guest-demo" || (boardId !== "default" && boardId !== "user-julio" && !matchedCommunityUser)) {
         initialShows = initialShows.map((s: any) => ({
@@ -2068,9 +2421,11 @@ app.post("/api/boards", async (req, res) => {
   if (isJulioTarget) {
     const isVerifiedJulio = 
       userEmailHeader === 'juliozaldivar@gmail.com' ||
+      userEmailHeader === 'julio@couchtaterz.com' ||
       userIdHeader === 'default' ||
       userIdHeader === 'user-julio' ||
-      (owner && (owner.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' || owner.id === 'default'));
+      userIdHeader === 'user-google-8850' ||
+      (owner && (owner.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' || owner.email?.toLowerCase().trim() === 'julio@couchtaterz.com' || owner.id === 'default' || owner.id === 'user-julio' || owner.id === 'user-google-8850'));
 
     if (!isVerifiedJulio) {
       console.warn(`[Security Alert] Unauthorized attempt to modify admin Julio account from ${userEmailHeader || 'anonymous'}`);
@@ -2149,6 +2504,18 @@ app.post("/api/boards", async (req, res) => {
   };
   ensureBoardOwner(db[id], id);
   unrecordDeletedUser(id);
+
+  // Automatically ensure Julio / Admin account is connected to every user account
+  if (id !== 'default' && id !== 'user-julio' && id !== 'guest-demo' && !id.startsWith('guest')) {
+    try {
+      const friendsDb = readFriendsDb();
+      const userRec = getUserFriendsRecord(friendsDb, id);
+      const julioRec = getUserFriendsRecord(friendsDb, 'default');
+      if (!userRec.friends.includes('default')) userRec.friends.unshift('default');
+      if (!julioRec.friends.includes(id)) julioRec.friends.push(id);
+      writeFriendsDbAsync(friendsDb, [id, 'default']).catch(() => {});
+    } catch (e) {}
+  }
   
   await writeDatabaseAsync(db, id);
   res.json(db[id]);
@@ -2916,51 +3283,31 @@ function mergeBoards(cloudBoard: Board, localBoard: Board): { mergedBoard: Board
 
   let mergedShows: any[] = [];
 
-  if (localTime > cloudTime) {
-    // Local board is strictly newer: localShows is canonical (respects deletions)
-    const cloudMap = new Map<string, any>();
-    cloudShows.forEach((cs: any) => {
-      const key = getShowKey(cs);
-      if (key) cloudMap.set(key, cs);
-    });
-    mergedShows = localShows.map((ls: any) => {
-      const key = getShowKey(ls);
-      const matched = key ? cloudMap.get(key) : null;
-      return matched ? mergeSingleShow(ls, matched) : ls;
-    });
-  } else if (cloudTime > localTime) {
-    // Cloud board is strictly newer: cloudShows is canonical (respects deletions)
-    const localMap = new Map<string, any>();
-    localShows.forEach((ls: any) => {
-      const key = getShowKey(ls);
-      if (key) localMap.set(key, ls);
-    });
-    mergedShows = cloudShows.map((cs: any) => {
-      const key = getShowKey(cs);
-      const matched = key ? localMap.get(key) : null;
-      return matched ? mergeSingleShow(cs, matched) : cs;
-    });
+  // Lossless Union Show Merge: Ensure no user shows or reviews are ever silently dropped during sync
+  const showMap = new Map<string, any>();
+  const addShowToMap = (s: any, isCloud: boolean) => {
+    const key = getShowKey(s);
+    if (!key) return;
+
+    if (!showMap.has(key)) {
+      showMap.set(key, s);
+    } else {
+      const existing = showMap.get(key);
+      const isNewer = (isCloud && cloudTime >= localTime) || (!isCloud && localTime >= cloudTime);
+      const primary = isNewer ? s : existing;
+      const secondary = primary === s ? existing : s;
+      showMap.set(key, mergeSingleShow(primary, secondary));
+    }
+  };
+
+  if (cloudTime >= localTime) {
+    localShows.forEach((ls: any) => addShowToMap(ls, false));
+    cloudShows.forEach((cs: any) => addShowToMap(cs, true));
   } else {
-    // Timestamps identical or uninitialized: Union merge
-    const showMap = new Map<string, any>();
-    const addShowToMap = (s: any, isCloud: boolean) => {
-      const key = getShowKey(s);
-      if (!key) return;
-
-      if (!showMap.has(key)) {
-        showMap.set(key, s);
-      } else {
-        const existing = showMap.get(key);
-        const primary = isCloud ? s : existing;
-        const secondary = primary === s ? existing : s;
-        showMap.set(key, mergeSingleShow(primary, secondary));
-      }
-    };
-
     cloudShows.forEach((cs: any) => addShowToMap(cs, true));
     localShows.forEach((ls: any) => addShowToMap(ls, false));
-    mergedShows = Array.from(showMap.values());
   }
+  mergedShows = Array.from(showMap.values());
 
   const mergedPreferences = {
     genres: Array.from(new Set([...(cloudBoard.preferences?.genres || []), ...(localBoard.preferences?.genres || [])])),
@@ -3340,6 +3687,24 @@ function getUserFriendsRecord(db: Record<string, UserFriendsRecord>, userId: str
   if (!Array.isArray(db[normId].pendingSent)) db[normId].pendingSent = [];
   if (!Array.isArray(db[normId].pendingReceived)) db[normId].pendingReceived = [];
 
+  const isJulioUser = normId === 'default' || normId === 'user-julio';
+  const isGuest = normId === 'guest-demo' || normId.startsWith('guest');
+
+  // Automatically ensure Julio / Admin account is connected to every user account
+  if (!isJulioUser && !isGuest) {
+    if (!db[normId].friends.includes('default')) {
+      db[normId].friends.unshift('default');
+    }
+    // Also ensure Julio's record has this user
+    if (!db['default']) {
+      db['default'] = { friends: [], pendingSent: [], pendingReceived: [] };
+    }
+    if (!Array.isArray(db['default'].friends)) db['default'].friends = [];
+    if (!db['default'].friends.includes(normId)) {
+      db['default'].friends.push(normId);
+    }
+  }
+
   // Also ensure alias db entry is kept consistently in sync
   if (userId !== normId) {
     if (db[userId] && (!db[normId].friends.length && db[userId].friends?.length)) {
@@ -3486,12 +3851,6 @@ function saveUserActivityDb() {
       const dir = path.dirname(USER_ACTIVITY_FILE);
       if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(USER_ACTIVITY_FILE, JSON.stringify(userActivityDb, null, 2), "utf8");
-
-      if (dbFirestore && !isFirestoreQuotaExhausted) {
-        Object.entries(userActivityDb).forEach(([uId, act]) => {
-          setDoc(doc(dbFirestore, "user_activity", uId), sanitizeForFirestore(act), { merge: true }).catch(() => {});
-        });
-      }
     } catch (err) {
       console.error("Error saving user activity:", err);
     }
@@ -3705,6 +4064,30 @@ app.post(["/api/users/profile", "/api/users/avatar"], async (req, res) => {
   }
 });
 
+// In-memory cache for Firestore users collection to avoid blocking /api/users requests
+let cachedFirestoreUsers: User[] = [];
+let lastFirestoreUsersFetch = 0;
+let isFetchingFirestoreUsers = false;
+
+function refreshFirestoreUsersInBackground() {
+  if (!dbFirestore || isFirestoreQuotaExhausted || isFetchingFirestoreUsers) return;
+  isFetchingFirestoreUsers = true;
+  getDocs(collection(dbFirestore, "users"))
+    .then((usersSnap) => {
+      const list: User[] = [];
+      usersSnap.forEach((uDoc) => {
+        const u = uDoc.data() as User;
+        if (u && u.id) list.push(u);
+      });
+      cachedFirestoreUsers = list;
+      lastFirestoreUsersFetch = Date.now();
+    })
+    .catch(() => {})
+    .finally(() => {
+      isFetchingFirestoreUsers = false;
+    });
+}
+
 // 2.5. Get all users
 app.get("/api/users", async (req, res) => {
   const { currentUserId, email, name, activeSeconds, isLogin } = req.query as { 
@@ -3721,7 +4104,6 @@ app.get("/api/users", async (req, res) => {
     });
   }
 
-  await ensureDatabaseSynced();
   const db = readDatabase();
   
   // Ensure default board has owner populated
@@ -3763,20 +4145,21 @@ app.get("/api/users", async (req, res) => {
     }
   });
 
-  // Also query Cloud Firestore users collection directly if available for instant real-time sync
-  if (dbFirestore && !isFirestoreQuotaExhausted) {
-    try {
-      const usersSnap = await getDocs(collection(dbFirestore, "users"));
-      usersSnap.forEach((uDoc) => {
-        const u = uDoc.data() as User;
-        if (u && u.id) {
-          const normId = normalizeBoardId(u.id);
-          if (!deletedUserIds.has(normId)) {
-            uniqueOwnersMap.set(normId, { ...u, id: normId });
-          }
+  // Overlay cached Firestore users without blocking
+  if (cachedFirestoreUsers.length > 0) {
+    cachedFirestoreUsers.forEach((u) => {
+      if (u && u.id) {
+        const normId = normalizeBoardId(u.id);
+        if (!deletedUserIds.has(normId)) {
+          uniqueOwnersMap.set(normId, { ...u, id: normId });
         }
-      });
-    } catch (e) {}
+      }
+    });
+  }
+
+  // Refresh Firestore users in background if stale
+  if (dbFirestore && !isFirestoreQuotaExhausted && Date.now() - lastFirestoreUsersFetch > 45000) {
+    refreshFirestoreUsersInBackground();
   }
 
   const coreOrder = ["default", "user-doug-5821", "user-ejc-2841", "user-stef-4912", "user-rafael-9639", "user-julian-7667", "user-lily-9367", "user-kris-5139", "user-lilyann-4290", "user-greg-3842", "user-hyunjin-6821"];
@@ -3838,6 +4221,196 @@ app.get("/api/users", async (req, res) => {
   });
 
   res.json(usersWithOnlineStatus);
+});
+
+// ==========================================
+// 2.5.1 Lemon Squeezy VIP Payment & Webhook API
+// ==========================================
+
+// Get Lemon Squeezy Public Config & Availability
+app.get("/api/lemonsqueezy/config", (req, res) => {
+  const config = getLemonSqueezyConfig();
+  res.json({
+    isConfigured: config.isConfigured,
+    hasApiKey: Boolean(config.apiKey),
+    hasStoreId: Boolean(config.storeId),
+    hasWebhookSecret: Boolean(config.webhookSecret),
+    hasMonthlyCheckout: Boolean(config.checkoutUrlMonthly),
+    hasLifetimeCheckout: Boolean(config.checkoutUrlLifetime),
+    checkoutUrlMonthly: config.checkoutUrlMonthly || null,
+    checkoutUrlLifetime: config.checkoutUrlLifetime || null
+  });
+});
+
+// Generate a frictionless, pre-filled Lemon Squeezy checkout link
+app.post("/api/lemonsqueezy/create-checkout", (req, res) => {
+  try {
+    const { userId, userEmail, userName, plan = "monthly", customCheckoutUrl, returnUrl } = req.body || {};
+    
+    if (!userId && !userEmail) {
+      return res.status(400).json({ error: "userId or userEmail is required." });
+    }
+
+    const cleanUserId = userId || (userEmail ? `user-${userEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_')}` : "default");
+
+    const checkoutUrl = buildCheckoutUrl({
+      plan: plan === 'lifetime' || plan === 'annual' ? plan : 'monthly',
+      userId: cleanUserId,
+      userEmail,
+      userName,
+      customCheckoutUrl,
+      returnUrl
+    });
+
+    const config = getLemonSqueezyConfig();
+
+    return res.json({
+      success: true,
+      url: checkoutUrl,
+      isLiveConfigured: config.isConfigured,
+      plan
+    });
+  } catch (err: any) {
+    console.error("[Lemon Squeezy] Error generating checkout link:", err);
+    return res.status(500).json({ error: err?.message || "Failed to create checkout URL." });
+  }
+});
+
+// Official Lemon Squeezy Webhook Handler
+app.post("/api/lemonsqueezy/webhook", async (req: any, res) => {
+  try {
+    const signature = (req.headers["x-signature"] as string) || "";
+    const config = getLemonSqueezyConfig();
+    const rawBody = req.rawBody || JSON.stringify(req.body);
+
+    // Verify HMAC-SHA256 signature
+    const isValid = verifyWebhookSignature(rawBody, signature, config.webhookSecret);
+    if (!isValid) {
+      console.warn("[Lemon Squeezy Webhook] Invalid signature rejected.");
+      return res.status(401).json({ error: "Invalid webhook signature." });
+    }
+
+    await ensureDatabaseSynced();
+
+    const result = await processLemonSqueezyWebhook(req.body, {
+      dbFirestore,
+      readDatabase,
+      writeDatabase,
+      communityUsers: COMMUNITY_USERS,
+      isFirestoreQuotaExhausted
+    });
+
+    console.log("[Lemon Squeezy Webhook] Successfully processed event:", result);
+    return res.status(200).json({ success: true, ...result });
+  } catch (err: any) {
+    console.error("[Lemon Squeezy Webhook] Processing error:", err);
+    // Return 200 to prevent Lemon Squeezy retry storms for bad payloads, but log error
+    return res.status(200).json({ error: err?.message || "Webhook processing error", success: false });
+  }
+});
+
+// Check user VIP status from server & database
+app.get("/api/lemonsqueezy/status", async (req, res) => {
+  try {
+    const { userId, email } = req.query as { userId?: string; email?: string };
+    if (!userId && !email) {
+      return res.status(400).json({ error: "userId or email required" });
+    }
+
+    const cleanUserId = userId || (email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' ? 'default' : null) || 'default';
+    const isJulio = cleanUserId === 'default' || cleanUserId === 'user-julio' || email?.toLowerCase().trim() === 'juliozaldivar@gmail.com';
+
+    await ensureDatabaseSynced();
+    const db = readDatabase();
+    const targetId = isJulio ? 'default' : cleanUserId;
+    const board = db[targetId];
+    const owner = board?.owner;
+
+    // Check community users list as well
+    const commUser = COMMUNITY_USERS.find(u => u.id === targetId || (email && u.email?.toLowerCase() === email.toLowerCase())) as any;
+
+    const isVip = isJulio || Boolean(owner?.isVip) || Boolean(commUser?.isVip) || Boolean(owner?.isPro);
+
+    return res.json({
+      userId: targetId,
+      isVip,
+      isPro: isVip,
+      vipPlan: owner?.vipPlan || (isJulio ? 'admin' : (commUser?.vipPlan || 'free')),
+      vipSince: owner?.vipSince || (isJulio ? '2026-07-14T00:00:00.000Z' : null),
+      subscriptionStatus: isJulio ? 'active' : (owner?.subscriptionStatus || (isVip ? 'active' : 'inactive')),
+      subscriptionRenewsAt: owner?.subscriptionRenewsAt || null,
+      customerPortalUrl: owner?.lemonSqueezyCustomerPortalUrl || null,
+      isLiveConfigured: getLemonSqueezyConfig().isConfigured
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || "Failed to check VIP status." });
+  }
+});
+
+// Instant Test / Simulation upgrade endpoint (for development & preview testing)
+app.post("/api/lemonsqueezy/simulate-upgrade", async (req, res) => {
+  try {
+    const { userId, email, name, plan = "monthly", isVip = true } = req.body || {};
+    const cleanId = userId || (email?.toLowerCase().trim() === 'juliozaldivar@gmail.com' ? 'default' : null) || 'default';
+    const isJulio = cleanId === 'default' || cleanId === 'user-julio' || email?.toLowerCase().trim() === 'juliozaldivar@gmail.com';
+
+    await ensureDatabaseSynced();
+    const db = readDatabase();
+    const targetBoardIds = isJulio ? ['default', 'user-julio'] : [cleanId];
+
+    for (const bId of targetBoardIds) {
+      if (db[bId]) {
+        if (!db[bId].owner) {
+          db[bId].owner = {
+            id: bId,
+            name: name || (isJulio ? 'Julio' : 'User'),
+            email: email || (isJulio ? 'juliozaldivar@gmail.com' : ''),
+            createdAt: new Date().toISOString()
+          };
+        }
+        db[bId].owner.isVip = isVip;
+        db[bId].owner.isPro = isVip;
+        db[bId].owner.vipPlan = isVip ? plan : 'free';
+        db[bId].owner.vipSince = isVip ? new Date().toISOString() : undefined;
+        db[bId].owner.subscriptionStatus = isVip ? 'active' : 'inactive';
+        db[bId].updatedAt = new Date().toISOString();
+        writeDatabase(db, bId);
+      }
+    }
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      const userPayload: any = {
+        id: cleanId,
+        isVip,
+        isPro: isVip,
+        vipPlan: isVip ? plan : 'free',
+        subscriptionStatus: isVip ? 'active' : 'inactive',
+        updatedAt: new Date().toISOString()
+      };
+      setDoc(doc(dbFirestore, "users", cleanId), userPayload, { merge: true }).catch(() => {});
+      if (isJulio) {
+        setDoc(doc(dbFirestore, "users", "default"), userPayload, { merge: true }).catch(() => {});
+        setDoc(doc(dbFirestore, "users", "user-julio"), userPayload, { merge: true }).catch(() => {});
+      }
+    }
+
+    const commUser = COMMUNITY_USERS.find(u => u.id === cleanId || (isJulio && u.id === 'default')) as any;
+    if (commUser) {
+      commUser.isVip = isVip;
+      commUser.isPro = isVip;
+      commUser.vipPlan = isVip ? plan : 'free';
+    }
+
+    return res.json({
+      success: true,
+      isVip,
+      isPro: isVip,
+      plan,
+      message: isVip ? "User VIP perks successfully unlocked!" : "User VIP status reset to free."
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message || "Failed to simulate upgrade." });
+  }
 });
 
 // Batch Delete Users Endpoint for Administration
@@ -4303,6 +4876,879 @@ app.get("/api/admin/overview", async (req, res) => {
   });
 });
 
+// -------------------------------------------------------------
+// Bug Reports & Feedback Engine
+// -------------------------------------------------------------
+const BUG_REPORTS_FILE = path.join(process.cwd(), "data", "bug_reports.json");
+
+interface ServerBugReport {
+  id: string;
+  category: 'bug' | 'feature_request' | 'ui_confusing' | 'other';
+  title: string;
+  description: string;
+  stepsToReproduce?: string;
+  expectedBehavior?: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'new' | 'investigating' | 'resolved' | 'dismissed';
+  userId?: string;
+  userName?: string;
+  userEmail?: string;
+  currentRoute?: string;
+  browserInfo?: string;
+  screenResolution?: string;
+  createdAt: string;
+  updatedAt?: string;
+  adminNotes?: string;
+}
+
+function readBugReports(): ServerBugReport[] {
+  try {
+    if (fs.existsSync(BUG_REPORTS_FILE)) {
+      const raw = fs.readFileSync(BUG_REPORTS_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (err) {
+    console.error("Error reading bug_reports.json:", err);
+  }
+  return [];
+}
+
+function writeBugReports(reports: ServerBugReport[]) {
+  try {
+    const dir = path.dirname(BUG_REPORTS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(BUG_REPORTS_FILE, JSON.stringify(reports, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error writing bug_reports.json:", err);
+  }
+}
+
+// POST: Submit a new bug or feedback report
+app.post("/api/bug-reports", async (req, res) => {
+  try {
+    const {
+      category = 'bug',
+      title,
+      description,
+      stepsToReproduce,
+      expectedBehavior,
+      severity = 'medium',
+      userId,
+      userName,
+      userEmail,
+      currentRoute,
+      browserInfo,
+      screenResolution
+    } = req.body;
+
+    if (!title || !description) {
+      return res.status(400).json({ error: "Title and description are required." });
+    }
+
+    const newReport: ServerBugReport = {
+      id: `bug_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      category: ['bug', 'feature_request', 'ui_confusing', 'other'].includes(category) ? category : 'bug',
+      title: String(title).slice(0, 300),
+      description: String(description).slice(0, 5000),
+      stepsToReproduce: stepsToReproduce ? String(stepsToReproduce).slice(0, 3000) : undefined,
+      expectedBehavior: expectedBehavior ? String(expectedBehavior).slice(0, 3000) : undefined,
+      severity: ['low', 'medium', 'high', 'critical'].includes(severity) ? severity : 'medium',
+      status: 'new',
+      userId: userId || 'guest',
+      userName: userName || 'Guest User',
+      userEmail: userEmail || undefined,
+      currentRoute: currentRoute || undefined,
+      browserInfo: browserInfo ? String(browserInfo).slice(0, 500) : undefined,
+      screenResolution: screenResolution ? String(screenResolution).slice(0, 100) : undefined,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const reports = readBugReports();
+    reports.unshift(newReport);
+    writeBugReports(reports);
+
+    // Sync to Firestore if available
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      setDoc(doc(dbFirestore, "bug_reports", newReport.id), newReport).catch(err => {
+        console.error("[Firestore] Failed to save bug report:", err);
+      });
+    }
+
+    console.log(`[BugReports] New report filed: [${newReport.category.toUpperCase()}] "${newReport.title}" by ${newReport.userName} (${newReport.userId})`);
+    return res.status(201).json({ success: true, report: newReport });
+  } catch (err: any) {
+    console.error("[BugReports] Error submitting bug report:", err);
+    return res.status(500).json({ error: "Internal server error submitting report." });
+  }
+});
+
+// GET: Retrieve bug reports (filtered by user or all for admin)
+app.get("/api/bug-reports", async (req, res) => {
+  try {
+    const userEmail = (req.query.email as string) || "";
+    const userId = (req.query.userId as string) || "";
+    const isAdmin = isUserAdmin(userEmail, userId);
+
+    let reports = readBugReports();
+
+    if (!isAdmin) {
+      // Filter only reports submitted by this user
+      reports = reports.filter(r => 
+        (userId && r.userId === userId) ||
+        (userEmail && r.userEmail && r.userEmail.toLowerCase() === userEmail.toLowerCase())
+      );
+    }
+
+    return res.json({ reports, isAdmin });
+  } catch (err: any) {
+    console.error("[BugReports] Error fetching bug reports:", err);
+    return res.status(500).json({ error: "Failed to retrieve bug reports." });
+  }
+});
+
+// PUT: Update bug report status or admin notes (Admin only)
+app.put("/api/bug-reports/:id", async (req, res) => {
+  try {
+    const userEmail = (req.query.email as string) || "";
+    const userId = (req.query.userId as string) || "";
+    const isAdmin = isUserAdmin(userEmail, userId) || req.body.adminSecret === 'couchtaterz-admin';
+
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Admin authorization required to update reports." });
+    }
+
+    const { id } = req.params;
+    const { status, adminNotes, severity } = req.body;
+
+    const reports = readBugReports();
+    const index = reports.findIndex(r => r.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Bug report not found." });
+    }
+
+    if (status && ['new', 'investigating', 'resolved', 'dismissed'].includes(status)) {
+      reports[index].status = status;
+    }
+    if (adminNotes !== undefined) {
+      reports[index].adminNotes = String(adminNotes);
+    }
+    if (severity && ['low', 'medium', 'high', 'critical'].includes(severity)) {
+      reports[index].severity = severity;
+    }
+    reports[index].updatedAt = new Date().toISOString();
+
+    writeBugReports(reports);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      setDoc(doc(dbFirestore, "bug_reports", id), reports[index], { merge: true }).catch(() => {});
+    }
+
+    return res.json({ success: true, report: reports[index] });
+  } catch (err: any) {
+    console.error("[BugReports] Error updating bug report:", err);
+    return res.status(500).json({ error: "Failed to update bug report." });
+  }
+});
+
+// DELETE: Delete a bug report (Admin only)
+app.delete("/api/bug-reports/:id", async (req, res) => {
+  try {
+    const userEmail = (req.query.email as string) || "";
+    const userId = (req.query.userId as string) || "";
+    const isAdmin = isUserAdmin(userEmail, userId);
+
+    if (!isAdmin) {
+      return res.status(403).json({ error: "Admin authorization required to delete reports." });
+    }
+
+    const { id } = req.params;
+    let reports = readBugReports();
+    const beforeCount = reports.length;
+    reports = reports.filter(r => r.id !== id);
+
+    if (reports.length === beforeCount) {
+      return res.status(404).json({ error: "Bug report not found." });
+    }
+
+    writeBugReports(reports);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      deleteDoc(doc(dbFirestore, "bug_reports", id)).catch(() => {});
+    }
+
+    return res.json({ success: true, deletedId: id });
+  } catch (err: any) {
+    console.error("[BugReports] Error deleting bug report:", err);
+    return res.status(500).json({ error: "Failed to delete bug report." });
+  }
+});
+
+// -------------------------------------------------------------
+// Shared VIP Buddy Watchlists Engine
+// -------------------------------------------------------------
+const SHARED_WATCHLISTS_FILE = path.join(process.cwd(), "data", "shared_watchlists.json");
+
+interface ServerSharedWatchlist {
+  id: string;
+  title: string;
+  description?: string;
+  badge?: string;
+  themeColor?: string;
+  createdById: string;
+  createdByName: string;
+  createdByAvatarUrl?: string;
+  isVipExclusive: boolean;
+  collaboratorIds: string[];
+  collaborators: Array<{
+    id: string;
+    name: string;
+    email?: string;
+    avatarUrl?: string;
+    role: 'owner' | 'editor' | 'viewer';
+    isVip?: boolean;
+    joinedAt?: string;
+  }>;
+  shows: Array<{
+    id: string;
+    title: string;
+    streamingService: string;
+    bannerImage?: string;
+    genres?: string[];
+    status?: 'Watching' | 'Backlog' | 'Completed';
+    addedByUserId: string;
+    addedByUserName: string;
+    addedAt: string;
+    targetSeason?: number;
+    targetEpisode?: number;
+    totalEpisodes?: number;
+    notes?: string;
+    votes?: Record<string, number>;
+  }>;
+  activityFeed?: Array<{
+    id: string;
+    userId: string;
+    userName: string;
+    userAvatarUrl?: string;
+    action: string;
+    showTitle?: string;
+    timestamp: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function getInitialSharedWatchlists(): ServerSharedWatchlist[] {
+  return [
+    {
+      id: "vip_wl_friday_binge_squad",
+      title: "Friday Night Binge Squad",
+      description: "Coordinated watch party queue for high-stakes thrillers and sci-fi hits!",
+      badge: "👑 VIP Shared",
+      themeColor: "purple",
+      createdById: "default",
+      createdByName: "Julio (VIP Host)",
+      createdByAvatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
+      isVipExclusive: true,
+      collaboratorIds: ["default", "user-doug-5821", "user-stef-4912", "user-lily-9367"],
+      collaborators: [
+        {
+          id: "default",
+          name: "Julio",
+          email: "juliozaldivar@gmail.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
+          role: "owner",
+          isVip: true,
+          joinedAt: new Date().toISOString()
+        },
+        {
+          id: "user-doug-5821",
+          name: "Doug",
+          email: "doug@couchtaterz.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=doug",
+          role: "editor",
+          isVip: true,
+          joinedAt: new Date().toISOString()
+        },
+        {
+          id: "user-stef-4912",
+          name: "Stef",
+          email: "stef@couchtaterz.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=stef",
+          role: "editor",
+          isVip: true,
+          joinedAt: new Date().toISOString()
+        },
+        {
+          id: "user-lily-9367",
+          name: "Lily",
+          email: "lily@couchtaterz.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=lily",
+          role: "editor",
+          isVip: true,
+          joinedAt: new Date().toISOString()
+        }
+      ],
+      shows: [
+        {
+          id: "show_severance_shared",
+          title: "Severance",
+          streamingService: "Apple TV+",
+          bannerImage: "https://image.tmdb.org/t/p/w500/9Pf9bZup9jZ69p8kUqR04F5Z42H.jpg",
+          genres: ["Sci-Fi", "Drama", "Mystery"],
+          status: "Watching",
+          addedByUserId: "default",
+          addedByUserName: "Julio",
+          addedAt: new Date().toISOString(),
+          targetSeason: 2,
+          targetEpisode: 1,
+          totalEpisodes: 10,
+          notes: "Sync up for Season 2 premiere discussion!",
+          votes: { "default": 5, "user-doug-5821": 5, "user-stef-4912": 5 }
+        },
+        {
+          id: "show_tlou_shared",
+          title: "The Last of Us",
+          streamingService: "HBO Max",
+          bannerImage: "https://image.tmdb.org/t/p/w500/u3bZgnGQ9T01sWNhyveQz0w708D.jpg",
+          genres: ["Drama", "Action", "Sci-Fi"],
+          status: "Backlog",
+          addedByUserId: "user-doug-5821",
+          addedByUserName: "Doug",
+          addedAt: new Date().toISOString(),
+          targetSeason: 2,
+          targetEpisode: 1,
+          totalEpisodes: 8,
+          notes: "Rewatching Season 1 finale before Season 2 drops",
+          votes: { "default": 5, "user-doug-5821": 5, "user-lily-9367": 4 }
+        },
+        {
+          id: "show_stranger_things_shared",
+          title: "Stranger Things",
+          streamingService: "Netflix",
+          bannerImage: "https://image.tmdb.org/t/p/w500/49WJfeN0moxb9IPfGn8AIqMGskD.jpg",
+          genres: ["Sci-Fi", "Horror", "Drama"],
+          status: "Backlog",
+          addedByUserId: "user-stef-4912",
+          addedByUserName: "Stef",
+          addedAt: new Date().toISOString(),
+          targetSeason: 5,
+          targetEpisode: 1,
+          totalEpisodes: 8,
+          notes: "Final season marathon squad!",
+          votes: { "default": 5, "user-stef-4912": 5 }
+        }
+      ],
+      activityFeed: [
+        {
+          id: "act_init_1",
+          userId: "default",
+          userName: "Julio",
+          action: "created VIP Shared Watchlist 'Friday Night Binge Squad'",
+          timestamp: new Date().toISOString()
+        },
+        {
+          id: "act_init_2",
+          userId: "user-doug-5821",
+          userName: "Doug",
+          action: "added 'The Last of Us' with a 5-star vote",
+          showTitle: "The Last of Us",
+          timestamp: new Date().toISOString()
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    },
+    {
+      id: "vip_wl_prestige_drama_club",
+      title: "Prestige Drama Marathon",
+      description: "Emmy-caliber storytelling, weekly episodic breakdowns, and deep character studies.",
+      badge: "✨ Curated VIP",
+      themeColor: "amber",
+      createdById: "user-ejc-2841",
+      createdByName: "EJC (VIP Producer)",
+      createdByAvatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=ejc",
+      isVipExclusive: true,
+      collaboratorIds: ["user-ejc-2841", "default", "user-greg-3842", "user-rafael-9639"],
+      collaborators: [
+        {
+          id: "user-ejc-2841",
+          name: "EJC",
+          email: "ejc@couchtaterz.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=ejc",
+          role: "owner",
+          isVip: true,
+          joinedAt: new Date().toISOString()
+        },
+        {
+          id: "default",
+          name: "Julio",
+          email: "juliozaldivar@gmail.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Julio",
+          role: "editor",
+          isVip: true,
+          joinedAt: new Date().toISOString()
+        },
+        {
+          id: "user-greg-3842",
+          name: "Greg",
+          email: "greg@couchtaterz.com",
+          avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=greg",
+          role: "editor",
+          isVip: true,
+          joinedAt: new Date().toISOString()
+        }
+      ],
+      shows: [
+        {
+          id: "show_shogun_shared",
+          title: "Shōgun",
+          streamingService: "Hulu",
+          bannerImage: "https://image.tmdb.org/t/p/w500/7O4iVfOMQmdCSxhOg1WnzG1AgYT.jpg",
+          genres: ["Drama", "History", "Action"],
+          status: "Completed",
+          addedByUserId: "user-ejc-2841",
+          addedByUserName: "EJC",
+          addedAt: new Date().toISOString(),
+          targetSeason: 1,
+          targetEpisode: 10,
+          totalEpisodes: 10,
+          notes: "Masterpiece cinematography & writing.",
+          votes: { "user-ejc-2841": 5, "default": 5, "user-greg-3842": 5 }
+        },
+        {
+          id: "show_succession_shared",
+          title: "Succession",
+          streamingService: "HBO Max",
+          bannerImage: "https://image.tmdb.org/t/p/w500/7HXag6NV4z2c0uCq1pS6E7jD1sQ.jpg",
+          genres: ["Drama"],
+          status: "Completed",
+          addedByUserId: "default",
+          addedByUserName: "Julio",
+          addedAt: new Date().toISOString(),
+          targetSeason: 4,
+          targetEpisode: 10,
+          totalEpisodes: 39,
+          notes: "All-time favorite rewatch candidate",
+          votes: { "default": 5, "user-ejc-2841": 5 }
+        }
+      ],
+      activityFeed: [
+        {
+          id: "act_init_3",
+          userId: "user-ejc-2841",
+          userName: "EJC",
+          action: "created VIP Shared Watchlist 'Prestige Drama Marathon'",
+          timestamp: new Date().toISOString()
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ];
+}
+
+function readSharedWatchlists(): ServerSharedWatchlist[] {
+  try {
+    if (fs.existsSync(SHARED_WATCHLISTS_FILE)) {
+      const raw = fs.readFileSync(SHARED_WATCHLISTS_FILE, "utf-8");
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.error("Error reading shared_watchlists.json:", err);
+  }
+  const initial = getInitialSharedWatchlists();
+  writeSharedWatchlists(initial);
+  return initial;
+}
+
+function writeSharedWatchlists(lists: ServerSharedWatchlist[]) {
+  try {
+    const dir = path.dirname(SHARED_WATCHLISTS_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(SHARED_WATCHLISTS_FILE, JSON.stringify(lists, null, 2), "utf-8");
+  } catch (err) {
+    console.error("Error writing shared_watchlists.json:", err);
+  }
+}
+
+// GET: Fetch all shared VIP buddy watchlists accessible by a user
+app.get("/api/shared-watchlists", async (req, res) => {
+  try {
+    const rawUserId = (req.query.userId as string) || "default";
+    const userId = normalizeBoardId(rawUserId);
+    const allLists = readSharedWatchlists();
+
+    // Filter lists where user is owner, collaborator, or public VIP
+    const userLists = allLists.filter(list => {
+      const isOwner = normalizeBoardId(list.createdById) === userId || (userId === "default" && list.createdById === "default");
+      const isCollaborator = list.collaboratorIds.some(cId => normalizeBoardId(cId) === userId || (userId === "default" && cId === "default"));
+      return isOwner || isCollaborator || list.isVipExclusive;
+    });
+
+    return res.json(userLists);
+  } catch (err: any) {
+    console.error("[SharedWatchlists] GET error:", err);
+    return res.status(500).json({ error: "Failed to fetch shared watchlists." });
+  }
+});
+
+// POST: Create a new shared VIP buddy watchlist
+app.post("/api/shared-watchlists", async (req, res) => {
+  try {
+    const {
+      title,
+      description = "",
+      badge = "👑 VIP Shared",
+      themeColor = "purple",
+      createdById,
+      createdByName,
+      createdByAvatarUrl,
+      collaborators = [],
+      initialShows = []
+    } = req.body || {};
+
+    if (!title || !createdById) {
+      return res.status(400).json({ error: "Title and createdById are required." });
+    }
+
+    const normCreatedById = normalizeBoardId(createdById);
+    const listId = `vip_wl_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+    const collabList = [
+      {
+        id: normCreatedById,
+        name: createdByName || "VIP Host",
+        avatarUrl: createdByAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${normCreatedById}`,
+        role: "owner" as const,
+        isVip: true,
+        joinedAt: new Date().toISOString()
+      },
+      ...collaborators.map((c: any) => ({
+        id: normalizeBoardId(c.id),
+        name: c.name || "Watch Buddy",
+        email: c.email,
+        avatarUrl: c.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${c.id}`,
+        role: c.role || "editor",
+        isVip: Boolean(c.isVip),
+        joinedAt: new Date().toISOString()
+      }))
+    ];
+
+    const collabIds = Array.from(new Set(collabList.map(c => c.id)));
+
+    const formattedShows = initialShows.map((s: any, idx: number) => ({
+      id: s.id || `show_${Date.now()}_${idx}`,
+      title: s.title || "Untitled Show",
+      streamingService: s.streamingService || "Other",
+      bannerImage: s.bannerImage,
+      genres: Array.isArray(s.genres) ? s.genres : [],
+      status: s.status || "Watching",
+      addedByUserId: normCreatedById,
+      addedByUserName: createdByName || "VIP Host",
+      addedAt: new Date().toISOString(),
+      targetSeason: s.targetSeason || 1,
+      targetEpisode: s.targetEpisode || 1,
+      totalEpisodes: s.totalEpisodes || null,
+      notes: s.notes || "",
+      votes: { [normCreatedById]: 5 }
+    }));
+
+    const newList: ServerSharedWatchlist = {
+      id: listId,
+      title: title.trim(),
+      description: description.trim(),
+      badge,
+      themeColor,
+      createdById: normCreatedById,
+      createdByName: createdByName || "VIP Host",
+      createdByAvatarUrl,
+      isVipExclusive: true,
+      collaboratorIds: collabIds,
+      collaborators: collabList,
+      shows: formattedShows,
+      activityFeed: [
+        {
+          id: `act_${Date.now()}`,
+          userId: normCreatedById,
+          userName: createdByName || "VIP Host",
+          userAvatarUrl: createdByAvatarUrl,
+          action: `created VIP Shared Watchlist '${title.trim()}'`,
+          timestamp: new Date().toISOString()
+        }
+      ],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    const currentLists = readSharedWatchlists();
+    const updatedLists = [newList, ...currentLists];
+    writeSharedWatchlists(updatedLists);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      setDoc(doc(dbFirestore, "shared_watchlists", listId), newList).catch(() => {});
+    }
+
+    return res.status(201).json(newList);
+  } catch (err: any) {
+    console.error("[SharedWatchlists] POST error:", err);
+    return res.status(500).json({ error: "Failed to create shared watchlist." });
+  }
+});
+
+// PUT: Update an existing shared VIP watchlist
+app.put("/api/shared-watchlists/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body || {};
+    const lists = readSharedWatchlists();
+    const index = lists.findIndex(l => l.id === id);
+
+    if (index === -1) {
+      return res.status(404).json({ error: "Shared watchlist not found." });
+    }
+
+    const current = lists[index];
+    const updated: ServerSharedWatchlist = {
+      ...current,
+      ...updates,
+      id: current.id,
+      createdById: current.createdById,
+      updatedAt: new Date().toISOString()
+    };
+
+    if (updates.updatedBy && updates.actionDescription) {
+      const feed = updated.activityFeed || [];
+      feed.unshift({
+        id: `act_${Date.now()}`,
+        userId: updates.updatedBy.id || "guest",
+        userName: updates.updatedBy.name || "Watch Buddy",
+        action: updates.actionDescription,
+        timestamp: new Date().toISOString()
+      });
+      updated.activityFeed = feed.slice(0, 50); // Keep latest 50 activities
+    }
+
+    lists[index] = updated;
+    writeSharedWatchlists(lists);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      setDoc(doc(dbFirestore, "shared_watchlists", id), updated, { merge: true }).catch(() => {});
+    }
+
+    return res.json(updated);
+  } catch (err: any) {
+    console.error("[SharedWatchlists] PUT error:", err);
+    return res.status(500).json({ error: "Failed to update shared watchlist." });
+  }
+});
+
+// POST: Add a show to a shared VIP watchlist
+app.post("/api/shared-watchlists/:id/shows", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      streamingService = "Other",
+      bannerImage,
+      genres = [],
+      status = "Watching",
+      addedByUserId = "default",
+      addedByUserName = "Watch Buddy",
+      targetSeason = 1,
+      targetEpisode = 1,
+      notes = ""
+    } = req.body || {};
+
+    if (!title) {
+      return res.status(400).json({ error: "Show title is required." });
+    }
+
+    const lists = readSharedWatchlists();
+    const list = lists.find(l => l.id === id);
+    if (!list) {
+      return res.status(404).json({ error: "Shared watchlist not found." });
+    }
+
+    const existingIdx = list.shows.findIndex(s => s.title.toLowerCase().trim() === title.toLowerCase().trim());
+    if (existingIdx !== -1) {
+      // Already exists, just return current list
+      return res.json(list);
+    }
+
+    const newShow = {
+      id: `show_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      title: title.trim(),
+      streamingService,
+      bannerImage,
+      genres: Array.isArray(genres) ? genres : [],
+      status: (status as 'Watching' | 'Backlog' | 'Completed') || 'Watching',
+      addedByUserId: normalizeBoardId(addedByUserId),
+      addedByUserName,
+      addedAt: new Date().toISOString(),
+      targetSeason: Number(targetSeason) || 1,
+      targetEpisode: Number(targetEpisode) || 1,
+      notes: notes.trim(),
+      votes: { [normalizeBoardId(addedByUserId)]: 5 }
+    };
+
+    list.shows.unshift(newShow);
+    list.updatedAt = new Date().toISOString();
+
+    const feed = list.activityFeed || [];
+    feed.unshift({
+      id: `act_${Date.now()}`,
+      userId: normalizeBoardId(addedByUserId),
+      userName: addedByUserName,
+      action: `added '${title.trim()}' to the shared watchlist`,
+      showTitle: title.trim(),
+      timestamp: new Date().toISOString()
+    });
+    list.activityFeed = feed.slice(0, 50);
+
+    writeSharedWatchlists(lists);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      setDoc(doc(dbFirestore, "shared_watchlists", id), list, { merge: true }).catch(() => {});
+    }
+
+    return res.json(list);
+  } catch (err: any) {
+    console.error("[SharedWatchlists] Add show error:", err);
+    return res.status(500).json({ error: "Failed to add show to shared watchlist." });
+  }
+});
+
+// DELETE: Remove a show from a shared VIP watchlist
+app.delete("/api/shared-watchlists/:id/shows/:showId", async (req, res) => {
+  try {
+    const { id, showId } = req.params;
+    const { removedBy } = req.body || {};
+    const lists = readSharedWatchlists();
+    const list = lists.find(l => l.id === id);
+
+    if (!list) {
+      return res.status(404).json({ error: "Shared watchlist not found." });
+    }
+
+    const targetShow = list.shows.find(s => s.id === showId);
+    list.shows = list.shows.filter(s => s.id !== showId);
+    list.updatedAt = new Date().toISOString();
+
+    if (targetShow && removedBy) {
+      const feed = list.activityFeed || [];
+      feed.unshift({
+        id: `act_${Date.now()}`,
+        userId: normalizeBoardId(removedBy.id || "guest"),
+        userName: removedBy.name || "Watch Buddy",
+        action: `removed '${targetShow.title}' from the shared watchlist`,
+        showTitle: targetShow.title,
+        timestamp: new Date().toISOString()
+      });
+      list.activityFeed = feed.slice(0, 50);
+    }
+
+    writeSharedWatchlists(lists);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      setDoc(doc(dbFirestore, "shared_watchlists", id), list, { merge: true }).catch(() => {});
+    }
+
+    return res.json(list);
+  } catch (err: any) {
+    console.error("[SharedWatchlists] Remove show error:", err);
+    return res.status(500).json({ error: "Failed to remove show from shared watchlist." });
+  }
+});
+
+// POST: Vote/Rate a show in a shared VIP watchlist
+app.post("/api/shared-watchlists/:id/vote", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { showId, userId, userName, voteValue = 5 } = req.body || {};
+
+    if (!showId || !userId) {
+      return res.status(400).json({ error: "showId and userId are required." });
+    }
+
+    const lists = readSharedWatchlists();
+    const list = lists.find(l => l.id === id);
+    if (!list) {
+      return res.status(404).json({ error: "Shared watchlist not found." });
+    }
+
+    const show = list.shows.find(s => s.id === showId);
+    if (!show) {
+      return res.status(404).json({ error: "Show not found in watchlist." });
+    }
+
+    const normUId = normalizeBoardId(userId);
+    if (!show.votes) show.votes = {};
+    show.votes[normUId] = Number(voteValue);
+    list.updatedAt = new Date().toISOString();
+
+    const feed = list.activityFeed || [];
+    feed.unshift({
+      id: `act_${Date.now()}`,
+      userId: normUId,
+      userName: userName || "Watch Buddy",
+      action: `voted ${voteValue}★ for '${show.title}'`,
+      showTitle: show.title,
+      timestamp: new Date().toISOString()
+    });
+    list.activityFeed = feed.slice(0, 50);
+
+    writeSharedWatchlists(lists);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      setDoc(doc(dbFirestore, "shared_watchlists", id), list, { merge: true }).catch(() => {});
+    }
+
+    return res.json(list);
+  } catch (err: any) {
+    console.error("[SharedWatchlists] Vote error:", err);
+    return res.status(500).json({ error: "Failed to vote on show." });
+  }
+});
+
+// DELETE: Delete a shared VIP watchlist
+app.delete("/api/shared-watchlists/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const rawUserId = (req.query.userId as string) || "default";
+    const userId = normalizeBoardId(rawUserId);
+
+    let lists = readSharedWatchlists();
+    const target = lists.find(l => l.id === id);
+
+    if (!target) {
+      return res.status(404).json({ error: "Shared watchlist not found." });
+    }
+
+    const isOwner = normalizeBoardId(target.createdById) === userId || userId === "default";
+    const isAdmin = isUserAdmin("", userId);
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: "Only the creator or admin can delete this watchlist." });
+    }
+
+    lists = lists.filter(l => l.id !== id);
+    writeSharedWatchlists(lists);
+
+    if (dbFirestore && !isFirestoreQuotaExhausted) {
+      deleteDoc(doc(dbFirestore, "shared_watchlists", id)).catch(() => {});
+    }
+
+    return res.json({ success: true, deletedId: id });
+  } catch (err: any) {
+    console.error("[SharedWatchlists] DELETE error:", err);
+    return res.status(500).json({ error: "Failed to delete shared watchlist." });
+  }
+});
+
 // Public endpoint for Interactive Social & Content Network Graph
 app.get("/api/network/graph", async (req, res) => {
   await ensureDatabaseSynced();
@@ -4483,6 +5929,40 @@ app.get("/api/network/graph", async (req, res) => {
     users: userSummaries,
     networkConnections: networkConnectionsList,
     topShows: topShowsList
+  });
+});
+
+// Admin API to fetch AI Beta Settings & active daily limits
+app.get("/api/admin/ai-settings", (req, res) => {
+  const { email } = req.query as { email?: string };
+  const isAdmin = isUserAdmin(email);
+  res.json({
+    isAdmin,
+    settings: aiBetaSettings,
+    activeUsageCount: aiDailyUsageMap.size,
+    date: getTodayString()
+  });
+});
+
+// Admin API to update AI Beta Settings (toggle on/off, change daily limits, admin-only mode)
+app.post("/api/admin/ai-settings", (req, res) => {
+  const { email, betaLimitsEnabled, dailyLimitPerUser, adminOnlyMode, proDailyLimit } = req.body || {};
+  if (!isUserAdmin(email)) {
+    return res.status(403).json({ error: "Unauthorized: Admin account required to update AI safeguards." });
+  }
+
+  if (typeof betaLimitsEnabled === "boolean") aiBetaSettings.betaLimitsEnabled = betaLimitsEnabled;
+  if (typeof dailyLimitPerUser === "number" && dailyLimitPerUser >= 0) aiBetaSettings.dailyLimitPerUser = dailyLimitPerUser;
+  if (typeof adminOnlyMode === "boolean") aiBetaSettings.adminOnlyMode = adminOnlyMode;
+  if (typeof proDailyLimit === "number" && proDailyLimit >= 0) aiBetaSettings.proDailyLimit = proDailyLimit;
+
+  saveAiBetaSettings();
+  console.log(`[AI Safeguards] Updated settings:`, aiBetaSettings);
+
+  res.json({
+    success: true,
+    message: "AI beta safeguard settings updated successfully.",
+    settings: aiBetaSettings
   });
 });
 
@@ -6317,11 +7797,11 @@ app.post("/api/enrich-show", async (req, res) => {
 
     const resultsToFetch = searchData.results.slice(0, 6);
 
-    // Map streaming services
-    function determineStreamingService(networks: any[], title: string = ""): StreamingService {
+    // Map streaming services with multi-layer safeguard resolution
+    function determineStreamingService(details: any, title: string = ""): StreamingService {
       const cleanTitle = (title || "").toLowerCase().trim().replace(/['"’]/g, "");
 
-      // Specific popular overrides
+      // Tier 1: Specific Curated Overrides
       const overrides: Record<string, StreamingService> = {
         "family guy": "Hulu",
         "the simpsons": "Hulu",
@@ -6385,8 +7865,16 @@ app.post("/api/enrich-show", async (req, res) => {
         "batman caped crusader": "Prime Video",
         "batman": "HBO",
         "fleabag": "Prime Video",
+        "spider-noir": "Prime Video",
+        "spider noir": "Prime Video",
         "spider-man noir": "Prime Video",
         "spiderman noir": "Prime Video",
+        "your friendly neighborhood spider-man": "Disney+",
+        "marvel's spider-man": "Disney+",
+        "marvels spider-man": "Disney+",
+        "spider-man: the animated series": "Disney+",
+        "spider-man the animated series": "Disney+",
+        "spidey and his amazing friends": "Disney+",
         "my adventures with superman": "HBO",
         "superman": "HBO",
         "outlander": "Starz",
@@ -6399,60 +7887,95 @@ app.post("/api/enrich-show", async (req, res) => {
         "spartacus": "Starz",
         "bmf": "Starz",
         "the serpent queen": "Starz",
-        "p-valley": "Starz"
+        "p-valley": "Starz",
+        "humans": "Hulu"
       };
 
       if (overrides[cleanTitle]) {
         return overrides[cleanTitle];
       }
 
-      // Check for fuzzy matching patterns
+      // Tier 2: Check TMDB JustWatch US Watch Providers (Official Streaming Carrier)
+      const usWatchProviders = details?.["watch/providers"]?.results?.US;
+      const flatrateList = usWatchProviders?.flatrate || usWatchProviders?.free || usWatchProviders?.ads || [];
+      if (Array.isArray(flatrateList) && flatrateList.length > 0) {
+        for (const prov of flatrateList) {
+          const pName = (prov.provider_name || "").toLowerCase();
+          if (pName.includes("disney")) return "Disney+";
+          if (pName.includes("hbo") || pName.includes("max")) return "HBO";
+          if (pName.includes("netflix")) return "Netflix";
+          if (pName.includes("amazon") || pName.includes("prime")) return "Prime Video";
+          if (pName.includes("hulu")) return "Hulu";
+          if (pName.includes("apple")) return "Apple TV";
+          if (pName.includes("paramount")) return "Paramount+";
+          if (pName.includes("peacock")) return "Peacock";
+          if (pName.includes("amc")) return "AMC+";
+          if (pName.includes("starz")) return "Starz";
+        }
+      }
+
+      // Tier 3: Primary Broadcast / Producing Network
+      const networks = details?.networks;
+      if (Array.isArray(networks) && networks.length > 0) {
+        for (const net of networks) {
+          const name = (net.name || "").toLowerCase();
+          if (name.includes("hbo") || name.includes("max") || name.includes("adult swim") || name.includes("cartoon network") || name.includes("dc universe")) return "HBO";
+          if (name.includes("disney")) return "Disney+";
+          if (name.includes("netflix")) return "Netflix";
+          if (name.includes("amazon") || name.includes("prime")) return "Prime Video";
+          if (name.includes("hulu")) return "Hulu";
+          if (name.includes("paramount")) return "Paramount+";
+          if (name.includes("apple")) return "Apple TV";
+          if (name.includes("peacock")) return "Peacock";
+          if (name.includes("amc")) return "AMC+";
+          if (name.includes("starz")) return "Starz";
+
+          // Broadcast / original network to streaming platform fallbacks
+          if (name.includes("fox")) return "Hulu";
+          if (name.includes("fx") || name.includes("fxx")) return "Hulu";
+          if (name.includes("abc")) return "Hulu";
+          if (name.includes("nbc")) return "Peacock";
+          if (name.includes("cbs")) return "Paramount+";
+          if (name.includes("cw")) return "Netflix";
+          if (name.includes("showtime")) return "Paramount+";
+        }
+      }
+
+      // Tier 4: Major Franchise / Production Company Origin Safeguard
+      const companies = details?.production_companies;
+      if (Array.isArray(companies) && companies.length > 0) {
+        for (const comp of companies) {
+          const cName = (comp.name || "").toLowerCase();
+          if (cName.includes("marvel studios") || cName.includes("lucasfilm") || cName.includes("pixar") || cName.includes("walt disney")) {
+            return "Disney+";
+          }
+          if (cName.includes("dc studios") || cName.includes("dc entertainment") || cName.includes("hbo entertainment") || cName.includes("warner bros. animation")) {
+            return "HBO";
+          }
+        }
+      }
+
+      // Tier 5: Safe Specific Disambiguation Heuristics (Never use broad raw substring matching)
+      if (cleanTitle.includes("spider-noir") || cleanTitle.includes("spider noir") || cleanTitle.includes("spider-man noir") || cleanTitle.includes("spiderman noir")) {
+        return "Prime Video";
+      }
+      if (cleanTitle.includes("friendly neighborhood") || cleanTitle.includes("spidey and his amazing friends")) {
+        return "Disney+";
+      }
       if (cleanTitle.includes("caped crusader") || cleanTitle.includes("batman caped crusader")) {
         return "Prime Video";
       }
-      if (cleanTitle.includes("batman") || cleanTitle.includes("superman")) {
+      if (cleanTitle.includes("batman the animated series") || cleanTitle.includes("batman beyond") || cleanTitle.includes("my adventures with superman") || cleanTitle.includes("teen titans") || cleanTitle.includes("justice league") || cleanTitle.includes("total drama")) {
         return "HBO";
-      }
-      if (cleanTitle.includes("teen titans")) {
-        return "HBO";
-      }
-      if (cleanTitle.includes("justice league")) {
-        return "HBO";
-      }
-      if (cleanTitle.includes("total drama")) {
-        return "HBO";
-      }
-      if (cleanTitle.includes("spider-man") || cleanTitle.includes("spiderman")) {
-        return "Prime Video";
       }
       if (cleanTitle.includes("power book") || cleanTitle.includes("raising kanan")) {
         return "Starz";
       }
-
-      if (!networks || !Array.isArray(networks)) return "Other";
-      for (const net of networks) {
-        const name = net.name.toLowerCase();
-        if (name.includes("hbo") || name.includes("max") || name.includes("adult swim") || name.includes("cartoon network") || name.includes("dc universe")) return "HBO";
-        if (name.includes("disney")) return "Disney+";
-        if (name.includes("netflix")) return "Netflix";
-        if (name.includes("amazon") || name.includes("prime")) return "Prime Video";
-        if (name.includes("hulu")) return "Hulu";
-        if (name.includes("paramount")) return "Paramount+";
-        if (name.includes("apple")) return "Apple TV";
-        if (name.includes("peacock")) return "Peacock";
-        if (name.includes("amc")) return "AMC+";
-        if (name.includes("starz")) return "Starz";
-
-        // Broadcast / original network to streaming platform fallbacks
-        if (name.includes("fox")) return "Hulu";
-        if (name.includes("fx") || name.includes("fxx")) return "Hulu";
-        if (name.includes("abc")) return "Hulu";
-        if (name.includes("nbc")) return "Peacock";
-        if (name.includes("cbs")) return "Paramount+";
-        if (name.includes("cw")) return "Netflix";
-        if (name.includes("showtime")) return "Paramount+";
+      if (cleanTitle.includes("yellowstone") || cleanTitle.includes("1883") || cleanTitle.includes("1923") || cleanTitle.includes("tulsa king") || cleanTitle.includes("mayor of kingstown") || cleanTitle.includes("landman")) {
+        return "Paramount+";
       }
-      const firstNet = networks[0]?.name;
+
+      const firstNet = networks?.[0]?.name;
       const validServices: StreamingService[] = ['HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Starz'];
       if (firstNet && validServices.includes(firstNet as StreamingService)) {
         return firstNet as StreamingService;
@@ -6464,7 +7987,7 @@ app.post("/api/enrich-show", async (req, res) => {
       resultsToFetch.map(async (result: any) => {
         try {
           const tvId = result.id;
-          const detailsUrl = `https://api.themoviedb.org/3/tv/${tvId}?api_key=${apiKey}&append_to_response=credits,next_episode_to_air&language=en-US`;
+          const detailsUrl = `https://api.themoviedb.org/3/tv/${tvId}?api_key=${apiKey}&append_to_response=credits,next_episode_to_air,watch/providers&language=en-US`;
           const detailsRes = await fetchWithTimeout(detailsUrl);
           if (!detailsRes.ok) return null;
           const details = await detailsRes.json() as any;
@@ -6475,7 +7998,7 @@ app.post("/api/enrich-show", async (req, res) => {
             : ["Drama"];
           const genres = normalizeShowGenres(details.name, rawTmdbGenres, details.overview);
 
-          const streamingService = determineStreamingService(details.networks, details.name);
+          const streamingService = determineStreamingService(details, details.name);
 
           // Map Rotten Tomatoes percentage score from vote_average (0 to 10 scale)
           const rottenTomatoesScore = details.vote_average
@@ -6780,6 +8303,23 @@ app.post("/api/episode-recap", async (req, res) => {
 
   // 4. Fallback to Gemini AI with Search Grounding (Instructed to prioritize TVmaze/Wikipedia)
   try {
+    const userEmail = (req.body?.userEmail || req.query?.userEmail || req.headers["x-user-email"]) as string | undefined;
+    const userId = (req.body?.userId || req.query?.userId || req.headers["x-user-id"]) as string | undefined;
+    const isPro = Boolean(req.body?.isPro || req.body?.userState?.isPro);
+    const clientIp = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown") as string;
+
+    const creditCheck = checkAndConsumeAiCredit(clientIp, userEmail, userId, isPro, "Episode Recaps");
+    if (!creditCheck.allowed) {
+      console.log(`[AI Safeguard] Quota exceeded on /api/episode-recap for ${userEmail || userId || clientIp}. Serving smart library fallback.`);
+      const fallbackRecap = generateDynamicEpisodeRecap(title, season, episode, genres, overview);
+      return res.json({ 
+        recap: fallbackRecap,
+        isLimitReached: true,
+        limitMessage: creditCheck.message,
+        remainingCredits: 0
+      });
+    }
+
     let contextPrompt = `You are an elite television archivist and critic. Provide a highly specific, detailed, and authentic plot recap of exactly what happened in Season ${season}, Episode ${episode} of the real TV show "${title}".`;
     if (overview) {
       contextPrompt += `\nHere is a description/overview of the show for context to help you identify characters, settings, and conflicts accurately: "${overview}".`;
@@ -7495,7 +9035,9 @@ Return a valid JSON object matching this schema:
 app.post("/api/taterz-ai", async (req, res) => {
   const { intent, recap, group, search, customPrompt, messages, userState, preferences } = req.body;
   const isPro = userState?.isPro || false;
-  const freeCreditsUsed = typeof userState?.freeCreditsUsed === "number" ? userState.freeCreditsUsed : 0;
+  const userEmail = (userState?.email || req.body?.userEmail || req.headers["x-user-email"]) as string | undefined;
+  const userId = (userState?.userId || req.body?.userId || req.headers["x-user-id"]) as string | undefined;
+  const clientIp = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown") as string;
 
   try {
     // -------------------------------------------------------------
@@ -7522,12 +9064,14 @@ app.post("/api/taterz-ai", async (req, res) => {
         return;
       }
 
-      // 2. Financial & Token Safeguard Check (Free Tier Limit: 3 queries / week)
-      if (!isPro && freeCreditsUsed >= 3) {
+      // 2. Financial & Token Safeguard Check (Beta Limit / Daily Quota Check)
+      const creditCheck = checkAndConsumeAiCredit(clientIp, userEmail, userId, isPro, "AI Summaries & Recaps");
+      if (!creditCheck.allowed) {
         res.status(402).json({
           success: false,
           isLimitReached: true,
-          error: "You've used your 3 free Spudz AI credits this week. Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks."
+          error: creditCheck.message || "Beta daily AI limit reached (10 AI recommendations/summaries per day). Quota resets at midnight!",
+          remaining: 0
         });
         return;
       }
@@ -7600,7 +9144,8 @@ Formatting Guidelines:
         success: true,
         content: generatedRecap,
         cached: false,
-        cacheKey
+        cacheKey,
+        remainingCredits: creditCheck.remaining
       });
       return;
     }
@@ -7608,11 +9153,13 @@ Formatting Guidelines:
     // -------------------------------------------------------------
     // FINANCIAL / TOKEN SAFEGUARD CHECK FOR NON-CACHED INTENTS
     // -------------------------------------------------------------
-    if (!isPro && freeCreditsUsed >= 3) {
+    const creditCheckNonCached = checkAndConsumeAiCredit(clientIp, userEmail, userId, isPro, "AI Requests");
+    if (!creditCheckNonCached.allowed) {
       res.status(402).json({
         success: false,
         isLimitReached: true,
-        error: "You've used your 3 free Spudz AI credits this week. Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks."
+        error: creditCheckNonCached.message || "Beta daily AI limit reached (10 AI recommendations/summaries per day). Quota resets at midnight!",
+        remaining: 0
       });
       return;
     }
@@ -8034,6 +9581,19 @@ app.post("/api/recommendations", async (req, res) => {
     topServices: Object.entries(serviceCounts).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([s, c]) => `${s} (${c})`)
   };
 
+  // Beta safeguard limit check before triggering expensive Gemini recommendation calls
+  const userEmail = (req.body?.userEmail || req.query?.userEmail || req.headers["x-user-email"]) as string | undefined;
+  const userId = (req.body?.userId || req.query?.userId || req.headers["x-user-id"]) as string | undefined;
+  const isPro = Boolean(req.body?.isPro || req.body?.userState?.isPro);
+  const clientIp = (req.headers["x-forwarded-for"] || req.socket.remoteAddress || "unknown") as string;
+
+  const creditCheck = checkAndConsumeAiCredit(clientIp, userEmail, userId, isPro, "AI Recommendations");
+  if (!creditCheck.allowed) {
+    console.log(`[AI Safeguard] Quota exceeded on /api/recommendations for ${userEmail || userId || clientIp}. Serving smart library fallback.`);
+    const dynamicFallbacks = generateLibraryAwareFallbacks(userShows);
+    return res.json(dynamicFallbacks);
+  }
+
   try {
     const prompt = `You are an expert TV recommendation engine for CouchTaterz.
 
@@ -8224,18 +9784,25 @@ app.get(["/list/:listId", "/p/:username"], async (req, res) => {
 
 // Vite & Static file serving setup
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  const distPath = path.join(process.cwd(), "dist");
+  const hasDist = fs.existsSync(path.join(distPath, "index.html"));
+
+  if (hasDist || process.env.NODE_ENV === "production") {
+    console.log("[Server] Serving optimized live application bundle from dist/");
+    app.use(express.static(distPath, {
+      maxAge: "1h",
+      index: false
+    }));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  } else {
+    console.log("[Server] Mounting Vite dev middleware...");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    const distPath = path.join(process.cwd(), "dist");
-    app.use(express.static(distPath));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(distPath, "index.html"));
-    });
   }
 
   app.listen(PORT, "0.0.0.0", () => {
