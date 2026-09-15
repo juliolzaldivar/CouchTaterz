@@ -16,8 +16,27 @@ import {
   onAuthStateChanged,
   User as FirebaseUser
 } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
-import firebaseConfig from '../firebase-applet-config.json';
+import { getFirestore, doc, getDocFromServer, setLogLevel } from 'firebase/firestore';
+import rawConfig from '../firebase-applet-config.json';
+
+// Build environment-aware Firebase Config supporting Vercel and custom env overrides
+const metaEnv = typeof import.meta !== 'undefined' ? (import.meta as any).env || {} : {};
+const firebaseConfig = {
+  projectId: metaEnv.VITE_FIREBASE_PROJECT_ID || rawConfig.projectId || "witty-skyline-9dw25",
+  appId: metaEnv.VITE_FIREBASE_APP_ID || rawConfig.appId || "1:424771510171:web:dac4ab2c008c66eacb0b3e",
+  apiKey: metaEnv.VITE_FIREBASE_API_KEY || rawConfig.apiKey || "AIzaSyAhtm8DoUlgxDqHDtGQ7ERzqYVarvFwMgI",
+  authDomain: metaEnv.VITE_FIREBASE_AUTH_DOMAIN || rawConfig.authDomain || "witty-skyline-9dw25.firebaseapp.com",
+  firestoreDatabaseId: metaEnv.VITE_FIREBASE_FIRESTORE_DATABASE_ID || rawConfig.firestoreDatabaseId || "(default)",
+  storageBucket: metaEnv.VITE_FIREBASE_STORAGE_BUCKET || rawConfig.storageBucket || "witty-skyline-9dw25.firebasestorage.app",
+  messagingSenderId: metaEnv.VITE_FIREBASE_MESSAGING_SENDER_ID || rawConfig.messagingSenderId || "424771510171",
+  measurementId: metaEnv.VITE_FIREBASE_MEASUREMENT_ID || rawConfig.measurementId || "",
+  oAuthClientId: metaEnv.VITE_FIREBASE_OAUTH_CLIENT_ID || (rawConfig as any).oAuthClientId || ""
+};
+
+// Set log level to silent to prevent flooding console with internal retry backoff logs
+try {
+  setLogLevel('silent');
+} catch {}
 
 // Initialize Firebase App instance singleton
 export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
@@ -25,10 +44,12 @@ export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 // Initialize Firebase Auth
 export const auth = getAuth(app);
 
-// Initialize Firebase Firestore Database
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
-  ? firebaseConfig.firestoreDatabaseId 
-  : undefined
+// Initialize Firebase Firestore Database with explicit database ID
+export const db = getFirestore(
+  app, 
+  firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
+    ? firebaseConfig.firestoreDatabaseId 
+    : undefined
 );
 
 // Google Auth Provider setup
@@ -38,22 +59,66 @@ googleProvider.setCustomParameters({
 });
 
 /**
- * Sign in with Google Popup
+ * Genuine Sign in with Google via Firebase Auth Popup
  */
-export async function signInWithGoogle() {
+export async function signInWithGoogle(): Promise<{ user: any; error: string | null; errorCode?: string; domain?: string }> {
   try {
     const authPromise = signInWithPopup(auth, googleProvider);
     const timeoutPromise = new Promise<{ user: null; error: string }>((_, reject) => 
-      setTimeout(() => reject(new Error("GOOGLE_SIGNIN_TIMEOUT")), 60000)
+      setTimeout(() => reject(new Error("GOOGLE_SIGNIN_TIMEOUT")), 45000)
     );
     const result: any = await Promise.race([authPromise, timeoutPromise]);
     return { user: result.user, error: null };
   } catch (error: any) {
     console.error('[Firebase Auth] Google Sign-In error:', error);
     if (error?.message === 'GOOGLE_SIGNIN_TIMEOUT') {
-      return { user: null, error: 'Google Sign-In timed out. Please try again.' };
+      return { user: null, error: 'Google Sign-In request timed out. Please try again.', errorCode: 'timeout' };
     }
-    return { user: null, error: error?.message || 'Failed to sign in with Google' };
+
+    const currentDomain = typeof window !== 'undefined' ? window.location.hostname : 'your deployment domain';
+
+    if (error?.code === 'auth/unauthorized-domain' || error?.message?.includes('auth/unauthorized-domain')) {
+      return {
+        user: null,
+        error: `Unauthorized Domain (${currentDomain}): Please add "${currentDomain}" to Firebase Console -> Authentication -> Settings -> Authorized Domains.`,
+        errorCode: 'auth/unauthorized-domain',
+        domain: currentDomain
+      };
+    }
+
+    if (error?.code === 'auth/popup-closed-by-user') {
+      return { user: null, error: 'Google sign-in popup was closed before completing authentication.', errorCode: 'auth/popup-closed-by-user' };
+    }
+
+    if (error?.code === 'auth/cancelled-popup-request') {
+      return { user: null, error: 'Another sign-in popup is already open. Please complete or close the existing window.', errorCode: 'auth/cancelled-popup-request' };
+    }
+
+    if (error?.code === 'auth/popup-blocked') {
+      return { user: null, error: 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.', errorCode: 'auth/popup-blocked' };
+    }
+
+    if (error?.code === 'auth/network-request-failed') {
+      return { user: null, error: 'Network request failed. Please check your internet connection.', errorCode: 'auth/network-request-failed' };
+    }
+
+    if (error?.code === 'auth/operation-not-allowed') {
+      return {
+        user: null,
+        error: 'Google Sign-In is not enabled in your Firebase Project. Please enable the Google provider in Firebase Console -> Authentication -> Sign-in method.',
+        errorCode: 'auth/operation-not-allowed'
+      };
+    }
+
+    if (error?.code === 'auth/api-key-not-valid' || error?.message?.toLowerCase().includes('api-key-not-valid') || error?.message?.toLowerCase().includes('api_key_invalid')) {
+      return {
+        user: null,
+        error: 'Firebase Auth API key issue detected. In Google Cloud Console, ensure the Identity Toolkit API is enabled and your API key allows browser requests.',
+        errorCode: 'auth/api-key-not-valid'
+      };
+    }
+
+    return { user: null, error: error?.message || 'Failed to sign in with Google.', errorCode: error?.code || 'unknown' };
   }
 }
 

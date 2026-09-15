@@ -5,6 +5,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { TvShow, StreamingService, ShowStatus, User } from '../types';
+import { createCleanShowFromFriend } from '../utils/reviewSanitizer';
 import { getNormalizedGenres } from '../utils/genreUtils';
 import { normalizeShowTitle, getCanonicalShowTitle } from '../utils/titleUtils';
 import { Search, Loader2, X, Film, AlertCircle, Plus, Star, Tv, ChevronDown, Sparkles, SlidersHorizontal, Check, Info, ArrowLeft, Users, ChevronRight } from 'lucide-react';
@@ -367,15 +368,11 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
     const normTitle = normalizeShowTitle(item.show.title);
     if (addedShowTitles.has(normTitle)) return;
 
+    const cleanBuddyShow = createCleanShowFromFriend(item.show, 'Watching');
     const fullShow: TvShow = {
-      ...item.show,
+      ...cleanBuddyShow,
       title: getCanonicalShowTitle(item.show.title, existingShows),
-      id: `show-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      status: 'Watching',
-      latestWatched: item.show.latestWatched || { season: 1, episode: 0, title: 'Not Started' },
-      userScore: null,
-      userNotes: '',
-      createdAt: new Date().toISOString()
+      id: `show-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     };
 
     onAddShow(fullShow);
@@ -529,6 +526,9 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
       concluded: previewShow.concluded !== undefined ? previewShow.concluded : false,
       totalSeasons: previewShow.totalSeasons || 1,
       episodesPerSeason: previewShow.episodesPerSeason || [10],
+      episodes: previewShow.episodes || {},
+      episodeReviews: {},
+      episodeScores: {},
       createdAt: new Date().toISOString()
     };
 

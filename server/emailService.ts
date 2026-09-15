@@ -49,7 +49,7 @@ export interface ReminderLogEntry {
   airDate: string;
   sentAt: string;
   provider: string;
-  status: 'sent' | 'simulated' | 'failed';
+  status: 'sent' | 'simulated' | 'failed' | 'dismissed';
   error?: string;
 }
 
@@ -74,6 +74,44 @@ export function saveReminderLog(entry: ReminderLogEntry) {
     fs.writeFileSync(REMINDER_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf8');
   } catch (e) {
     console.error('[Reminder Logs] Failed to write log entry:', e);
+  }
+}
+
+export function markReminderAsDismissed(boardId: string, showIdOrTitle: string, season?: number, episode?: number, airDate?: string) {
+  try {
+    ensureLogDir();
+    const logs = readReminderLogs();
+    const showKey = (showIdOrTitle || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const airDateStr = airDate || 'any';
+    const logKey = `${boardId}_${showKey}_s${season || 1}e${episode || 1}_${airDateStr}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    logs[logKey] = {
+      id: logKey,
+      userId: boardId,
+      userEmail: '',
+      showId: showIdOrTitle,
+      showTitle: showIdOrTitle,
+      season: season || 1,
+      episode: episode || 1,
+      airDate: airDateStr,
+      sentAt: new Date().toISOString(),
+      provider: 'dismissed',
+      status: 'dismissed'
+    };
+    const generalKey = `${boardId}_${showKey}`;
+    logs[generalKey] = {
+      id: generalKey,
+      userId: boardId,
+      userEmail: '',
+      showId: showIdOrTitle,
+      showTitle: showIdOrTitle,
+      airDate: airDateStr,
+      sentAt: new Date().toISOString(),
+      provider: 'dismissed',
+      status: 'dismissed'
+    };
+    fs.writeFileSync(REMINDER_LOGS_FILE, JSON.stringify(logs, null, 2), 'utf8');
+  } catch (e) {
+    console.error('[Reminder Logs] Failed to mark reminder as dismissed:', e);
   }
 }
 
@@ -520,10 +558,28 @@ export async function checkAndDispatchDueReminders(
 
       if (!isDue) continue;
 
-      const logKey = `${boardId}_${show.id || show.title}_S${nextEp.season || 1}E${nextEp.episode || 1}_${airDateStr}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const showKey = (show.title || show.id || '').toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const logKey = `${boardId}_${showKey}_s${nextEp.season || 1}e${nextEp.episode || 1}_${airDateStr}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
+      const generalShowKey = `${boardId}_${showKey}`.toLowerCase().replace(/[^a-z0-9_]/g, '_');
 
-      // Check if already dispatched for this specific episode air date
-      if (logs[logKey] && logs[logKey].status === 'sent') {
+      // Check if already dispatched or dismissed for this specific episode air date
+      if (logs[logKey] && (logs[logKey].status === 'sent' || logs[logKey].status === 'dismissed')) {
+        continue;
+      }
+      if (logs[generalShowKey] && logs[generalShowKey].status === 'dismissed') {
+        continue;
+      }
+
+      // Check board dismissed lists
+      const dismissedIds: string[] = Array.isArray((board as any).dismissedNotificationIds) ? (board as any).dismissedNotificationIds : [];
+      const dismissedAlertKeys: string[] = Array.isArray((board as any).dismissedAlertKeys) ? (board as any).dismissedAlertKeys : [];
+
+      const stableNotifId = `airdate-${boardId}-${showKey}-s${nextEp.season || 1}e${nextEp.episode || 1}-${airDateStr}`.toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+
+      if (dismissedIds.includes(stableNotifId)) {
+        continue;
+      }
+      if (dismissedAlertKeys.includes(logKey) || dismissedAlertKeys.includes(showKey) || dismissedAlertKeys.includes(show.title.toLowerCase()) || dismissedAlertKeys.includes(`${showKey}_s${nextEp.season || 1}e${nextEp.episode || 1}`)) {
         continue;
       }
 
@@ -546,12 +602,13 @@ export async function checkAndDispatchDueReminders(
 
       // Dispatch In-App Notification to user's board
       if (!board.notifications) board.notifications = [];
-      const notifId = `airdate-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+      const notifId = stableNotifId;
       const inAppMsg = `🔔 Air Date Alert: "${show.title}" (S${nextEp.season || 1}E${nextEp.episode || 1}) airs ${airDateStr} on ${show.streamingService || 'Streaming'}!`;
       
-      // Avoid duplicate in-app notifications (match on show title/id or message)
+      // Avoid duplicate in-app notifications (match on show title/id or message or stableNotifId)
       const hasExistingAlert = board.notifications.some((n: any) => {
         if (!n) return false;
+        if (n.id === stableNotifId) return true;
         const matchesShow = (n.show?.title && n.show.title.toLowerCase() === show.title.toLowerCase()) || 
                             (n.show?.id && n.show.id === show.id);
         const matchesEpisode = n.message && n.message.includes(`S${nextEp.season}E${nextEp.episode}`);

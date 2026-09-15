@@ -3,19 +3,19 @@
     "userId": "default",
     "name": "Julio",
     "email": "juliozaldivar@gmail.com",
-    "lastLoginAt": "2026-08-24T19:55:41.895Z",
-    "lastActiveAt": "2026-08-24T19:55:42.471Z",
-    "totalTimeSpentSeconds": 144924,
-    "sessionCount": 340
+    "lastLoginAt": "2026-09-08T04:48:37.326Z",
+    "lastActiveAt": "2026-09-08T20:37:53.974Z",
+    "totalTimeSpentSeconds": 172036,
+    "sessionCount": 1074
   },
   "user-julio": {
     "userId": "user-julio",
     "name": "Julio",
     "email": "juliozaldivar@gmail.com",
-    "lastLoginAt": "2026-08-24T19:55:41.895Z",
-    "lastActiveAt": "2026-08-24T19:55:42.471Z",
-    "totalTimeSpentSeconds": 106122,
-    "sessionCount": 191
+    "lastLoginAt": "2026-09-08T04:48:37.326Z",
+    "lastActiveAt": "2026-09-08T20:37:53.974Z",
+    "totalTimeSpentSeconds": 119678,
+    "sessionCount": 558
   },
   "user-julian-7667": {
     "userId": "user-julian-7667",
@@ -97,5 +97,14 @@
     "lastActiveAt": "2026-08-24T19:56:38.368Z",
     "totalTimeSpentSeconds": 70,
     "sessionCount": 1
+  },
+  "user-jylian-summers": {
+    "userId": "user-jylian-summers",
+    "name": "Jylian",
+    "email": "jylian_summers@yahoo.com",
+    "lastLoginAt": "2026-08-24T18:00:00.000Z",
+    "lastActiveAt": "2026-08-24T18:30:00.000Z",
+    "totalTimeSpentSeconds": 1800,
+    "sessionCount": 2
   }
 }

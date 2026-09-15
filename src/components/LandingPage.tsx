@@ -17,13 +17,29 @@ import {
   Clapperboard, 
   Smartphone, 
   Share2, 
-  Lock,
-  Info,
-  Compass,
-  X,
-  LogIn,
-  UserPlus,
-  BookOpen
+  Lock, 
+  Info, 
+  Compass, 
+  X, 
+  LogIn, 
+  UserPlus, 
+  BookOpen, 
+  Crown, 
+  Bug, 
+  Zap, 
+  MessageSquare, 
+  Flame, 
+  Star, 
+  Check, 
+  Send, 
+  HelpCircle,
+  Clock,
+  Shield,
+  ThumbsUp,
+  Share,
+  Layers,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -53,8 +69,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
   // Interactive Demo State inside Landing Page
   const [demoEpisode, setDemoEpisode] = useState(7);
   const [demoStatus, setDemoStatus] = useState<'Watching' | 'Backlog' | 'Completed'>('Watching');
-  const [showAiRecapDemo, setShowAiRecapDemo] = useState(false);
+  const [demoActiveTab, setDemoActiveTab] = useState<'spudz' | 'micro_review' | 'story_card'>('spudz');
   const [showGuestChoiceModal, setShowGuestChoiceModal] = useState(false);
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [showVipList, setShowVipList] = useState(false);
 
   useEffect(() => {
     // Detect iOS
@@ -89,12 +107,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     }
   };
 
+  const FAQS = [
+    {
+      q: "Is CouchTaterz really free?",
+      a: "Yes, 100% free! All beta testers receive full VIP capabilities—including unlimited personal watchlists, spoiler-free Spudz AI catch-up recaps, episode micro-reviews, and real-time Binge Network buddy sync."
+    },
+    {
+      q: "How fast can I get started?",
+      a: "Under 60 seconds. Sign in with Google or create an account with your email. During signup, you can pick your favorite genres and streaming services to auto-load a personalized 3-show starter pack so you don't start with a blank dashboard."
+    },
+    {
+      q: "How do I invite my friends to my Binge Network?",
+      a: "Once inside your dashboard, tap the 'Share' or 'Binge Buddies' button to copy your unique invite link. When friends click your link, they are instantly linked to your network so you can compare progress and borrow recommendations."
+    },
+    {
+      q: "Will I get spoiled if my friends are further ahead in a show?",
+      a: "Never. Episode micro-reviews and Spudz AI are strictly filtered to your recorded watch progress. You'll only see reviews and catch-up recaps up to the exact season and episode you've checked off."
+    },
+    {
+      q: "How do I report bugs or suggest shows during testing?",
+      a: "Look for the Bug icon (🪲) in the top navigation bar of your dashboard. Clicking it opens the in-app Bug Reporter where you can send glitches, missing show requests, or feedback directly to the development team in seconds."
+    }
+  ];
+
   return (
     <div id="landing-page-root" className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-blue-600 selection:text-white relative overflow-x-hidden">
       
       {/* Background Subtle Gradient Blobs */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-tr from-blue-600/15 via-indigo-600/10 to-violet-600/15 blur-3xl pointer-events-none rounded-full" />
-      <div className="absolute top-[600px] right-0 w-[500px] h-[500px] bg-sky-500/10 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1100px] h-[550px] bg-gradient-to-tr from-blue-600/15 via-indigo-600/10 to-violet-600/15 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute top-[700px] right-0 w-[550px] h-[550px] bg-sky-500/10 blur-3xl pointer-events-none rounded-full" />
+      <div className="absolute top-[1400px] left-0 w-[550px] h-[550px] bg-purple-500/10 blur-3xl pointer-events-none rounded-full" />
 
       {/* Top Floating Navigation Header */}
       <header className="sticky top-0 z-50 backdrop-blur-md bg-slate-950/90 border-b border-slate-800/80 px-4 sm:px-6 lg:px-8 py-3">
@@ -104,15 +146,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <div 
             className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group shrink-0" 
             onClick={() => setShowGuestChoiceModal(true)}
-            title="CouchTaterz: Your Binge Buddy"
+            title="CouchTaterz™: Your Binge Buddy"
           >
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-600/25 text-white shrink-0 group-hover:scale-105 transition-transform">
               <Tv className="w-5 h-5 stroke-[2.2]" />
             </div>
             <div className="flex flex-col justify-center">
-              <span className="font-black text-lg sm:text-xl tracking-tight uppercase leading-none whitespace-nowrap">
+              <span className="font-black text-lg sm:text-xl tracking-tight uppercase leading-none whitespace-nowrap inline-flex items-center">
                 <span className="text-blue-500">COUCH</span>
                 <span className="text-white">TATERZ</span>
+                <span className="text-[9px] sm:text-[10px] font-bold text-slate-400 ml-0.5 select-none relative -top-1 leading-none">™</span>
               </span>
               <p className="text-[9px] sm:text-[11px] font-extrabold tracking-[0.2em] text-slate-400 uppercase mt-1 leading-none whitespace-nowrap">
                 YOUR BINGE BUDDY
@@ -129,7 +172,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 title="Install App to Home Screen"
               >
                 <Download className="w-3.5 h-3.5 text-blue-400" />
-                <span>Install</span>
+                <span>Install App</span>
               </button>
             )}
 
@@ -152,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <span className="whitespace-nowrap">Sign In</span>
             </button>
 
-            {/* Join / Sign Up CTA - Hidden on mobile, visible on tablet/desktop */}
+            {/* Join / Sign Up CTA */}
             <button
               onClick={onOpenSignup}
               className="hidden sm:flex px-3.5 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all items-center gap-1.5 cursor-pointer active:scale-95 shrink-0"
@@ -166,15 +209,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </header>
 
       {/* Main Hero Section */}
-      <section className="relative pt-10 md:pt-16 pb-14 px-4 lg:px-8 max-w-7xl mx-auto flex-1">
-        <div className="text-center max-w-3xl mx-auto space-y-6">
+      <section className="relative pt-8 md:pt-14 pb-14 px-4 lg:px-8 max-w-7xl mx-auto flex-1">
+        <div className="text-center max-w-3xl mx-auto space-y-5">
           
+          {/* Beta Welcome Badge */}
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-bold shadow-sm backdrop-blur-md"
+          >
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <span className="text-blue-400 font-extrabold uppercase tracking-wider text-[11px]">BETA TESTER INVITATION</span>
+            <span className="text-slate-500">•</span>
+            <span className="text-slate-300 text-[11px] font-semibold">100% Free • &lt; 60s Setup</span>
+          </motion.div>
+
           {/* Headline */}
           <motion.h1 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.15]"
+            className="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight leading-[1.12]"
           >
             Track Shows. <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-violet-400">
@@ -182,14 +237,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </span>
           </motion.h1>
 
-          {/* Subtitle */}
+          {/* Subtitle with key value props */}
           <motion.p 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-base md:text-lg text-slate-400 font-normal leading-relaxed max-w-2xl mx-auto"
+            className="text-base sm:text-lg text-slate-300/90 font-normal leading-relaxed max-w-2xl mx-auto"
           >
-            Stop scrolling streaming menus for 40 minutes. Track exact seasons, borrow recommendations from friends, get spoiler-free AI recaps, and keep your household in sync.
+            Create your free account in under a minute. Connect with your friends via a shareable link, drop episode micro-reviews, get spoiler-free catch-up summaries from Spudz AI, and shape the app with our built-in bug reporter.
           </motion.p>
 
           {/* Main Action Buttons */}
@@ -201,94 +256,138 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           >
             <button
               onClick={onOpenSignup}
-              className="w-full sm:w-auto flex-1 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+              className="w-full sm:w-auto flex-1 px-7 py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 group cursor-pointer active:scale-95"
             >
               <Sparkles className="w-4 h-4 text-blue-200 group-hover:scale-110 transition-transform" />
-              <span>Create Tester Account</span>
+              <span>Create Free Account (&lt; 60s)</span>
               <ArrowRight className="w-4 h-4 text-blue-200 group-hover:translate-x-1 transition-transform" />
             </button>
 
             <button
               onClick={onOpenLogin}
-              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/40 text-slate-200 hover:text-white font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-blue-500/40 text-slate-200 hover:text-white font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95"
             >
               <LogIn className="w-4 h-4 text-blue-400" />
               <span>Sign In</span>
             </button>
           </motion.div>
 
-          {/* Secure Registered Account Quick-Switcher */}
+          {/* Value Pillars / Feature Pills */}
+          <div className="pt-2 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-300 font-medium">
+            <span className="flex items-center gap-1.5 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-200 shadow-sm whitespace-nowrap">
+              <Clapperboard className="w-3.5 h-3.5 text-blue-400" /> Episode Tracker
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-200 shadow-sm whitespace-nowrap">
+              <Users className="w-3.5 h-3.5 text-indigo-400" /> Borrow Friend's Picks
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-900/80 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-200 shadow-sm whitespace-nowrap">
+              <Calendar className="w-3.5 h-3.5 text-sky-400" /> TV Calendar Synch
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-800/80 text-slate-400 whitespace-nowrap">
+              <Clock className="w-3.5 h-3.5 text-blue-400" /> 60s Fast Setup
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-800/80 text-slate-400 whitespace-nowrap">
+              <Share2 className="w-3.5 h-3.5 text-indigo-400" /> 1-Click Friend Invites
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-800/80 text-slate-400 whitespace-nowrap">
+              <MessageSquare className="w-3.5 h-3.5 text-sky-400" /> Micro-Reviews
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-800/80 text-slate-400 whitespace-nowrap">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Spudz AI Recaps
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-900/60 px-3 py-1.5 rounded-xl border border-slate-800/80 text-slate-400 whitespace-nowrap">
+              <Bug className="w-3.5 h-3.5 text-rose-400" /> In-App Bug Reporter
+            </span>
+          </div>
+
+          {/* OG TATERZ VIPS Quick-Switcher (Reserved for Founding Testers) */}
           {registeredUsers.length > 0 && (
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="pt-5 border-t border-slate-900/80 max-w-2xl mx-auto"
+              className="pt-4 border-t border-slate-900/80 max-w-2xl mx-auto flex flex-col items-center"
             >
-              <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center justify-center gap-1.5">
-                <Lock className="w-3 h-3 text-slate-500" />
-                Active Tester Directory (Sign In Required)
-              </p>
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {registeredUsers.map((u, idx) => {
-                  const isJulio = u.id === 'default' || u.id === 'user-julio' || u.name?.toLowerCase().trim() === 'julio' || u.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com';
-                  return (
-                    <button
-                      key={`reguser-${u.id}-${idx}`}
-                      onClick={() => onSelectUser(u)}
-                      className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800/80 hover:border-blue-500/30 text-xs text-slate-300 hover:text-white transition-all shadow-sm group cursor-pointer"
-                    >
-                      <img 
-                        src={u.avatarUrl} 
-                        alt={u.name} 
-                        className="w-4 h-4 rounded-full bg-slate-800 group-hover:scale-105 transition-transform" 
-                      />
-                      <span className="font-semibold">{u.name}</span>
-                      {isJulio ? (
-                        <span title="Admin Account - Password / Google Verification Required">
-                          <Lock className="w-3 h-3 text-amber-400 shrink-0 ml-0.5" />
-                        </span>
-                      ) : (
-                        <Lock className="w-2.5 h-2.5 text-slate-500 opacity-60 group-hover:opacity-100" />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+              <button
+                type="button"
+                onClick={() => setShowVipList(prev => !prev)}
+                aria-expanded={showVipList}
+                className="group flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/70 hover:bg-slate-900 border border-amber-500/20 hover:border-amber-500/40 transition-all cursor-pointer shadow-sm text-center"
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
+                <span className="text-[11px] font-extrabold text-amber-400 tracking-wider uppercase">OG TATERZ VIPS</span>
+                <span className="text-slate-500 font-medium normal-case text-[10px]">
+                  {showVipList ? '(Click to hide)' : '(Click to view)'}
+                </span>
+                {showVipList ? (
+                  <ChevronUp className="w-3.5 h-3.5 text-amber-400/80 transition-transform" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-500 group-hover:text-amber-400 transition-colors" />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showVipList && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0, y: -6 }}
+                    animate={{ opacity: 1, height: 'auto', y: 0 }}
+                    exit={{ opacity: 0, height: 0, y: -6 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden w-full pt-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-center gap-2">
+                      {registeredUsers.map((u, idx) => {
+                        const isJulio = u.id === 'default' || u.id === 'user-julio' || u.name?.toLowerCase().trim() === 'julio' || u.email?.toLowerCase().trim() === 'juliozaldivar@gmail.com';
+                        return (
+                          <button
+                            key={`vipuser-${u.id}-${idx}`}
+                            onClick={() => onSelectUser(u)}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-850 border border-slate-800/80 hover:border-amber-500/40 text-xs text-slate-300 hover:text-white transition-all shadow-sm group cursor-pointer"
+                          >
+                            <img 
+                              src={u.avatarUrl} 
+                              alt={u.name} 
+                              className="w-4 h-4 rounded-full bg-slate-800 group-hover:scale-105 transition-transform" 
+                            />
+                            <span className="font-semibold">{u.name}</span>
+                            {isJulio ? (
+                              <span title="Admin Account - Password / Google Verification Required">
+                                <Lock className="w-3 h-3 text-amber-400 shrink-0 ml-0.5" />
+                              </span>
+                            ) : (
+                              <Lock className="w-2.5 h-2.5 text-slate-500 opacity-60 group-hover:opacity-100" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </motion.div>
           )}
 
-          {/* Trust badges */}
-          <div className="pt-3 flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs text-slate-500 font-medium">
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Private personal queues
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Multi-device cloud sync
-            </span>
-            <span className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Live premiere countdowns
-            </span>
-          </div>
-
         </div>
 
-        {/* Live Interactive Component Demo Card */}
+        {/* Live Interactive Component Demo Card with Spudz AI & Micro-Review Toggles */}
         <motion.div 
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="mt-12 max-w-4xl mx-auto rounded-3xl bg-slate-900/90 border border-slate-800/90 shadow-2xl overflow-hidden p-6 md:p-8 relative"
         >
-          {/* Subtle Top Badge */}
-          <div className="flex items-center justify-between pb-6 border-b border-slate-800/80 mb-6">
-            <div className="flex items-center gap-2">
+          {/* Top Demo Bar */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-5 border-b border-slate-800/80 mb-6 gap-3">
+            <div className="flex items-center gap-2.5">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping" />
-              <span className="text-xs font-bold uppercase tracking-wider text-blue-400">Interactive Preview Sandbox</span>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-400 block">Interactive Live Preview</span>
+                <span className="text-[11px] text-slate-400">Try testing episode progress, Spudz AI recaps, and micro-reviews</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1 bg-slate-950 px-3 py-1 rounded-lg border border-slate-800 text-[11px] text-slate-400 font-mono">
+            <div className="flex items-center gap-1 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 text-xs text-slate-400 font-mono">
               <span>Status:</span>
-              <span className={`font-semibold ${
+              <span className={`font-bold ${
                 demoStatus === 'Completed' ? 'text-emerald-400' : demoStatus === 'Backlog' ? 'text-amber-400' : 'text-blue-400'
               }`}>
                 {demoStatus === 'Backlog' ? 'Up Next' : demoStatus === 'Completed' ? 'Watched' : 'Watching'}
@@ -296,7 +395,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             </div>
           </div>
 
-          <div className="grid md:grid-cols-12 gap-6 items-center">
+          <div className="grid md:grid-cols-12 gap-6 items-start">
             
             {/* Show Poster & Details */}
             <div className="md:col-span-5 flex gap-4 items-start">
@@ -343,11 +442,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               </div>
             </div>
 
-            {/* Progress Controls & AI Recap Demo */}
+            {/* Progress Controls & Interactive Tabs (Spudz AI, Micro-Reviews, Story Cards) */}
             <div className="md:col-span-7 bg-slate-950/80 rounded-2xl p-4 md:p-5 border border-slate-800/80 space-y-4">
               
               <div className="flex items-center justify-between text-xs">
-                <span className="text-slate-400 font-medium">Watched Episode Progress:</span>
+                <span className="text-slate-400 font-medium">Logged Episode Progress:</span>
                 <span className="text-white font-bold font-mono">Season 2 • Ep {demoEpisode} / 10</span>
               </div>
 
@@ -359,13 +458,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                       demoStatus === 'Completed'
                         ? 'bg-gradient-to-r from-emerald-600 to-teal-500'
                         : demoStatus === 'Backlog'
-                          ? 'bg-gradient-to-r from-amber-600 to-orange-500'
+                          ? 'bg-gradient-to-r from-amber-600 to-amber-500'
                           : 'bg-gradient-to-r from-blue-600 to-indigo-500'
                     }`}
                     style={{ width: `${(demoEpisode / 10) * 100}%` }}
                   />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-1">
                     {[1, 3, 5, 7, 10].map((ep) => (
                       <button
@@ -386,40 +485,124 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                     ))}
                   </div>
 
-                  <button
-                    onClick={() => setShowAiRecapDemo(!showAiRecapDemo)}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Sparkles className="w-3 h-3 text-indigo-400" />
-                    <span>{showAiRecapDemo ? 'Hide Spudz Recap' : '✨ Try Spudz Recap'}</span>
-                  </button>
+                  {/* Demo Feature Switcher */}
+                  <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+                    <button
+                      onClick={() => setDemoActiveTab('spudz')}
+                      className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                        demoActiveTab === 'spudz' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      ✨ Spudz AI
+                    </button>
+                    <button
+                      onClick={() => setDemoActiveTab('micro_review')}
+                      className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                        demoActiveTab === 'micro_review' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      ✍️ Micro-Review
+                    </button>
+                    <button
+                      onClick={() => setDemoActiveTab('story_card')}
+                      className={`px-2 py-1 rounded-md font-bold transition-all cursor-pointer ${
+                        demoActiveTab === 'story_card' ? 'bg-purple-600 text-white' : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      🖼️ Share Card
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              {/* AI Recap Box Demo */}
-              <AnimatePresence>
-                {showAiRecapDemo && (
+              {/* Dynamic Demo Feature Content */}
+              <AnimatePresence mode="wait">
+                {demoActiveTab === 'spudz' && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="bg-indigo-950/40 border border-indigo-800/50 rounded-xl p-3 text-xs space-y-1.5 overflow-hidden"
+                    key="spudz-demo"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="bg-indigo-950/40 border border-indigo-800/50 rounded-xl p-3.5 text-xs space-y-2"
                   >
-                    <div className="flex items-center gap-1.5 text-indigo-300 font-bold text-[11px]">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span className="uppercase tracking-wider font-black text-amber-400">SPUDZ SAYS:</span>
-                      <span className="text-indigo-200 font-semibold">(Spoiler-Free Catchup S2 Ep {demoEpisode})</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-indigo-300 font-bold text-[11px]">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span className="uppercase tracking-wider font-black text-amber-400">SPUDZ SAYS:</span>
+                        <span className="text-indigo-200 font-semibold">(Spoiler-Free Recap S2 Ep {demoEpisode})</span>
+                      </div>
+                      <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Zero Spoilers
+                      </span>
                     </div>
                     <p className="text-slate-300 leading-relaxed text-[11px]">
                       "Mark and the Lumon severed team uncover encrypted keycards in the macrodata department. High narrative tension develops without revealing future unreleased plot points!"
                     </p>
                   </motion.div>
                 )}
+
+                {demoActiveTab === 'micro_review' && (
+                  <motion.div
+                    key="review-demo"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="bg-blue-950/30 border border-blue-800/40 rounded-xl p-3.5 text-xs space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center font-black text-[10px]">
+                          J
+                        </div>
+                        <span className="font-bold text-white text-[11px]">Julio's Ep {demoEpisode} Reaction</span>
+                      </div>
+                      <div className="flex items-center gap-0.5 text-amber-400">
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        <Star className="w-3 h-3 fill-amber-400" />
+                        <span className="text-[10px] font-bold text-slate-300 ml-1">9.5/10</span>
+                      </div>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed italic">
+                      "That elevator scene was mind-bending! Easily the best cinematography of the season so far."
+                    </p>
+                    <div className="flex items-center justify-between pt-1 border-t border-blue-900/40 text-[10px] text-slate-400">
+                      <span>Shared to Binge Network</span>
+                      <span className="text-blue-400 font-semibold cursor-pointer hover:underline flex items-center gap-1">
+                        <Share2 className="w-3 h-3" /> Export to Group Chat
+                      </span>
+                    </div>
+                  </motion.div>
+                )}
+
+                {demoActiveTab === 'story_card' && (
+                  <motion.div
+                    key="card-demo"
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    className="bg-gradient-to-r from-purple-950/40 via-indigo-950/30 to-purple-950/40 border border-purple-800/40 rounded-xl p-3.5 text-xs space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-purple-300 uppercase tracking-wider text-[10px] flex items-center gap-1">
+                        <Flame className="w-3.5 h-3.5 text-amber-400" /> 1-Click Story Card
+                      </span>
+                      <span className="text-[10px] bg-purple-500/20 text-purple-200 px-2 py-0.5 rounded-full border border-purple-500/30">
+                        Instagram & Text Ready
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[11px]">
+                      Generate high-resolution social review cards with poster art, Rotten Tomatoes verified ratings, and your personal score in 1 click.
+                    </p>
+                  </motion.div>
+                )}
               </AnimatePresence>
 
-              <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                <Info className="w-3 h-3" />
-                <span>Tap any episode button or hit 'Ask Spudz' above to test the live mechanics!</span>
+              <div className="text-[11px] text-slate-500 flex items-center gap-1.5 pt-1">
+                <Info className="w-3 h-3 text-blue-400 shrink-0" />
+                <span>Tap any episode button or feature tab above to preview the real mechanics!</span>
               </div>
 
             </div>
@@ -427,83 +610,105 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           </div>
         </motion.div>
 
-        {/* Feature Highlights Grid */}
+        {/* Beta Tester Features & Quick-Start Guide Section */}
         <div className="mt-20 space-y-10">
           
-          <div className="text-center max-w-xl mx-auto space-y-2">
-            <h2 className="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
-              Crafted for Real TV Enthusiasts
+          <div className="text-center max-w-2xl mx-auto space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[11px] font-extrabold uppercase tracking-wider border border-blue-500/20">
+              <Zap className="w-3.5 h-3.5" />
+              <span>BETA TESTER HIGHLIGHTS</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-black text-white tracking-tight">
+              Everything You Need to Binge Smarter
             </h2>
-            <p className="text-sm text-slate-400">
-              Personal queues, spoiler-free AI recaps, and friend recommendation sharing built into one clean platform.
+            <p className="text-sm text-slate-400 leading-relaxed">
+              Designed for TV lovers who want private queues, effortless friend recommendations, and zero spoilers.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             
-            {/* Feature 1 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
-                <Clapperboard className="w-5 h-5" />
+            {/* Feature 1: Fast Setup & Starter Pack */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3 hover:border-blue-500/40 transition-all group">
+              <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 group-hover:scale-105 transition-transform">
+                <Clock className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Precise Episode Tracking</h3>
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold text-blue-400 uppercase tracking-wider">Fast-Track Setup</span>
+                <h3 className="text-base font-bold text-white">Under 60 Seconds & Free</h3>
+              </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Log exact season and episode progress across every streaming service. Settle household TV debates before pressing play.
+                Sign in with Google or email with zero credit card friction. Pick your streaming subscriptions and genres to instantly populate a curated starter pack.
               </p>
             </div>
 
-            {/* Feature 2 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+            {/* Feature 2: Binge Network & Invite Links */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3 hover:border-indigo-500/40 transition-all group">
+              <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-105 transition-transform">
                 <Users className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Borrow Friend Recommendations</h3>
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold text-indigo-400 uppercase tracking-wider">Social Binging</span>
+                <h3 className="text-base font-bold text-white">Invite Friends with a Link</h3>
+              </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                See what your friends are binging and swipe top-rated picks straight into your watchlist with one tap.
+                Share your personal Binge Buddy link in group chats. Sync watchlists with friends, compare scores, and borrow their top recommendations in one click.
               </p>
             </div>
 
-            {/* Feature 3 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+            {/* Feature 3: Episode Micro-Reviews & Story Cards */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3 hover:border-sky-500/40 transition-all group">
+              <div className="w-11 h-11 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-105 transition-transform">
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold text-sky-400 uppercase tracking-wider">Micro-Reviews</span>
+                <h3 className="text-base font-bold text-white">Write & Share Micro-Reviews</h3>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Log quick reactions right after an episode ends. Generate sleek, shareable story cards with poster art and ratings ready for Instagram and messages.
+              </p>
+            </div>
+
+            {/* Feature 4: Spudz AI Spoiler-Free Recaps */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3 hover:border-amber-500/40 transition-all group">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:scale-105 transition-transform">
                 <Sparkles className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Spoiler-Free Catchup Recaps</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Haven't watched in months? Spudz AI gives you a quick refresher on what happened up to your last episode without spoiling ahead.
-              </p>
-            </div>
-
-            {/* Feature 4 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
-                <Calendar className="w-5 h-5" />
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold text-amber-400 uppercase tracking-wider">AI TV Companion</span>
+                <h3 className="text-base font-bold text-white">Spoiler-Free Spudz AI</h3>
               </div>
-              <h3 className="text-base font-bold text-white">Premiere Calendar Radar</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Live release dates and countdown timers so you never miss a season drop or weekly episode premiere.
+                Haven't watched in months? Ask Spudz "Where was I?" and get a spoiler-free catchup recap locked strictly to your last watched episode.
               </p>
             </div>
 
-            {/* Feature 5 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+            {/* Feature 5: In-App Bug & Feedback Reporter */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3 hover:border-rose-500/40 transition-all group">
+              <div className="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 group-hover:scale-105 transition-transform">
+                <Bug className="w-5 h-5" />
+              </div>
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold text-rose-400 uppercase tracking-wider">Direct Feedback</span>
+                <h3 className="text-base font-bold text-white">In-App Bug & Feature Reporter</h3>
+              </div>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Spot a missing show, wrong release date, or UI glitch? Tap the Bug icon (🪲) at the top of your dashboard to send instant diagnostics directly to the developer.
+              </p>
+            </div>
+
+            {/* Feature 6: PWA Mobile Install */}
+            <div className="bg-slate-900/60 border border-slate-800/80 rounded-3xl p-6 space-y-3 hover:border-emerald-500/40 transition-all group">
+              <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:scale-105 transition-transform">
                 <Smartphone className="w-5 h-5" />
               </div>
-              <h3 className="text-base font-bold text-white">Save Right to Your Phone</h3>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Add CouchTaterz to your mobile home screen for instant TV tracking right from the couch.
-              </p>
-            </div>
-
-            {/* Feature 6 */}
-            <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-6 space-y-2.5 hover:border-slate-700 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <Share2 className="w-5 h-5" />
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold text-emerald-400 uppercase tracking-wider">Mobile Experience</span>
+                <h3 className="text-base font-bold text-white">Add Right to Your Phone</h3>
               </div>
-              <h3 className="text-base font-bold text-white">Rich Link Sharing</h3>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Text recommendations to friends with rich open graph preview cards containing poster art, ratings, and stats.
+                Install CouchTaterz to your iOS or Android home screen with one tap for a full-screen, native-feeling TV tracking companion right from your couch.
               </p>
             </div>
 
@@ -511,9 +716,111 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
         </div>
 
+        {/* Beta Tester FAQ Accordion Section */}
+        <div className="mt-20 max-w-3xl mx-auto space-y-6">
+          <div className="text-center space-y-2">
+            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              Beta Tester Frequently Asked Questions
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-400">
+              Quick answers about accounts, friend invites, and feature testing.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {FAQS.map((faq, idx) => {
+              const isOpen = activeFaq === idx;
+              return (
+                <div 
+                  key={idx}
+                  className="rounded-2xl bg-slate-900/80 border border-slate-800 overflow-hidden transition-colors"
+                >
+                  <button
+                    onClick={() => setActiveFaq(isOpen ? null : idx)}
+                    className="w-full p-4 sm:p-5 text-left flex items-center justify-between gap-4 font-bold text-sm text-slate-200 hover:text-white cursor-pointer"
+                  >
+                    <span>{faq.q}</span>
+                    <span className="text-slate-500 text-lg">{isOpen ? '−' : '+'}</span>
+                  </button>
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="px-4 sm:px-5 pb-5 text-xs text-slate-400 leading-relaxed border-t border-slate-800/60 pt-3"
+                      >
+                        {faq.a}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Bottom CTA Card */}
+        <div className="mt-20 max-w-4xl mx-auto rounded-3xl bg-gradient-to-r from-blue-900/40 via-indigo-900/40 to-blue-900/40 border border-blue-500/30 p-8 sm:p-10 text-center space-y-6 relative overflow-hidden shadow-2xl">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="relative z-10 space-y-3 max-w-xl mx-auto">
+            <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              Ready to Upgrade Your TV Experience?
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Join fellow founding beta testers today. Set up your private queue, invite your friends, and never waste 40 minutes searching what to watch again.
+            </p>
+          </div>
+
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-3.5 max-w-md mx-auto">
+            <button
+              onClick={onOpenSignup}
+              className="w-full sm:w-auto flex-1 px-8 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Create Free Account</span>
+            </button>
+            <button
+              onClick={() => setShowGuestChoiceModal(true)}
+              className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-slate-900/90 hover:bg-slate-850 border border-slate-700 text-slate-200 hover:text-white font-bold text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Compass className="w-4 h-4 text-slate-400" />
+              <span>Try Guest Sandbox</span>
+            </button>
+          </div>
+
+          {/* Feature Pills */}
+          <div className="relative z-10 flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-xs text-slate-300 font-medium pt-1">
+            <span className="flex items-center gap-1.5 bg-slate-950/70 px-3.5 py-1.5 rounded-xl border border-blue-500/20 text-slate-200 shadow-sm whitespace-nowrap">
+              <Clapperboard className="w-3.5 h-3.5 text-blue-400" /> Episode Tracker
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950/70 px-3.5 py-1.5 rounded-xl border border-blue-500/20 text-slate-200 shadow-sm whitespace-nowrap">
+              <Users className="w-3.5 h-3.5 text-indigo-400" /> Borrow Friend's Picks
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950/70 px-3.5 py-1.5 rounded-xl border border-blue-500/20 text-slate-200 shadow-sm whitespace-nowrap">
+              <Calendar className="w-3.5 h-3.5 text-sky-400" /> TV Calendar Synch
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950/50 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-400 whitespace-nowrap">
+              <Clock className="w-3.5 h-3.5 text-blue-400" /> 60s Fast Setup
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950/50 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-400 whitespace-nowrap">
+              <Share2 className="w-3.5 h-3.5 text-indigo-400" /> 1-Click Friend Invites
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950/50 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-400 whitespace-nowrap">
+              <MessageSquare className="w-3.5 h-3.5 text-sky-400" /> Micro-Reviews
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950/50 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-400 whitespace-nowrap">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" /> Spudz AI Recaps
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950/50 px-3.5 py-1.5 rounded-xl border border-slate-800 text-slate-400 whitespace-nowrap">
+              <Bug className="w-3.5 h-3.5 text-rose-400" /> In-App Bug Reporter
+            </span>
+          </div>
+        </div>
+
       </section>
 
-      {/* Footer Call to Action */}
+      {/* Footer */}
       <footer className="mt-16 border-t border-slate-900 bg-slate-950 py-10 px-4 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
           <div className="flex items-center justify-center md:justify-start gap-3">
@@ -521,9 +828,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({
               <Tv className="w-4 h-4 stroke-[2.2]" />
             </div>
             <div className="flex flex-col justify-center">
-              <span className="font-black text-lg tracking-tight uppercase leading-none">
+              <span className="font-black text-lg tracking-tight uppercase leading-none inline-flex items-center">
                 <span className="text-blue-500">COUCH</span>
                 <span className="text-white">TATERZ</span>
+                <span className="text-[9px] font-bold text-slate-400 ml-0.5 select-none relative -top-1 leading-none">™</span>
               </span>
               <p className="text-[10px] font-extrabold tracking-[0.2em] text-slate-500 uppercase mt-1 leading-none whitespace-nowrap">
                 YOUR BINGE BUDDY
@@ -537,6 +845,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <button onClick={onOpenLogin} className="hover:text-white transition-colors cursor-pointer">Sign In</button>
             <span>•</span>
             <button onClick={onOpenSignup} className="hover:text-white transition-colors cursor-pointer">Create Account</button>
+            {onOpenGuide && (
+              <>
+                <span>•</span>
+                <button onClick={onOpenGuide} className="hover:text-white transition-colors cursor-pointer flex items-center gap-1">
+                  <BookOpen className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Product Guide</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
       </footer>
@@ -699,3 +1016,4 @@ export const LandingPage: React.FC<LandingPageProps> = ({
     </div>
   );
 };
+

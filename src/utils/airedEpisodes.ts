@@ -1,4 +1,14 @@
 import { TvShow, WatchedEpisode } from '../types';
+import { getEpisodeAirDate } from './showSchedules';
+
+/**
+ * Checks if a title is a temporary placeholder like 'TBA'
+ */
+function isPlaceholderTitle(val?: string | null): boolean {
+  if (!val) return true;
+  const s = val.trim().toUpperCase();
+  return s === 'TBA' || s === 'TBD' || s === 'TBC' || s === 'TO BE ANNOUNCED' || s === 'UNTITLED' || s === 'UNANNOUNCED';
+}
 
 /**
  * Gets today's date string in YYYY-MM-DD format (local time)
@@ -34,46 +44,50 @@ export function hasFutureNextEpisode(show: TvShow): boolean {
 }
 
 /**
- * Calculates the maximum season that has actually aired episodes.
+ * Calculates the maximum season available for tracking (allowing navigation of all known seasons).
  */
 export function getMaxAiredSeason(show: TvShow): number {
-  if (hasFutureNextEpisode(show) && show.nextEpisode) {
-    // If nextEpisode has episode > 1, then earlier episodes in that season have aired!
-    if (show.nextEpisode.episode > 1) {
-      return show.nextEpisode.season;
-    }
-    // If nextEpisode is S_E1, season S hasn't aired yet, so max aired season is S - 1.
-    return Math.max(1, show.nextEpisode.season - 1);
-  }
-
-  // If no future nextEpisode, all known seasons up to totalSeasons / latestWatched have aired
-  return Math.max(1, show.totalSeasons || 1, show.latestWatched?.season || 1);
+  const fromTotal = show.totalSeasons || 1;
+  const fromEps = show.episodesPerSeason ? show.episodesPerSeason.length : 1;
+  const fromWatched = show.latestWatched?.season || 1;
+  const fromNext = show.nextEpisode?.season || 1;
+  return Math.max(1, fromTotal, fromEps, fromWatched, fromNext);
 }
 
 /**
- * Calculates the maximum episode count that has actually aired for a specific season.
+ * Calculates the maximum episode count available for a specific season.
+ * Ensures user can always progress through all known episodes of that season.
  */
 export function getMaxAiredEpisodeForSeason(show: TvShow, season: number): number {
-  const episodesInSeason = (show.episodesPerSeason && show.episodesPerSeason[season - 1]) || 10;
-
-  if (hasFutureNextEpisode(show) && show.nextEpisode) {
-    const futureSeason = show.nextEpisode.season;
-    const futureEpisode = show.nextEpisode.episode;
-
-    if (season > futureSeason) {
-      // Future season after nextEpisode -> 0 aired episodes
-      return 0;
-    } else if (season === futureSeason) {
-      // Same season as nextEpisode -> max aired episode is futureEpisode - 1
-      return Math.max(0, futureEpisode - 1);
-    } else {
-      // Earlier season -> all episodes in this season have aired
-      return episodesInSeason;
-    }
+  // 1. From episodesPerSeason array
+  if (show.episodesPerSeason && show.episodesPerSeason[season - 1] && show.episodesPerSeason[season - 1] > 0) {
+    return show.episodesPerSeason[season - 1];
   }
 
-  // No future nextEpisode -> all episodes in this season have aired
-  return Math.max(1, episodesInSeason, season === show.latestWatched?.season ? show.latestWatched.episode : 0);
+  // 2. Count numbered episodes in episodes map
+  if (show.episodes && typeof show.episodes === 'object') {
+    let maxEp = 0;
+    const prefixS = `S${season}E`;
+    const prefixDash = `${season}-`;
+    for (const key of Object.keys(show.episodes)) {
+      if (key.startsWith(prefixS) || key.startsWith(prefixDash)) {
+        const match = key.match(/E(\d+)/i) || key.match(/-(\d+)/);
+        if (match) {
+          const ep = parseInt(match[1], 10);
+          if (!isNaN(ep) && ep > maxEp) maxEp = ep;
+        }
+      }
+    }
+    if (maxEp > 0) return maxEp;
+  }
+
+  // 3. From latestWatched if it's already higher
+  if (show.latestWatched && show.latestWatched.season === season && show.latestWatched.episode > 10) {
+    return show.latestWatched.episode;
+  }
+
+  // Default to standard 10 episodes per season
+  return 10;
 }
 
 /**
@@ -83,16 +97,39 @@ export function getTitleForEpisode(show: TvShow, season: number, episode: number
   if (episode <= 0) return "Not Started";
   const k1 = `S${season}E${episode}`;
   const k2 = `${season}-${episode}`;
-  if (show.episodes?.[k1]) return show.episodes[k1];
-  if (show.episodes?.[k2]) return show.episodes[k2];
-  if (show.latestWatched?.season === season && show.latestWatched?.episode === episode && show.latestWatched.title) {
+  const ep1 = show.episodes?.[k1];
+  const ep2 = show.episodes?.[k2];
+
+  // 1. If local dictionary has a valid, non-placeholder title, use it
+  if (ep1 && !isPlaceholderTitle(ep1)) return ep1;
+  if (ep2 && !isPlaceholderTitle(ep2)) return ep2;
+
+  // 2. Prioritize official broadcast schedule (canonical database)
+  const canonical = getEpisodeAirDate(show.title, season, episode);
+  if (canonical?.title && !isPlaceholderTitle(canonical.title)) {
+    return canonical.title;
+  }
+
+  // 3. Check nextEpisode if matching season/episode and has an official title
+  if (show.nextEpisode?.season === season && show.nextEpisode?.episode === episode && show.nextEpisode.title && !isPlaceholderTitle(show.nextEpisode.title)) {
+    return show.nextEpisode.title;
+  }
+
+  // 4. Check latestWatched if matching season/episode and has an official title
+  if (show.latestWatched?.season === season && show.latestWatched?.episode === episode && show.latestWatched.title && !isPlaceholderTitle(show.latestWatched.title)) {
     return show.latestWatched.title;
   }
+
+  // 5. Fallback to placeholder if explicit ("TBA"), or canonical title
+  if (ep1) return ep1;
+  if (ep2) return ep2;
+  if (canonical?.title) return canonical.title;
+
   return `Episode ${episode}`;
 }
 
 /**
- * Clamps user progress so that season and episode never exceed the most recent aired episode.
+ * Clamps user progress so that season and episode never exceed the known boundaries.
  */
 export function clampProgressToAired(show: TvShow, targetSeason: number, targetEpisode: number): WatchedEpisode {
   const maxSeason = getMaxAiredSeason(show);
@@ -107,3 +144,4 @@ export function clampProgressToAired(show: TvShow, targetSeason: number, targetE
     title: getTitleForEpisode(show, clampedSeason, clampedEpisode)
   };
 }
+

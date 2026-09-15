@@ -613,6 +613,7 @@ interface TaterzAvatarBuilderModalProps {
   isPro?: boolean;
   onOpenUpgradeModal?: () => void;
   theme?: 'dark' | 'light';
+  currentUserId?: string;
 }
 
 const renderDicebearPropOverlay = (propId: string) => {
@@ -838,8 +839,11 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
   onSaveAvatar,
   isPro = false,
   onOpenUpgradeModal,
-  theme = 'dark'
+  theme = 'dark',
+  currentUserId = 'default'
 }) => {
+  const customPresetsStorageKey = `taterz_custom_user_presets_${currentUserId}`;
+  const savedVariationsStorageKey = `couchtaterz_saved_avatar_variations_${currentUserId}`;
   const [config, setConfig] = useState<TaterAvatarConfig>(DEFAULT_TATER_CONFIG);
   const [activeCategory, setActiveCategory] = useState<'colors' | 'body' | 'hair' | 'eyes' | 'mouth' | 'hat' | 'outfit' | 'item' | 'bg'>('body');
   const [showVipGateModal, setShowVipGateModal] = useState(false);
@@ -982,17 +986,25 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
   const [editingPresetName, setEditingPresetName] = useState('');
   const [saveFeedbackMsg, setSaveFeedbackMsg] = useState<string | null>(null);
 
-  // Load custom presets from localStorage on mount
+  // Load custom presets from localStorage on mount & user change
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('taterz_custom_user_presets');
+      const saved = localStorage.getItem(customPresetsStorageKey);
       if (saved) {
         setCustomPresets(JSON.parse(saved));
+      } else {
+        // Fallback for seamless migration from legacy unscoped key if available
+        const legacy = localStorage.getItem('taterz_custom_user_presets');
+        if (legacy && (currentUserId === 'default' || currentUserId === 'user-julio')) {
+          setCustomPresets(JSON.parse(legacy));
+        } else {
+          setCustomPresets([]);
+        }
       }
     } catch (e) {
       console.error('Failed to load custom presets', e);
     }
-  }, []);
+  }, [customPresetsStorageKey, currentUserId]);
 
   // Sync avatar generator initial state with currentAvatarUrl when modal opens
   useEffect(() => {
@@ -1151,7 +1163,7 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
   const syncCustomPresetsStorage = (newPresets: OptionItem[]) => {
     setCustomPresets(newPresets);
     try {
-      localStorage.setItem('taterz_custom_user_presets', JSON.stringify(newPresets));
+      localStorage.setItem(customPresetsStorageKey, JSON.stringify(newPresets));
     } catch (e) {
       console.error('Failed to save custom presets', e);
     }
@@ -1273,27 +1285,35 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
 
   const hasVipItemsEquipped = activeVipItems.length > 0;
 
-  // Saved Variations limit: VIP = 10, Free = 1
-  const maxVariations = isPro ? 10 : 1;
+  // Saved Variations limit
+  const maxVariations = 10;
   const [variationName, setVariationName] = useState('');
   const [savedVariations, setSavedVariations] = useState<{ id: string; name: string; url: string; createdAt: number }[]>([]);
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('couchtaterz_saved_avatar_variations');
+      const raw = localStorage.getItem(savedVariationsStorageKey);
       if (raw) {
         setSavedVariations(JSON.parse(raw));
+      } else {
+        // Fallback migration check for legacy unscoped storage
+        const legacy = localStorage.getItem('couchtaterz_saved_avatar_variations');
+        if (legacy && (currentUserId === 'default' || currentUserId === 'user-julio')) {
+          setSavedVariations(JSON.parse(legacy));
+        } else {
+          setSavedVariations([]);
+        }
       }
     } catch (e) {
       console.error(e);
     }
-  }, []);
+  }, [savedVariationsStorageKey, currentUserId]);
 
   if (!isOpen) return null;
 
   const saveAvatarToVariations = (urlToSave: string, customName?: string) => {
     try {
-      const raw = localStorage.getItem('couchtaterz_saved_avatar_variations');
+      const raw = localStorage.getItem(savedVariationsStorageKey);
       let currentList: { id: string; name: string; url: string; createdAt: number }[] = raw ? JSON.parse(raw) : [];
 
       const name = customName?.trim() || variationName.trim() || `Tater Look #${currentList.length + 1}`;
@@ -1304,23 +1324,17 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
         createdAt: Date.now()
       };
 
-      if (!isPro) {
-        // Free tier: strictly 1 variation slot
-        currentList = [newVariation];
+      const existingIdx = currentList.findIndex(v => v.url === urlToSave);
+      if (existingIdx >= 0) {
+        currentList[existingIdx] = newVariation;
+      } else if (currentList.length >= 10) {
+        currentList = [...currentList.slice(1), newVariation];
       } else {
-        // VIP tier: up to 10 variation slots
-        const existingIdx = currentList.findIndex(v => v.url === urlToSave);
-        if (existingIdx >= 0) {
-          currentList[existingIdx] = newVariation;
-        } else if (currentList.length >= 10) {
-          currentList = [...currentList.slice(1), newVariation];
-        } else {
-          currentList.push(newVariation);
-        }
+        currentList.push(newVariation);
       }
 
       setSavedVariations(currentList);
-      localStorage.setItem('couchtaterz_saved_avatar_variations', JSON.stringify(currentList));
+      localStorage.setItem(savedVariationsStorageKey, JSON.stringify(currentList));
       setVariationName('');
     } catch (e) {
       console.error(e);
@@ -1330,47 +1344,20 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
   const handleDeleteVariation = (idToDelete: string) => {
     const updated = savedVariations.filter(v => v.id !== idToDelete);
     setSavedVariations(updated);
-    localStorage.setItem('couchtaterz_saved_avatar_variations', JSON.stringify(updated));
+    localStorage.setItem(savedVariationsStorageKey, JSON.stringify(updated));
   };
 
   const currentDataUrl = configToDataUrl(config);
 
   const handleSave = () => {
     const finalUrl = builderMode === 'dicebear_10' ? dicebear10Url : currentDataUrl;
-    if (builderMode !== 'dicebear_10' && hasVipItemsEquipped && !isPro) {
-      setShowVipGateModal(true);
-      return;
-    }
     saveAvatarToVariations(finalUrl);
     onSaveAvatar(finalUrl);
     onClose();
   };
 
-  const handleStripVipAndSave = () => {
-    const strippedConfig: TaterAvatarConfig = {
-      body: BODY_OPTIONS.find(b => b.id === config.body)?.isVip ? 'russet' : config.body,
-      hair: config.hair,
-      hairColor: HAIR_COLOR_OPTIONS.find(hc => hc.id === config.hairColor)?.isVip ? 'brown' : config.hairColor,
-      eyes: EYES_OPTIONS.find(e => e.id === config.eyes)?.isVip ? 'chill' : config.eyes,
-      mouth: MOUTH_OPTIONS.find(m => m.id === config.mouth)?.isVip ? 'smile' : config.mouth,
-      hat: HAT_OPTIONS.find(h => h.id === config.hat)?.isVip ? 'none' : config.hat,
-      outfit: OUTFIT_OPTIONS.find(o => o.id === config.outfit)?.isVip ? 'hoodie' : config.outfit,
-      item: ITEM_OPTIONS.find(i => i.id === config.item)?.isVip ? 'remote' : config.item,
-      bg: BG_OPTIONS.find(bg => bg.id === config.bg)?.isVip ? 'dark' : config.bg,
-      customOutfitColor: undefined,
-      customHatColor: undefined,
-      customHairColor: undefined,
-      customSkinColor: undefined,
-      customBgColor: undefined,
-    };
-    const strippedUrl = configToDataUrl(strippedConfig);
-    onSaveAvatar(strippedUrl);
-    setShowVipGateModal(false);
-    onClose();
-  };
-
   const categories = [
-    { id: 'colors', label: 'VIP Color Sliders 🎨', icon: Palette, isVip: true },
+    { id: 'colors', label: 'Color Sliders 🎨', icon: Palette },
     { id: 'body', label: 'Skin Tone', icon: Palette },
     { id: 'hair', label: 'Hairstyle & Color', icon: Scissors },
     { id: 'eyes', label: 'Eyes & Glasses', icon: Eye },
@@ -1400,11 +1387,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                 <h2 className="text-base sm:text-lg font-black text-white tracking-tight uppercase">
                   TATERCREATOR
                 </h2>
-                {isPro && (
-                  <span className="inline-flex items-center gap-1 text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                    <Crown className="w-3 h-3 text-amber-400" /> VIP UNLOCKED
-                  </span>
-                )}
               </div>
               <p className="text-xs text-slate-400">Couchtaterz Pixel Art Avatar Engine</p>
             </div>
@@ -1492,11 +1474,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                     </div>
                   </div>
 
-                  {hasVipItemsEquipped && (
-                    <div className="absolute -top-3 -right-3 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black font-extrabold text-[11px] uppercase tracking-wider shadow-lg border border-amber-300 flex items-center gap-1 animate-bounce">
-                      <Crown className="w-3.5 h-3.5" /> VIP Equipped
-                    </div>
-                  )}
                 </div>
 
                 <div className="text-center space-y-1">
@@ -1504,9 +1481,7 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                     <Zap className="w-3.5 h-3.5" /> 8-Bit Pixel Grid Engine
                   </span>
                   <p className="text-xs text-slate-400">
-                    {hasVipItemsEquipped 
-                      ? `${activeVipItems.length} VIP Item${activeVipItems.length > 1 ? 's' : ''} Equipped`
-                      : '100% Free Pixel Character Options'}
+                    Custom Pixel Character Creator
                   </p>
                 </div>
               </div>
@@ -1607,7 +1582,7 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                 <div className="pt-2 border-t border-white/10 space-y-1.5">
                   <div className="flex items-center justify-between text-[10px] text-slate-400 font-medium">
                     <span className="font-bold text-amber-400 uppercase tracking-wider">Saved Variations (Click to Equip)</span>
-                    <span>{isPro ? 'VIP 10 Limit' : 'Free 1 Limit'}</span>
+                    <span>Max 10 Variations</span>
                   </div>
                   <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin pt-1">
                     {savedVariations.map((varItem) => (
@@ -2231,7 +2206,7 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                   <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-purple-500/10 border border-amber-500/30 flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-                        <Crown className="w-4 h-4 text-amber-400" /> VIP Custom Color Sliders
+                        <Palette className="w-4 h-4 text-amber-400" /> Custom Color Sliders
                       </h4>
                       <p className="text-xs text-slate-300 mt-0.5">
                         Fine-tune custom color hues & hex values for skin tone, attire, hats, facial hair, and background!
@@ -2633,11 +2608,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                           }`}
                         >
                           <span className="text-xs font-bold">{item.name}</span>
-                          {item.isVip && (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              VIP
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -2686,11 +2656,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                             }`}
                           >
                             <span className="text-xs font-bold">{item.name}</span>
-                            {item.isVip && (
-                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                VIP
-                              </span>
-                            )}
                           </button>
                         );
                       })}
@@ -2718,11 +2683,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                             }`}
                           >
                             <span className="text-xs font-bold">{item.name}</span>
-                            {item.isVip && (
-                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                VIP
-                              </span>
-                            )}
                           </button>
                         );
                       })}
@@ -2809,11 +2769,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                           }`}
                         >
                           <span className="text-xs font-bold">{item.name}</span>
-                          {item.isVip && (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              VIP
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -2839,11 +2794,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                           }`}
                         >
                           <span className="text-xs font-bold">{item.name}</span>
-                          {item.isVip && (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              VIP
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -2869,11 +2819,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                           }`}
                         >
                           <span className="text-xs font-bold">{item.name}</span>
-                          {item.isVip && (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              VIP
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -2899,11 +2844,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                           }`}
                         >
                           <span className="text-xs font-bold">{item.name}</span>
-                          {item.isVip && (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              VIP
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -2929,11 +2869,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
                           }`}
                         >
                           <span className="text-xs font-bold">{item.name}</span>
-                          {item.isVip && (
-                            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                              VIP
-                            </span>
-                          )}
                         </button>
                       );
                     })}
@@ -2946,68 +2881,6 @@ export const TaterzAvatarBuilderModal: React.FC<TaterzAvatarBuilderModalProps> =
           </div>
         </div>
       </motion.div>
-
-      {/* VIP GATE MODAL OVERLAY */}
-      <AnimatePresence>
-        {showVipGateModal && (
-          <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-lg">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="relative w-full max-w-md bg-[#12141F] border border-amber-500/40 rounded-3xl p-6 text-center space-y-5 shadow-2xl overflow-hidden"
-            >
-              <div className="w-16 h-16 rounded-3xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center mx-auto text-amber-400">
-                <Crown className="w-8 h-8 animate-bounce" />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-xl font-black text-white uppercase tracking-tight">
-                  VIP Upgrade Required
-                </h3>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  Your custom avatar includes <span className="text-amber-400 font-bold">{activeVipItems.length} VIP cosmetic item(s)</span>:
-                </p>
-                <div className="p-3 rounded-xl bg-black/40 border border-amber-500/20 text-left text-xs font-semibold text-amber-200 max-h-28 overflow-y-auto space-y-1">
-                  {activeVipItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>{item}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowVipGateModal(false);
-                    if (onOpenUpgradeModal) {
-                      onOpenUpgradeModal();
-                    } else {
-                      localStorage.setItem('couchtaterz_is_pro', 'true');
-                      onSaveAvatar(currentDataUrl);
-                      onClose();
-                    }
-                  }}
-                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-extrabold text-sm transition shadow-xl flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Crown className="w-4 h-4" /> Unlock VIP All Access ($3.99/mo)
-                </button>
-
-                <button
-                  type="button"
-                  onClick={handleStripVipAndSave}
-                  className="w-full py-2.5 px-4 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-xs font-bold transition cursor-pointer"
-                >
-                  Strip VIP Items & Save Free Avatar
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };

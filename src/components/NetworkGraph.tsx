@@ -9,7 +9,7 @@ import {
   Users, Tv, Share2, ZoomIn, ZoomOut, RotateCcw, Filter, 
   Search, Shield, Eye, Star, Sparkles, Activity, CheckCircle2, 
   Info, ExternalLink, Maximize2, Minimize2, MessageSquare, Send, Check,
-  ChevronDown, ChevronUp, UserCheck, Globe, UserPlus
+  ChevronDown, ChevronUp, UserCheck, Globe, UserPlus, Crown, Plus
 } from 'lucide-react';
 import { normalizeUserId, matchUserId } from '../utils/userUtils';
 import { getFriendsData, JULIO_USER_ID } from '../utils/friendsStorage';
@@ -23,6 +23,8 @@ interface NetworkGraphProps {
   currentUser?: any;
   confirmedBuddyIds?: string[];
   onSendMessage?: (targetUser: any, messageText: string) => Promise<void> | void;
+  onOpenSharedWatchlists?: (options?: { show?: any; buddyId?: string }) => void;
+  onOpenUpgradeModal?: () => void;
   scope?: 'connections' | 'all';
   allowScopeToggle?: boolean;
 }
@@ -60,15 +62,20 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
   currentUser,
   confirmedBuddyIds,
   onSendMessage,
+  onOpenSharedWatchlists,
+  onOpenUpgradeModal,
   scope = 'connections',
   allowScopeToggle = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
+  const isJulio = currentUser?.email?.toLowerCase() === 'juliozaldivar@gmail.com' || currentUser?.id === 'default';
+  const isVip = Boolean(currentUser?.isVip || currentUser?.isPro || isJulio);
+
   const [scopeMode, setScopeMode] = useState<'connections' | 'all'>(scope);
   const [viewMode, setViewMode] = useState<'all' | 'friends' | 'content'>('all');
-  const [contentLimit, setContentLimit] = useState<number>(15);
+  const [contentLimit, setContentLimit] = useState<number>(10);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [hoveredNode, setHoveredNode] = useState<NodeData | null>(null);
@@ -461,8 +468,8 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
       .append('line')
       .attr('stroke', (d) => {
         if (d.relationship === 'friend') return '#6366f1'; // Indigo for friends
-        if (d.status === 'Watching') return '#10b981'; // Green
-        if (d.status === 'Completed') return '#3b82f6'; // Blue
+        if (d.status === 'Watching') return '#3b82f6'; // Blue
+        if (d.status === 'Completed') return '#10b981'; // Green
         if (d.status === 'Backlog') return '#f59e0b'; // Amber
         return '#f43f5e'; // Rose
       })
@@ -674,40 +681,45 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
       }`}>
         {/* Top Info / Scope Row */}
         <div className="flex flex-wrap items-center justify-between gap-2 pb-1 border-b border-slate-800/60">
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-500/10 border border-purple-500/30 text-purple-300 font-extrabold text-[11px]">
               <Sparkles className="w-3.5 h-3.5 text-purple-400" />
               <span>{scopeMode === 'connections' ? 'My Binge Circle' : 'All Taters Network'}</span>
             </span>
+
             <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
               {buddyCount} {buddyCount === 1 ? 'Connected Buddy' : 'Connected Buddies'} • {sharedShowsCount} {sharedShowsCount === 1 ? 'Show Tracked' : 'Shows Tracked'}
             </span>
           </div>
 
-          {allowScopeToggle && (
-            <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800 text-[10px] font-bold">
-              <button
-                type="button"
-                onClick={() => setScopeMode('connections')}
-                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  scopeMode === 'connections' ? 'bg-purple-600 text-white shadow-xs font-black' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Users className="w-3 h-3" />
-                <span>My Circle Only</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setScopeMode('all')}
-                className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
-                  scopeMode === 'all' ? 'bg-blue-600 text-white shadow-xs font-black' : 'text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <Globe className="w-3 h-3" />
-                <span>All Profiles (Admin)</span>
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {/* VIP Shared Watchlists button hidden for beta testing */}
+
+            {allowScopeToggle && (
+              <div className="flex items-center gap-1 bg-slate-900/90 p-0.5 rounded-xl border border-slate-800 text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setScopeMode('connections')}
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                    scopeMode === 'connections' ? 'bg-purple-600 text-white shadow-xs font-black' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Users className="w-3 h-3" />
+                  <span>My Circle</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScopeMode('all')}
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer flex items-center gap-1 ${
+                    scopeMode === 'all' ? 'bg-blue-600 text-white shadow-xs font-black' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Globe className="w-3 h-3" />
+                  <span>All (Admin)</span>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
@@ -786,11 +798,13 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
               <select
                 value={contentLimit}
                 onChange={e => setContentLimit(Number(e.target.value))}
-                className="py-1.5 px-2.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-slate-200 outline-none cursor-pointer"
+                className="py-1.5 px-2.5 rounded-xl text-xs bg-slate-900 border border-slate-700 text-slate-200 outline-none cursor-pointer font-bold"
               >
                 <option value={10}>Top 10 Shows</option>
                 <option value={20}>Top 20 Shows</option>
-                <option value={40}>Top 40 Shows</option>
+                <option value={30}>Top 30 Shows</option>
+                <option value={40}>Top 40 Shows (VIP All-Access)</option>
+                <option value={100}>All Shows (Expanded Mesh)</option>
               </select>
             )}
 
@@ -875,11 +889,14 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
               <span className="flex items-center gap-1 text-indigo-400">
                 <span className="w-2 h-0.5 bg-indigo-500" /> Buddy
               </span>
-              <span className="flex items-center gap-1 text-emerald-400">
-                <span className="w-2 h-0.5 bg-emerald-500" /> Watching
-              </span>
               <span className="flex items-center gap-1 text-blue-400">
-                <span className="w-2 h-0.5 bg-blue-500" /> Completed
+                <span className="w-2 h-0.5 bg-blue-500" /> Watching
+              </span>
+              <span className="flex items-center gap-1 text-amber-400">
+                <span className="w-2 h-0.5 bg-amber-500" /> Up Next
+              </span>
+              <span className="flex items-center gap-1 text-emerald-400">
+                <span className="w-2 h-0.5 bg-emerald-500" /> Watched
               </span>
             </div>
             <div className="pt-1 border-t border-slate-800/80 text-[10px] text-slate-400 space-y-0.5 font-medium">
@@ -946,25 +963,28 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
                 </div>
                 <div className="flex items-center justify-between text-slate-300 text-[11px]">
                   <span>Watchlist Status:</span>
-                  <span className="font-bold text-emerald-400">{selectedNode.data.stats?.watching || 0} Watching</span>
+                  <span className="font-bold text-blue-400">{selectedNode.data.stats?.watching || 0} Watching</span>
                 </div>
                 {/* Action Buttons Row: Inspect Queue & Message */}
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                   {onInspectUserLibrary && (
                     <button
                       onClick={() => {
                         onInspectUserLibrary(selectedNode.data.id);
                       }}
-                      className="flex-1 py-2 px-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition truncate"
+                      className="flex-1 py-1.5 px-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] flex items-center justify-center gap-1 shadow-md cursor-pointer transition truncate"
                       title={`Inspect ${selectedNode.label}'s Queue`}
                     >
                       <Eye className="w-3.5 h-3.5 shrink-0" />
                       <span className="truncate">Inspect Queue</span>
                     </button>
                   )}
+                  
+                  {/* VIP Watchlist button hidden for beta testing */}
+
                   <button
                     onClick={() => setIsMessaging(!isMessaging)}
-                    className={`flex-1 py-2 px-2.5 rounded-xl font-extrabold text-[11px] flex items-center justify-center gap-1.5 shadow-md cursor-pointer transition truncate border ${
+                    className={`flex-1 py-1.5 px-2.5 rounded-xl font-extrabold text-[11px] flex items-center justify-center gap-1 shadow-md cursor-pointer transition truncate border ${
                       isMessaging 
                         ? 'bg-purple-600 border-purple-400 text-white' 
                         : 'bg-slate-800 hover:bg-purple-600/80 border-slate-700 hover:border-purple-500 text-purple-200 hover:text-white'
@@ -1017,14 +1037,17 @@ export const NetworkGraph: React.FC<NetworkGraphProps> = ({
 
             {selectedNode.type === 'show' && selectedNode.data && (
               <div className="space-y-2 text-xs border-t border-slate-800 pt-2">
-                <p className="text-[11px] text-slate-300 font-bold">Tracked by Binge Buddies:</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-[11px] text-slate-300 font-bold">Tracked by Binge Buddies:</p>
+                  {/* VIP Watchlist button hidden for beta testing */}
+                </div>
                 <div className="max-h-28 overflow-y-auto space-y-1 scrollbar-thin pr-1">
                   {selectedNode.data.users?.map((u: any, idx: number) => (
                     <div key={`show-user-${u.id || u.name}-${idx}`} className="flex items-center justify-between text-[11px] bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
                       <span className="font-extrabold text-blue-300">{u.name}</span>
                       <span className={`px-1.5 py-0.5 rounded text-[9px] font-black uppercase ${
-                        u.status === 'Watching' ? 'bg-emerald-500/20 text-emerald-400' :
-                        u.status === 'Completed' ? 'bg-blue-500/20 text-blue-400' : 'bg-amber-500/20 text-amber-400'
+                        u.status === 'Watching' ? 'bg-blue-500/20 text-blue-400' :
+                        u.status === 'Completed' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-orange-500/20 text-orange-400'
                       }`}>
                         {u.status}
                       </span>

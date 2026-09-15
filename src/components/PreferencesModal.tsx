@@ -10,7 +10,8 @@ import { TaterzAvatarBuilderModal } from './TaterzAvatarBuilderModal';
 import { 
   X, Check, Sparkles, Sliders, Mail, User as UserIcon, Trash2, 
   AlertTriangle, Download, Upload, Tv, Globe, Clock, Film, Heart, Plus, Calendar,
-  Camera, ShieldCheck, MapPin, Tag, Star, Bell, Phone, Smartphone, Send, CheckCircle2, BellRing, Palette, Crown
+  Camera, ShieldCheck, MapPin, Tag, Star, Bell, Phone, Smartphone, Send, CheckCircle2, BellRing, Palette, Crown,
+  HelpCircle, RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -24,6 +25,7 @@ interface PreferencesModalProps {
   showWorkflowGuide: boolean;
   onToggleWorkflowGuide: (show: boolean) => void;
   theme?: 'dark' | 'light';
+  onOpenUpgradeModal?: () => void;
 }
 
 const GENRE_OPTIONS = [
@@ -65,7 +67,8 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
   onClose,
   showWorkflowGuide,
   onToggleWorkflowGuide,
-  theme = 'dark'
+  theme = 'dark',
+  onOpenUpgradeModal
 }) => {
   // Navigation Tab State
   const [activeTab, setActiveTab] = useState<'profile' | 'ai_taste' | 'subscriptions' | 'app_data'>('profile');
@@ -81,26 +84,35 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
 
   const [isAvatarExpanded, setIsAvatarExpanded] = useState(false);
   const [isAvatarStudioOpen, setIsAvatarStudioOpen] = useState(false);
+  const savedVariationsStorageKey = `couchtaterz_saved_avatar_variations_${currentUser?.id || 'default'}`;
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('couchtaterz_saved_avatar_variations');
+      const raw = localStorage.getItem(savedVariationsStorageKey);
       if (raw) {
         setSavedVariations(JSON.parse(raw));
-      } else if (currentUser?.avatarUrl) {
-        const initVar = [{ id: 'var_default', name: 'Active Tater Avatar', url: currentUser.avatarUrl, createdAt: Date.now() }];
-        setSavedVariations(initVar);
-        localStorage.setItem('couchtaterz_saved_avatar_variations', JSON.stringify(initVar));
+      } else {
+        // Fallback for legacy unscoped storage if present
+        const legacy = localStorage.getItem('couchtaterz_saved_avatar_variations');
+        if (legacy && (currentUser?.id === 'default' || currentUser?.id === 'user-julio')) {
+          setSavedVariations(JSON.parse(legacy));
+        } else if (currentUser?.avatarUrl) {
+          const initVar = [{ id: 'var_default', name: 'Active Tater Avatar', url: currentUser.avatarUrl, createdAt: Date.now() }];
+          setSavedVariations(initVar);
+          localStorage.setItem(savedVariationsStorageKey, JSON.stringify(initVar));
+        } else {
+          setSavedVariations([]);
+        }
       }
     } catch (e) {
       console.error(e);
     }
-  }, [isAvatarExpanded, isAvatarStudioOpen, currentUser?.avatarUrl]);
+  }, [isAvatarExpanded, isAvatarStudioOpen, currentUser?.avatarUrl, savedVariationsStorageKey, currentUser?.id]);
 
   const handleDeleteVariation = (idToDelete: string) => {
     const updated = savedVariations.filter(v => v.id !== idToDelete);
     setSavedVariations(updated);
-    localStorage.setItem('couchtaterz_saved_avatar_variations', JSON.stringify(updated));
+    localStorage.setItem(savedVariationsStorageKey, JSON.stringify(updated));
   };
 
   // Notifications Preference State
@@ -116,6 +128,9 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
     preferences?.alertPreference === 'text' && preferences?.alertDestination
       ? preferences.alertDestination
       : ''
+  );
+  const [notificationLeadDays, setNotificationLeadDays] = useState<number>(
+    preferences?.notificationLeadDays ?? 30
   );
   const [testAlertMsg, setTestAlertMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isSendingTest, setIsSendingTest] = useState(false);
@@ -454,7 +469,8 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
       vibes: selectedVibes,
       favoriteShows,
       alertPreference,
-      alertDestination: alertPreference === 'email' ? alertEmail.trim() : alertPhone.trim()
+      alertDestination: alertPreference === 'email' ? alertEmail.trim() : alertPhone.trim(),
+      notificationLeadDays
     };
 
     onToggleWorkflowGuide(localShowWorkflowGuide);
@@ -466,7 +482,8 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
         userId: updatedUser.id,
         email: updatedUser.email,
         name: updatedUser.name,
-        avatarUrl: finalAvatarUrl
+        avatarUrl: finalAvatarUrl,
+        preferences: updatedPrefs
       })
     }).catch(err => console.error("Failed to sync profile directly:", err));
 
@@ -636,10 +653,6 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                     <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="text-base sm:text-lg font-black text-white tracking-tight truncate">{name || 'Watchlist Curator'}</h3>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                          <ShieldCheck className="w-3 h-3 text-blue-400" />
-                          <span>Spudz VIP</span>
-                        </span>
                       </div>
                       <p className="text-xs text-slate-400 truncate">{email || 'no-email@spudz.app'}</p>
                     </div>
@@ -695,17 +708,8 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <span className="text-xs font-bold text-amber-300 uppercase tracking-wider">
-                              Saved Avatar Variations ({savedVariations.length}/{maxVariations})
+                              Saved Avatar Variations ({savedVariations.length}/10)
                             </span>
-                            {isPro ? (
-                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase">
-                                VIP (Up to 10)
-                              </span>
-                            ) : (
-                              <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase">
-                                Free (1 Slot)
-                              </span>
-                            )}
                           </div>
                           <button
                             type="button"
@@ -873,6 +877,78 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
                         />
                       </>
                     )}
+                  </div>
+                </div>
+
+                {/* Air Date Alert Window / Lead Time Setting */}
+                <div className="space-y-2.5 pt-2 border-t border-white/5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-medium text-slate-300 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-blue-400" />
+                      <span>New Episode Air Date Alert Window</span>
+                    </label>
+                    <span className="text-[11px] font-bold text-blue-400 bg-blue-500/10 px-2.5 py-0.5 rounded-lg border border-blue-500/20">
+                      {notificationLeadDays === 1 
+                        ? '1 day before (24 hrs)' 
+                        : notificationLeadDays === 7 
+                        ? '7 days before (1 week)' 
+                        : notificationLeadDays === 14 
+                        ? '14 days before (2 weeks)' 
+                        : notificationLeadDays === 30 
+                        ? '30 days before (Default)' 
+                        : `${notificationLeadDays} days before`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400">
+                    Choose how far in advance you want to receive air date countdowns, upcoming episode badges, and notification alerts before a new episode airs.
+                  </p>
+
+                  {/* Quick Select Buttons */}
+                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+                    {[
+                      { days: 1, label: '1 Day' },
+                      { days: 3, label: '3 Days' },
+                      { days: 7, label: '7 Days (1 Wk)' },
+                      { days: 14, label: '14 Days (2 Wks)' },
+                      { days: 30, label: '30 Days (Default)' },
+                      { days: 60, label: '60 Days' },
+                    ].map(({ days, label }) => (
+                      <button
+                        key={days}
+                        type="button"
+                        onClick={() => setNotificationLeadDays(days)}
+                        className={`px-2.5 py-2 rounded-xl text-xs font-bold transition-all text-center cursor-pointer border ${
+                          notificationLeadDays === days
+                            ? 'bg-blue-600 text-white border-blue-400 shadow-md shadow-blue-950/40 scale-[1.02]'
+                            : 'bg-[#16181E] hover:bg-[#1E222B] text-slate-400 hover:text-slate-200 border-white/5'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Granular Custom Select */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-[11px] font-medium text-slate-400 shrink-0">Custom Time Window:</span>
+                    <select
+                      value={notificationLeadDays}
+                      onChange={(e) => setNotificationLeadDays(Number(e.target.value))}
+                      className="bg-[#16181E] border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer w-full sm:w-auto"
+                    >
+                      <option value={1}>1 Day Ahead (Day of / 24 Hours)</option>
+                      <option value={2}>2 Days Ahead</option>
+                      <option value={3}>3 Days Ahead</option>
+                      <option value={5}>5 Days Ahead</option>
+                      <option value={7}>7 Days Ahead (1 Week)</option>
+                      <option value={10}>10 Days Ahead</option>
+                      <option value={14}>14 Days Ahead (2 Weeks)</option>
+                      <option value={21}>21 Days Ahead (3 Weeks)</option>
+                      <option value={30}>30 Days Ahead (1 Month — Standard Default)</option>
+                      <option value={45}>45 Days Ahead (1.5 Months)</option>
+                      <option value={60}>60 Days Ahead (2 Months)</option>
+                      <option value={90}>90 Days Ahead (3 Months)</option>
+                    </select>
                   </div>
                 </div>
 
@@ -1477,6 +1553,7 @@ export const PreferencesModal: React.FC<PreferencesModalProps> = ({
           setIsAvatarExpanded(false);
         }}
         isPro={localStorage.getItem('couchtaterz_is_pro') === 'true'}
+        currentUserId={currentUser?.id || 'default'}
       />
     </div>
   );

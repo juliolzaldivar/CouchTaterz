@@ -6,7 +6,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { TvShow, StreamingService, ShowStatus, User, WatchedEpisode } from '../types';
 import { getNormalizedGenres } from '../utils/genreUtils';
-import { getShowBannerImage } from '../utils/showBanners';
+import { getShowBannerImage, getShowFallbackBanner } from '../utils/showBanners';
 import { 
   getMaxAiredSeason, 
   getMaxAiredEpisodeForSeason, 
@@ -30,7 +30,6 @@ import {
   BookOpen, 
   ChevronDown,
   ChevronUp,
-  Image,
   Link,
   Sparkles,
   Check,
@@ -46,10 +45,12 @@ import {
   Eye,
   EyeOff,
   Flame,
-  UserCheck
+  UserCheck,
+  Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShowMerchModal, AmazonShoppingBagIcon } from './ShowMerchModal';
+import { isUserInFriendList, formatDisplayNameFromId } from '../utils/userUtils';
 
 
 interface ShowCardProps {
@@ -76,6 +77,9 @@ interface ShowCardProps {
   onOpenStoryCard?: (show: TvShow, reason?: 'completed' | 'high_rating' | 'manual') => void;
   onRequireAuth?: (actionTitle: string, pendingAction: () => void) => void;
   onOpenTaterzAiRecap?: (show: TvShow) => void;
+  notificationLeadDays?: number;
+  onOpenFandom?: (show: TvShow) => void;
+  onToggleFandom?: (show: TvShow) => void;
 }
 
 export const SERVICE_COLORS: Record<StreamingService, { bg: string; text: string; border: string; accent: string }> = {
@@ -190,7 +194,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   friendsList = [],
   onOpenStoryCard,
   onRequireAuth,
-  onOpenTaterzAiRecap
+  onOpenTaterzAiRecap,
+  notificationLeadDays = 30,
+  onOpenFandom,
+  onToggleFandom
 }) => {
   const [showSubscribeTooltip, setShowSubscribeTooltip] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -243,6 +250,15 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     const altPaddedKey = `S${String(show.latestWatched.season).padStart(2, '0')}E${String(show.latestWatched.episode).padStart(2, '0')}`;
     return show.episodeReviews[legacyKey] || show.episodeReviews[altPaddedKey] || '';
   }, [currentEpKey, show.episodeReviews, show.latestWatched]);
+
+  const currentEpScore = useMemo(() => {
+    if (!currentEpKey || !show.episodeScores) return undefined;
+    if (show.episodeScores[currentEpKey] !== undefined) return show.episodeScores[currentEpKey];
+    const legacyKey = `${show.latestWatched.season}-${show.latestWatched.episode}`;
+    const altPaddedKey = `S${String(show.latestWatched.season).padStart(2, '0')}E${String(show.latestWatched.episode).padStart(2, '0')}`;
+    return show.episodeScores[legacyKey] ?? show.episodeScores[altPaddedKey];
+  }, [currentEpKey, show.episodeScores, show.latestWatched]);
+
   const [epReviewInput, setEpReviewInput] = useState<string>(() => {
     if (!currentEpKey) return '';
     try {
@@ -261,39 +277,59 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
   // All episode reviews logged for this show (filtering out any invalid episode 0 reviews and deduplicating by season & episode)
   const allLoggedReviews = useMemo(() => {
-    if (!show.episodeReviews || typeof show.episodeReviews !== 'object') return [];
-    const dedupMap = new Map<string, { key: string; season: number; episode: number; review: string }>();
+    const dedupMap = new Map<string, { key: string; season: number; episode: number; review: string; score?: number }>();
 
-    for (const [rawKey, review] of Object.entries(show.episodeReviews)) {
-      if (typeof review !== 'string' || review.trim().length === 0) continue;
-      const match = rawKey.match(/S(\d+)E(\d+)/i) || rawKey.match(/(\d+)-(\d+)/);
-      const season = match ? parseInt(match[1], 10) : 1;
-      const episode = match ? parseInt(match[2], 10) : 1;
-      if (episode < 1) continue;
+    if (show.episodeReviews && typeof show.episodeReviews === 'object') {
+      for (const [rawKey, review] of Object.entries(show.episodeReviews)) {
+        if (typeof review !== 'string' || review.trim().length === 0) continue;
+        const match = rawKey.match(/S(\d+)E(\d+)/i) || rawKey.match(/(\d+)-(\d+)/);
+        const season = match ? parseInt(match[1], 10) : 1;
+        const episode = match ? parseInt(match[2], 10) : 1;
+        if (episode < 1) continue;
 
-      const normKey = `S${season}E${episode}`;
-      const existing = dedupMap.get(normKey);
-      const isMirroredSeriesNotes = Boolean(show.userNotes && review.trim() === show.userNotes.trim());
-      const existingIsMirrored = Boolean(existing && show.userNotes && existing.review.trim() === show.userNotes.trim());
+        const normKey = `S${season}E${episode}`;
+        const existing = dedupMap.get(normKey);
+        const isMirroredSeriesNotes = Boolean(show.userNotes && review.trim() === show.userNotes.trim());
+        const existingIsMirrored = Boolean(existing && show.userNotes && existing.review.trim() === show.userNotes.trim());
+        const epScore = show.episodeScores?.[normKey] ?? show.episodeScores?.[rawKey];
 
-      if (!existing) {
-        dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim() });
-      } else {
-        const isCurrentCanonical = /^S\d+E\d+$/i.test(rawKey);
-        const isExistingCanonical = /^S\d+E\d+$/i.test(existing.key);
-        
-        // Prioritize distinct authentic episode takes over duplicate mirrored series notes
-        if (existingIsMirrored && !isMirroredSeriesNotes) {
-          dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim() });
-        } else if (!isMirroredSeriesNotes && ((isCurrentCanonical && !isExistingCanonical) || (review.trim().length > existing.review.length))) {
-          dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim() });
+        if (!existing) {
+          dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim(), score: epScore });
+        } else {
+          const isCurrentCanonical = /^S\d+E\d+$/i.test(rawKey);
+          const isExistingCanonical = /^S\d+E\d+$/i.test(existing.key);
+          
+          // Prioritize distinct authentic episode takes over duplicate mirrored series notes
+          if (existingIsMirrored && !isMirroredSeriesNotes) {
+            dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim(), score: epScore ?? existing.score });
+          } else if (!isMirroredSeriesNotes && ((isCurrentCanonical && !isExistingCanonical) || (review.trim().length > existing.review.length))) {
+            dedupMap.set(normKey, { key: normKey, season, episode, review: (review as string).trim(), score: epScore ?? existing.score });
+          }
+        }
+      }
+    }
+
+    if (show.episodeScores && typeof show.episodeScores === 'object') {
+      for (const [rawKey, score] of Object.entries(show.episodeScores)) {
+        if (typeof score !== 'number' || score < 1 || score > 10) continue;
+        const match = rawKey.match(/S(\d+)E(\d+)/i) || rawKey.match(/(\d+)-(\d+)/);
+        const season = match ? parseInt(match[1], 10) : 1;
+        const episode = match ? parseInt(match[2], 10) : 1;
+        if (episode < 1) continue;
+
+        const normKey = `S${season}E${episode}`;
+        const existing = dedupMap.get(normKey);
+        if (!existing) {
+          dedupMap.set(normKey, { key: normKey, season, episode, review: '', score });
+        } else if (!existing.score) {
+          existing.score = score;
         }
       }
     }
 
     return Array.from(dedupMap.values())
       .sort((a, b) => (b.season - a.season) || (b.episode - a.episode));
-  }, [show.episodeReviews, show.userNotes]);
+  }, [show.episodeReviews, show.episodeScores, show.userNotes]);
 
   const toggleSpoilerReveal = (key: string) => {
     setUnmaskedSpoilers(prev => ({
@@ -321,6 +357,41 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       setIsEpReviewOpen(false);
     }
   }, [show.id, currentEpKey, show.episodeReviews, isFocusedEpReview]);
+
+  // Auto-recover any episode reviews that may be cached in the browser's localStorage
+  useEffect(() => {
+    if (!show.id || !onUpdateShow) return;
+    try {
+      let hasNewReviews = false;
+      const mergedReviews = { ...(show.episodeReviews || {}) };
+      
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (!k) continue;
+        if (k.startsWith(`couchtater_ep_review_${show.id}_`)) {
+          const epKey = k.replace(`couchtater_ep_review_${show.id}_`, '');
+          const val = localStorage.getItem(k);
+          if (val && val.trim() && !mergedReviews[epKey]) {
+            mergedReviews[epKey] = val.trim();
+            hasNewReviews = true;
+          }
+        } else if (k.startsWith(`couchtater_ep_review_draft_${show.id}_`)) {
+          const epKey = k.replace(`couchtater_ep_review_draft_${show.id}_`, '');
+          const val = localStorage.getItem(k);
+          if (val && val.trim() && !mergedReviews[epKey]) {
+            mergedReviews[epKey] = val.trim();
+            hasNewReviews = true;
+          }
+        }
+      }
+      if (hasNewReviews) {
+        onUpdateShow({
+          ...show,
+          episodeReviews: mergedReviews
+        });
+      }
+    } catch (err) {}
+  }, [show.id]);
 
   const handleSaveEpReview = (textToSave?: string, targetKey?: string) => {
     const keyToUse = targetKey || selectedReviewEpKey || currentEpKey;
@@ -377,6 +448,33 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     setTimeout(() => setEpReviewSavedFeedback(false), 2200);
   };
 
+  const handleEpScoreChange = (score: number | null, targetKey?: string) => {
+    if (isFriendView || !currentUser) {
+      if (!currentUser && onRequireAuth) {
+        onRequireAuth('Sign in to rate TV episodes', () => {});
+      }
+      return;
+    }
+    const keyToUse = targetKey || selectedReviewEpKey || currentEpKey;
+    if (!keyToUse) return;
+    const nowIso = new Date().toISOString();
+    const updatedScores = {
+      ...(show.episodeScores || {}),
+    };
+    if (score !== null && score >= 1 && score <= 10) {
+      updatedScores[keyToUse] = score;
+    } else {
+      delete updatedScores[keyToUse];
+    }
+    const updated = {
+      ...show,
+      episodeScores: updatedScores,
+      reviewUpdatedAt: nowIso,
+      updatedAt: nowIso,
+    };
+    onUpdateShow(updated);
+  };
+
   useEffect(() => {
     if (show.userScore !== null && show.userScore !== undefined) {
       setCustomScore(show.userScore);
@@ -411,11 +509,45 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     const isJulioUser = (u: User) => u.id === 'default' || u.id === 'user-julio' || u.email?.toLowerCase() === 'juliozaldivar@gmail.com';
     const isCurrentUserJulio = isJulioUser(currentUser);
 
-    return allUsers.filter(u => {
+    // 1. Gather all users that match the friendsList or are connected to Julio
+    const matchedUsers: User[] = allUsers.filter(u => {
       if (u.id === currentUser.id) return false;
-      const isConnected = (friendsList && Array.isArray(friendsList) && friendsList.includes(u.id)) || (!isCurrentUserJulio && isJulioUser(u));
+      const isConnected = isCurrentUserJulio || isUserInFriendList(u, friendsList) || (!isCurrentUserJulio && isJulioUser(u));
       return isConnected;
     });
+
+    // 2. Also ensure any friend ID in friendsList that wasn't found in allUsers is included as a recipient target
+    const existingIds = new Set(matchedUsers.map(u => u.id.toLowerCase().trim()));
+    if (friendsList && Array.isArray(friendsList)) {
+      friendsList.forEach(fId => {
+        if (!fId || fId === currentUser.id) return;
+        const cleanF = fId.toLowerCase().trim();
+        const alreadyIncluded = matchedUsers.some(u => isUserInFriendList(u, [fId]));
+        if (!alreadyIncluded && !existingIds.has(cleanF)) {
+          existingIds.add(cleanF);
+          matchedUsers.push({
+            id: fId,
+            name: formatDisplayNameFromId(fId),
+            email: `${cleanF.replace(/^user-/, '')}@couchtaterz.com`,
+            avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(fId)}`,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+    }
+
+    // 3. Guarantee Jylian is present for Julio in recipient options
+    if (isCurrentUserJulio && !matchedUsers.some(u => isUserInFriendList(u, ['user-jylian-summers', 'jylian_summers@yahoo.com']))) {
+      matchedUsers.push({
+        id: 'user-jylian-summers',
+        name: 'Jylian',
+        email: 'jylian_summers@yahoo.com',
+        avatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Jylian',
+        createdAt: '2026-08-20T10:00:00.000Z'
+      });
+    }
+
+    return matchedUsers;
   }, [allUsers, currentUser, friendsList]);
 
   const isTargetShow = onboardingTargetShowId === show.id;
@@ -534,8 +666,11 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     return `${shortMonth} ${d.getDate()} ${twoDigitYear}`;
   };
 
+  // Determine canonical actual broadcast episode
+  const effectiveNextEpisode = !show.concluded ? (resolveNextUpcomingEpisode(show) || show.nextEpisode || null) : null;
+
   // Determine if nextEpisode is defined and represents an un-aired/upcoming episode
-  const isNextEpFuture = hasFutureNextEpisode(show);
+  const isNextEpFuture = hasFutureNextEpisode({ ...show, nextEpisode: effectiveNextEpisode });
 
   // Maximum season that has actually aired episodes
   const maxSeasons = getMaxAiredSeason(show);
@@ -550,34 +685,39 @@ export const ShowCard: React.FC<ShowCardProps> = ({
   // Series is only fully completed if the show has officially concluded AND has no upcoming episodes planned AND user is on the final season & episode
   const isSeriesFullyCompleted = Boolean(
     show.concluded && 
-    !show.nextEpisode && 
+    !effectiveNextEpisode && 
     show.latestWatched.season >= maxSeasons &&
     show.latestWatched.episode >= maxEpisodesInSeason
   );
 
   // Show is "Caught Up" if user watched all aired episodes of the current season, but the show is ongoing or has upcoming episodes/seasons
   const isCaughtUp = show.latestWatched.episode > 0 && show.latestWatched.episode >= maxEpisodesInSeason && (
-    !show.concluded || Boolean(show.nextEpisode) || show.latestWatched.season < maxSeasons
+    !show.concluded || Boolean(effectiveNextEpisode) || show.latestWatched.season < maxSeasons
   );
 
-  // Show nextEpisode notification based purely on the air date of the show (upcoming or aired within the last 30 days), regardless of tracker progress
+  // Show nextEpisode notification based on the air date of the show (upcoming or recently aired within the user's notification lead window), regardless of tracker progress
   const shouldShowNextEpNotification = (() => {
-    if (!show.nextEpisode || show.concluded) return false;
+    if (!effectiveNextEpisode || show.concluded) return false;
 
-    if (!show.nextEpisode.airDate) return true;
+    if (!effectiveNextEpisode.airDate) return true;
 
-    const airDateStr = show.nextEpisode.airDate.split('T')[0];
+    const airDateStr = effectiveNextEpisode.airDate.split('T')[0];
     const todayStr = getTodayDateString();
 
-    // If future or airing today, always show
-    if (airDateStr >= todayStr) return true;
-
-    // If in the past, only show if it aired within the last 30 days (1 month ago max)
-    const airDateMs = new Date(show.nextEpisode.airDate).getTime();
+    const airDateMs = new Date(effectiveNextEpisode.airDate).getTime();
     if (isNaN(airDateMs)) return true;
 
-    const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-    return (Date.now() - airDateMs) <= thirtyDaysMs;
+    const leadDays = notificationLeadDays ?? 30;
+    const leadMs = leadDays * 24 * 60 * 60 * 1000;
+
+    // If future or airing today, check if it falls within the configured notification lead window
+    if (airDateStr >= todayStr) {
+      const now = Date.now();
+      return (airDateMs - now) <= leadMs;
+    }
+
+    // If in the past, only show if it aired within the lead window
+    return (Date.now() - airDateMs) <= leadMs;
   })();
 
   const isDarkTheme = theme === 'dark';
@@ -597,7 +737,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         icon: 'text-amber-400',
         dot: 'text-amber-500/40',
         text: isDarkTheme ? 'text-amber-400' : 'text-amber-700',
-        bar: 'bg-gradient-to-r from-amber-500 to-orange-400 shadow-[0_0_10px_rgba(251,146,60,0.5)]'
+        bar: 'bg-gradient-to-r from-amber-500 to-yellow-400 shadow-[0_0_10px_rgba(245,158,11,0.5)]'
       };
     } else {
       // Watching section (Blue)
@@ -606,7 +746,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         icon: 'text-blue-400',
         dot: 'text-blue-500/40',
         text: isDarkTheme ? 'text-blue-400' : 'text-blue-700',
-        bar: 'bg-gradient-to-r from-blue-500 to-cyan-400 shadow-[0_0_10px_rgba(56,189,248,0.5)]'
+        bar: 'bg-gradient-to-r from-blue-500 to-cyan-400 shadow-[0_0_10px_rgba(59,130,246,0.5)]'
       };
     }
   })();
@@ -616,9 +756,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       if (!currentUser && onRequireAuth) onRequireAuth('Sign in to update progress', () => {});
       return;
     }
-    if (show.latestWatched.episode >= maxEpisodesInSeason) return;
-    const nextEp = show.latestWatched.episode + 1;
-    const s = show.latestWatched.season;
+    const currentWatched = show.latestWatched || { season: 1, episode: 0, title: 'Not Started' };
+    if (currentWatched.episode >= maxEpisodesInSeason) return;
+    const nextEp = currentWatched.episode + 1;
+    const s = currentWatched.season || 1;
     const clampedWatched = clampProgressToAired(show, s, nextEp);
     const nextCalculated = !show.concluded ? resolveNextUpcomingEpisode({ ...show, latestWatched: clampedWatched }) : null;
     const isCompletedNow = Boolean(
@@ -641,12 +782,13 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       if (!currentUser && onRequireAuth) onRequireAuth('Sign in to update progress', () => {});
       return;
     }
+    const currentWatched = show.latestWatched || { season: 1, episode: 0, title: 'Not Started' };
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const percentage = clickX / rect.width;
-    const totalInSeason = (show.episodesPerSeason && show.episodesPerSeason[show.latestWatched.season - 1]) || 10;
+    const s = currentWatched.season || 1;
+    const totalInSeason = (show.episodesPerSeason && show.episodesPerSeason[s - 1]) || maxEpisodesInSeason || 10;
     const targetEpisodeRaw = Math.max(0, Math.min(totalInSeason, Math.round(percentage * totalInSeason)));
-    const s = show.latestWatched.season;
     const clampedWatched = clampProgressToAired(show, s, targetEpisodeRaw);
     const isCompletedNow = Boolean(
       clampedWatched.episode === maxEpisodesInSeason && 
@@ -668,9 +810,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       if (!currentUser && onRequireAuth) onRequireAuth('Sign in to update progress', () => {});
       return;
     }
-    if (show.latestWatched.episode <= 0) return;
-    const nextEp = show.latestWatched.episode - 1;
-    const s = show.latestWatched.season;
+    const currentWatched = show.latestWatched || { season: 1, episode: 0, title: 'Not Started' };
+    if (currentWatched.episode <= 0) return;
+    const nextEp = currentWatched.episode - 1;
+    const s = currentWatched.season || 1;
     const clampedWatched = clampProgressToAired(show, s, nextEp);
     const updated = {
       ...show,
@@ -684,8 +827,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       if (!currentUser && onRequireAuth) onRequireAuth('Sign in to update season', () => {});
       return;
     }
-    if (show.latestWatched.season >= maxSeasons) return;
-    const nextSeason = show.latestWatched.season + 1;
+    const currentWatched = show.latestWatched || { season: 1, episode: 0, title: 'Not Started' };
+    const s = currentWatched.season || 1;
+    if (s >= maxSeasons) return;
+    const nextSeason = s + 1;
     const clampedWatched = clampProgressToAired(show, nextSeason, 1);
     const updated = {
       ...show,
@@ -699,8 +844,10 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       if (!currentUser && onRequireAuth) onRequireAuth('Sign in to update season', () => {});
       return;
     }
-    if (show.latestWatched.season <= 1) return;
-    const prevSeason = show.latestWatched.season - 1;
+    const currentWatched = show.latestWatched || { season: 1, episode: 0, title: 'Not Started' };
+    const s = currentWatched.season || 1;
+    if (s <= 1) return;
+    const prevSeason = s - 1;
     const clampedWatched = clampProgressToAired(show, prevSeason, 1);
     const updated = {
       ...show,
@@ -896,7 +1043,14 @@ export const ShowCard: React.FC<ShowCardProps> = ({
             style={{ objectPosition: show.bannerPosition || 'center 25%' }}
             referrerPolicy="no-referrer"
             onError={(e) => {
-              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=1280&auto=format&fit=crop';
+              const target = e.target as HTMLImageElement;
+              if (!target.dataset.triedFallback) {
+                target.dataset.triedFallback = 'true';
+                target.src = getShowFallbackBanner(show, target.src);
+              } else if (!target.dataset.triedGenre) {
+                target.dataset.triedGenre = 'true';
+                target.src = 'https://images.unsplash.com/photo-1593784991095-a205069470b6?q=80&w=1280&auto=format&fit=crop';
+              }
             }}
           />
         ) : (
@@ -957,7 +1111,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
         </div>
 
         {/* Scores and actions overlay */}
-        <div className="absolute top-4 right-4 z-20 flex gap-2 md:gap-1.5 items-center">
+        <div className="absolute top-4 right-4 z-20 flex gap-1 sm:gap-1.5 items-center">
           {showDeleteConfirm ? (
             <div 
               className="flex items-center gap-1.5 bg-[#0F1115]/95 border border-rose-500/40 p-1.5 rounded-xl shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 select-none"
@@ -994,53 +1148,61 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 onClick={(e) => {
                   e.stopPropagation();
                 }}
-                className={`p-2 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 ${
+                className={`p-1.5 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[28px] min-h-[28px] md:min-w-0 md:min-h-0 ${
                   theme === 'dark'
                     ? 'border-white/5 bg-[#0F1115] text-slate-400 hover:text-white'
                     : 'border-slate-200 bg-white/90 text-slate-700 hover:text-slate-950 shadow-sm backdrop-blur-sm'
                 }`}
                 title={`Watch ${show.title} on ${show.streamingService}`}
               >
-                <Play className="w-4.5 h-4.5 md:w-3 md:h-3 fill-current" />
+                <Play className="w-3.5 h-3.5 md:w-3 md:h-3 fill-current" />
               </a>
+
+              {/* Fandom Connection / Superfans Button */}
+              {onOpenFandom && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleInteractionClick();
+                    onOpenFandom(show);
+                  }}
+                  className={`p-1.5 md:p-1 rounded-lg border transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[28px] min-h-[28px] md:min-w-0 md:min-h-0 relative group/fandom ${
+                    show.isFandomActive
+                      ? 'border-amber-500/60 bg-amber-500/25 text-amber-300 shadow-sm shadow-amber-500/30'
+                      : theme === 'dark'
+                        ? 'border-white/5 bg-[#0F1115] text-slate-400 hover:text-amber-400 hover:border-amber-500/30'
+                        : 'border-slate-200 bg-white/90 text-slate-700 hover:text-amber-600 hover:border-amber-300 shadow-sm backdrop-blur-sm'
+                  }`}
+                  title={
+                    show.isFandomActive
+                      ? `Joined ${show.title} Fandom — Click to open Fandom Hub`
+                      : `Explore ${show.title} Fandom Hub & Superfans`
+                  }
+                >
+                  <Flame className={`w-3.5 h-3.5 md:w-3 md:h-3 transition-transform ${show.isFandomActive ? 'fill-current scale-110 text-amber-400' : 'group-hover/fandom:scale-110'}`} />
+                  {show.isFandomActive && (
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ring-1 ring-black absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
+                  )}
+                </button>
+              )}
 
               {!isFriendView && (
                 <>
-                  {/* Edit Image URL Button - Only show for Julio/admin */}
-                  {currentUser?.email?.trim().toLowerCase() === 'juliozaldivar@gmail.com' && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setImageUrlInput(show.bannerImage || '');
-                        setBannerPositionInput(show.bannerPosition || 'center 25%');
-                        setIsEditingImage(true);
-                        handleInteractionClick();
-                      }}
-                      className={`p-2 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 ${
-                        theme === 'dark'
-                          ? 'border-white/5 bg-[#0F1115] text-slate-400 hover:text-white'
-                          : 'border-slate-200 bg-white/90 text-slate-700 hover:text-slate-950 shadow-sm backdrop-blur-sm'
-                      }`}
-                      title="Change Show Cover Image"
-                    >
-                      <Image className="w-4.5 h-4.5 md:w-3 md:h-3" />
-                    </button>
-                  )}
-
                   {/* 9:16 Social Story Card Generator Button */}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       if (onOpenStoryCard) onOpenStoryCard(show, 'manual');
                     }}
-                    className={`p-2 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 ${
+                    className={`p-1.5 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[28px] min-h-[28px] md:min-w-0 md:min-h-0 ${
                       theme === 'dark'
                         ? 'border-white/5 bg-[#0F1115] text-slate-400 hover:text-white'
                         : 'border-slate-200 bg-white/90 text-slate-700 hover:text-slate-950 shadow-sm backdrop-blur-sm'
                     }`}
                     title="Generate 9:16 Story Card for Social Stories"
                   >
-                    <Share2 className="w-4.5 h-4.5 md:w-3 md:h-3" />
+                    <Share2 className="w-3.5 h-3.5 md:w-3 md:h-3" />
                   </button>
 
                   {/* Share / Notify Button */}
@@ -1052,14 +1214,14 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                       setIsSharing(true);
                       handleInteractionClick();
                     }}
-                    className={`p-2 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 ${
+                    className={`p-1.5 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[28px] min-h-[28px] md:min-w-0 md:min-h-0 ${
                       theme === 'dark'
                         ? 'border-white/5 bg-[#0F1115] text-slate-400 hover:text-white'
                         : 'border-slate-200 bg-white/90 text-slate-700 hover:text-slate-950 shadow-sm backdrop-blur-sm'
                     }`}
                     title="Share show with other CouchTaterz"
                   >
-                    <Send className="w-4.5 h-4.5 md:w-3 md:h-3" />
+                    <Send className="w-3.5 h-3.5 md:w-3 md:h-3" />
                   </button>
 
                   {/* Instant Delete Button */}
@@ -1068,14 +1230,14 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                       e.stopPropagation();
                       setShowDeleteConfirm(true);
                     }}
-                    className={`p-2 md:p-1.5 rounded-lg border transition-colors duration-150 cursor-pointer min-w-[34px] min-h-[34px] md:min-w-0 md:min-h-0 flex items-center justify-center ${
+                    className={`p-1.5 md:p-1 rounded-lg border transition-colors duration-150 cursor-pointer flex items-center justify-center min-w-[28px] min-h-[28px] md:min-w-0 md:min-h-0 ${
                       theme === 'dark'
                         ? 'bg-[#0F1115] hover:bg-rose-600/35 text-slate-400 hover:text-rose-400 border-white/5'
                         : 'bg-white/90 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border-slate-200 shadow-sm backdrop-blur-sm'
                     }`}
                     title="Delete Show"
                   >
-                    <Trash2 className="w-4.5 h-4.5 md:w-3 md:h-3" />
+                    <Trash2 className="w-3.5 h-3.5 md:w-3 md:h-3" />
                   </button>
                 </>
               )}
@@ -1099,7 +1261,36 @@ export const ShowCard: React.FC<ShowCardProps> = ({
               </span>
             ) : null}
           </h3>
-          <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-none pb-0.5">
+          <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-none pb-0.5 items-center">
+            {/* Lead with Fandom First so it is never pushed off-screen by multiple genre tags */}
+            {onOpenFandom && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpenFandom(show);
+                }}
+                className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-black rounded-md border shrink-0 flex items-center gap-1 transition cursor-pointer backdrop-blur-md shadow-xs select-none ${
+                  show.isFandomActive
+                    ? 'border-amber-500/70 bg-amber-500/30 text-amber-300 ring-1 ring-amber-500/30'
+                    : 'border-amber-500/40 bg-black/60 text-amber-400/90 hover:text-amber-300 hover:border-amber-400 hover:bg-amber-500/15'
+                }`}
+                title={show.isFandomActive ? `Joined ${show.title} Fandom — Open Fandom Hub` : `Explore ${show.title} Fandom Hub`}
+              >
+                <Flame className={`w-3 h-3 ${show.isFandomActive ? 'text-amber-400 fill-current animate-pulse' : 'text-amber-400 fill-current'}`} />
+                <span>Fandom</span>
+                {show.isFandomActive && (
+                  <span className="w-1 h-1 rounded-full bg-amber-400 ml-0.5" />
+                )}
+              </button>
+            )}
+
+            {/* Subtle separator if Fandom button is present */}
+            {onOpenFandom && getNormalizedGenres(show).length > 0 && (
+              <span className="text-white/20 text-[10px] select-none shrink-0">|</span>
+            )}
+
+            {/* Show Genre Tags */}
             {getNormalizedGenres(show).map((g, gIdx) => (
               <span key={`${g}-${gIdx}`} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded border shrink-0 ${
                 theme === 'dark'
@@ -1339,8 +1530,8 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 </button>
                 <span className="shrink-0 font-bold">
                   {(() => {
-                    if (!show.nextEpisode.airDate) return 'Next Episode:';
-                    const dateOnly = show.nextEpisode.airDate.split('T')[0];
+                    if (!effectiveNextEpisode?.airDate) return 'Next Episode:';
+                    const dateOnly = effectiveNextEpisode.airDate.split('T')[0];
                     const today = getTodayDateString();
                     
                     // Local day difference
@@ -1355,16 +1546,16 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                     const dToday = parseDate(today);
                     const diffDays = Math.round((dAir.getTime() - dToday.getTime()) / (1000 * 60 * 60 * 24));
 
-                    if (diffDays === 0) return `Airing Today! (${formatAirDate(show.nextEpisode.airDate)})`;
-                    if (diffDays === 1) return `Airing Tomorrow! (${formatAirDate(show.nextEpisode.airDate)})`;
-                    if (diffDays > 1) return `Next Airing: ${formatAirDate(show.nextEpisode.airDate)}`;
-                    return `Aired: ${formatAirDate(show.nextEpisode.airDate)}`;
+                    if (diffDays === 0) return `Airing Today! (${formatAirDate(effectiveNextEpisode.airDate)})`;
+                    if (diffDays === 1) return `Airing Tomorrow! (${formatAirDate(effectiveNextEpisode.airDate)})`;
+                    if (diffDays > 1) return `Next Airing: ${formatAirDate(effectiveNextEpisode.airDate)}`;
+                    return `Aired: ${formatAirDate(effectiveNextEpisode.airDate)}`;
                   })()}
                 </span>
                 <span className="text-emerald-500/40 shrink-0">•</span>
                 <span className="truncate">
-                  S{show.nextEpisode.season}E{show.nextEpisode.episode}
-                  {show.nextEpisode.title ? ` "${show.nextEpisode.title}"` : ''}
+                  S{effectiveNextEpisode?.season}E{effectiveNextEpisode?.episode}
+                  {effectiveNextEpisode?.title ? ` "${effectiveNextEpisode.title}"` : ''}
                 </span>
                 {show.hasAirDateReminder && (
                   <span className="hidden lg:inline-block text-[9px] font-black uppercase tracking-wider text-amber-500 bg-amber-500/15 border border-amber-500/30 px-1.5 py-0.5 rounded-full shrink-0 ml-auto">
@@ -1520,14 +1711,18 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 </div>
               )}
 
-              {show.latestWatched.title && (
-                <div className={`text-[11px] font-medium truncate flex items-center gap-1.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-800 font-medium'}`}>
-                  <span className={`font-extrabold text-[10px] uppercase shrink-0 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
-                    {show.latestWatched.episode === 0 ? "Status:" : "Current:"}
-                  </span>
-                  <span className="font-medium truncate">"{show.latestWatched.title}"</span>
-                </div>
-              )}
+              {show.latestWatched && (show.latestWatched.title || show.latestWatched.episode > 0) && (() => {
+                const resolvedTitle = getTitleForEpisode(show.latestWatched.season, show.latestWatched.episode) || show.latestWatched.title;
+                if (!resolvedTitle) return null;
+                return (
+                  <div className={`text-[11px] font-medium truncate flex items-center gap-1.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-800 font-medium'}`}>
+                    <span className={`font-extrabold text-[10px] uppercase shrink-0 ${theme === 'dark' ? 'text-slate-500' : 'text-slate-600'}`}>
+                      {show.latestWatched.episode === 0 ? "Status:" : "Current:"}
+                    </span>
+                    <span className="font-medium truncate">"{resolvedTitle}"</span>
+                  </div>
+                );
+              })()}
 
               {/* Interactive Progress Bar Track */}
               <div 
@@ -1702,11 +1897,6 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                           ? `S${show.latestWatched.season}E${show.latestWatched.episode} Take` 
                           : `+ S${show.latestWatched.season}E${show.latestWatched.episode} Take`}
                       </span>
-                      {isVip && (
-                        <span className="flex items-center gap-0.5 px-1 py-0.2 rounded text-[8.5px] font-black bg-amber-500/20 text-amber-400 border border-amber-500/30 shrink-0">
-                          <Crown className="w-2.5 h-2.5" /> VIP
-                        </span>
-                      )}
                     </button>
                   ) : (
                     <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 min-w-0">
@@ -1737,7 +1927,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                       <span>Takes ({allLoggedReviews.length})</span>
                     </button>
 
-                    {isEpisodeReviewEligible && onOpenStoryCard && isVip && (
+                    {isEpisodeReviewEligible && onOpenStoryCard && (
                       <button
                         type="button"
                         onClick={() => {
@@ -1745,7 +1935,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                           onOpenStoryCard(show, 'manual');
                         }}
                         className="flex items-center justify-center p-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-extrabold transition-all cursor-pointer shadow-2xs shrink-0"
-                        title="Share this episode review on 9:16 Social Story Card (VIP Feature)"
+                        title="Share this episode review on 9:16 Social Story Card"
                       >
                         <Share2 className="w-3.5 h-3.5 text-purple-300" />
                       </button>
@@ -1754,19 +1944,37 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 </div>
 
                 {/* Collapsed Episode Review Quote Preview Banner */}
-                {isEpisodeReviewEligible && currentEpReview && !isEpReviewOpen && (
+                {isEpisodeReviewEligible && (currentEpReview || currentEpScore) && !isEpReviewOpen && (
                   <div 
                     onClick={() => setIsEpReviewOpen(true)}
-                    className={`w-full p-2.5 rounded-xl border transition-all cursor-pointer group flex items-start gap-2 ${
+                    className={`w-full p-2.5 rounded-xl border transition-all cursor-pointer group flex items-start justify-between gap-2 ${
                       theme === 'dark'
                         ? 'bg-amber-500/[0.08] hover:bg-amber-500/[0.14] border-amber-500/20 text-amber-100'
                         : 'bg-amber-50/90 hover:bg-amber-100/90 border-amber-200 text-amber-950'
                     }`}
                   >
-                    <Quote className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                    <p className="text-xs italic font-medium line-clamp-2 leading-relaxed flex-1">
-                      "{currentEpReview}"
-                    </p>
+                    <div className="flex items-start gap-2 min-w-0 flex-1">
+                      <Quote className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {currentEpScore && (
+                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/30 text-amber-400 font-black text-[10px] leading-none shrink-0">
+                              <Star className="w-2.5 h-2.5 fill-amber-400" />
+                              <span>{currentEpScore}/10</span>
+                            </span>
+                          )}
+                          {currentEpReview ? (
+                            <p className="text-xs italic font-medium line-clamp-2 leading-relaxed">
+                              "{currentEpReview}"
+                            </p>
+                          ) : (
+                            <span className="text-xs font-semibold text-amber-400/90">
+                              Rated S{show.latestWatched.season}E{show.latestWatched.episode} &bull; Click to add written take
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <span className="text-[10px] uppercase font-bold text-amber-400/90 group-hover:text-amber-300 group-hover:underline shrink-0 self-center">
                       {isFriendView ? 'View' : 'Edit'}
                     </span>
@@ -1831,6 +2039,12 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                                     {rev.key === currentEpKey && (
                                       <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">
                                         {isFriendView ? `${ownerName || 'Friend'}'s Latest` : 'Latest Watched'}
+                                      </span>
+                                    )}
+                                    {rev.score && (
+                                      <span className="px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-400/30 text-amber-400 font-black text-[10px] flex items-center gap-0.5 leading-none">
+                                        <Star className="w-2.5 h-2.5 fill-amber-400" />
+                                        <span>{rev.score}/10</span>
                                       </span>
                                     )}
                                   </div>
@@ -1922,10 +2136,11 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                                 {ownerName || 'Friend'}'s S{show.latestWatched.season}E{show.latestWatched.episode} Take
                               </span>
                             </div>
-                            {isVip && (
-                              <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[9.5px] font-extrabold bg-amber-500/20 text-amber-400 border border-amber-500/30">
-                                <Crown className="w-3 h-3" /> VIP Take
-                              </span>
+                            {currentEpScore && (
+                              <div className="px-2 py-0.5 rounded-lg bg-amber-500/20 border border-amber-400/30 text-amber-300 text-xs font-black flex items-center gap-1 shrink-0">
+                                <Star className="w-3 h-3 fill-amber-300" />
+                                <span>{currentEpScore}/10</span>
+                              </div>
                             )}
                           </div>
 
@@ -1963,15 +2178,74 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         <div className={`p-3 rounded-xl border space-y-2.5 ${
                           theme === 'dark' ? 'bg-[#151720] border-amber-500/30' : 'bg-amber-50/50 border-amber-200'
                         }`}>
-                          {/* Quick Reaction Starters */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className={`text-[10px] font-extrabold uppercase mr-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
+                          {/* 10-Star Episode Review Option */}
+                          <div className={`flex flex-wrap items-center justify-between gap-2 p-2 rounded-lg border ${
+                            theme === 'dark' ? 'bg-black/30 border-amber-500/20' : 'bg-white/80 border-amber-200'
+                          }`}>
+                            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                              <div className="flex items-center gap-1 shrink-0">
+                                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                                <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider ${
+                                  theme === 'dark' ? 'text-amber-300' : 'text-amber-900'
+                                }`}>
+                                  S{show.latestWatched.season}E{show.latestWatched.episode} Score:
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                                  <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => {
+                                      if (currentEpScore === star) {
+                                        handleEpScoreChange(null);
+                                      } else {
+                                        handleEpScoreChange(star);
+                                      }
+                                    }}
+                                    className="p-0.5 text-amber-400 transition-all hover:scale-125 cursor-pointer"
+                                    style={{
+                                      color: star <= (currentEpScore || 0) ? '#fbbf24' : (theme === 'dark' ? '#334155' : '#cbd5e1')
+                                    }}
+                                    title={currentEpScore === star ? "Click again to reset episode score" : `Rate S${show.latestWatched.season}E${show.latestWatched.episode} ${star}/10`}
+                                  >
+                                    <Star className="w-3.5 h-3.5 fill-current" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {currentEpScore ? (
+                                <>
+                                  <span className="text-xs font-black text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded border border-amber-400/30">
+                                    {currentEpScore}/10
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleEpScoreChange(null)}
+                                    className="text-[10px] font-bold text-slate-400 hover:text-rose-400 transition cursor-pointer px-1"
+                                    title="Reset episode score"
+                                  >
+                                    Reset
+                                  </button>
+                                </>
+                              ) : (
+                                <span className="text-[10px] font-medium text-slate-500 italic">
+                                  Unrated
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Single-Row Quick Tags */}
+                          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                            <span className={`text-[10px] font-extrabold uppercase shrink-0 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                               Quick Tags:
                             </span>
                             {[
-                              '🤯 Cliffhanger twist!',
-                              '🔥 Best episode yet',
-                              '😭 Emotional ending',
+                              '🔥 Best yet',
+                              '🤯 Plot twist',
+                              '😭 Emotional',
                               '😴 Slow pacing',
                               '🍿 Peak cinema'
                             ].map((chip) => (
@@ -1982,7 +2256,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                                   const newText = epReviewInput ? `${epReviewInput} ${chip}` : chip;
                                   setEpReviewInput(newText.slice(0, 280));
                                 }}
-                                className={`px-2 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${
+                                className={`px-2 py-0.5 rounded-lg text-[10.5px] font-semibold border transition-all cursor-pointer shrink-0 whitespace-nowrap ${
                                   theme === 'dark'
                                     ? 'bg-white/5 border-white/10 hover:bg-white/10 text-slate-200'
                                     : 'bg-white border-slate-300 hover:bg-slate-100 text-slate-800 shadow-2xs'
@@ -2070,82 +2344,120 @@ export const ShowCard: React.FC<ShowCardProps> = ({
 
         {/* User Ratings & Review Notes Block */}
         <div className="space-y-2">
-          {/* Rating Scores Integrated Section */}
-          <div className={`flex flex-wrap items-center justify-between p-2.5 rounded-xl border text-xs gap-2 ${
-            theme === 'dark' ? 'bg-[#15171C]/50 border-white/5' : 'bg-white border-slate-300/80 shadow-2xs'
+          {/* Distinct Overall Series Verdict Section */}
+          <div className={`p-2.5 rounded-xl border text-xs space-y-2 ${
+            theme === 'dark' ? 'bg-[#15171C]/70 border-white/10 shadow-xs' : 'bg-white border-slate-300/80 shadow-2xs'
           }`}>
-            {/* Rotten Tomatoes score */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              <span className={`text-[10px] font-bold uppercase ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>RT:</span>
-              <span className="text-xs font-black text-rose-500">
-                {show.rottenTomatoesScore != null ? `${show.rottenTomatoesScore}%` : 'TBD'}
-              </span>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {/* Overall Series Verdict Header */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-baseline gap-1">
+                  <span className={`text-[10.5px] font-black uppercase tracking-wider ${
+                    theme === 'dark' ? 'text-slate-200' : 'text-slate-800'
+                  }`}>
+                    {isFriendView ? `${ownerName || 'Friend'}'s Series Score` : 'Overall Series Verdict'}
+                  </span>
+                  <span className="text-[9px] font-semibold text-slate-500">
+                    (Whole Show)
+                  </span>
+                </div>
+              </div>
+
+              {/* Rotten Tomatoes score pill */}
+              <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <span className={`text-[9.5px] font-bold uppercase ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>RT Critics:</span>
+                <span className="text-[11px] font-black text-rose-500">
+                  {show.rottenTomatoesScore != null ? `${show.rottenTomatoesScore}%` : 'TBD'}
+                </span>
+              </div>
             </div>
 
-            {/* User score */}
-            <div className="flex items-center gap-1 shrink-0 flex-wrap relative">
-              <span className={`text-[10px] font-bold uppercase shrink-0 mr-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-700'}`}>{isFriendView ? "Friend:" : "You:"}</span>
-              
-              {showResetRatingConfirm ? (
-                <div 
-                  className={`flex items-center gap-1.5 px-2 py-0.5 rounded-xl border text-[10px] shadow-sm animate-in fade-in zoom-in-95 duration-150 select-none ${
-                    theme === 'dark' ? 'bg-[#111319] border-amber-500/40 text-slate-200' : 'bg-amber-50 border-amber-300 text-slate-800'
-                  }`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <span className="font-bold text-amber-500 uppercase tracking-wider text-[10px]">Reset rating?</span>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleScoreChange(null);
-                      setShowResetRatingConfirm(false);
-                    }}
-                    className="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-amber-500 hover:bg-amber-400 text-slate-950 transition cursor-pointer"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowResetRatingConfirm(false);
-                    }}
-                    className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded transition cursor-pointer ${
-                      theme === 'dark' ? 'bg-white/10 hover:bg-white/20 text-slate-300' : 'bg-neutral-200 hover:bg-neutral-300 text-slate-700'
+            {/* Series Score Stars + Semantic Label */}
+            <div className={`flex flex-wrap items-center justify-between gap-2 p-1.5 rounded-lg border ${
+              theme === 'dark' ? 'bg-black/20 border-white/5' : 'bg-slate-50/80 border-slate-200/80'
+            }`}>
+              <div className="flex items-center gap-2 flex-wrap">
+                {showResetRatingConfirm ? (
+                  <div 
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[10.5px] shadow-sm animate-in fade-in zoom-in-95 duration-150 select-none ${
+                      theme === 'dark' ? 'bg-[#111319] border-amber-500/40 text-slate-200' : 'bg-amber-50 border-amber-300 text-slate-800'
                     }`}
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    No
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        disabled={isFriendView}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (show.userScore === star) {
-                            setShowResetRatingConfirm(true);
-                          } else {
-                            setShowResetRatingConfirm(false);
-                            handleScoreChange(star);
-                          }
-                        }}
-                        className={`transition-all p-px text-amber-400 ${isFriendView ? "cursor-default" : "cursor-pointer hover:scale-125"}`}
-                        style={{ color: star <= (show.userScore || 0) ? '#fbbf24' : (theme === 'dark' ? '#334155' : '#cbd5e1') }}
-                        title={show.userScore === star ? "Click again to reset rating" : `Rate ${star}/10`}
-                      >
-                        <Star className="w-2.5 h-2.5 fill-current" />
-                      </button>
-                    ))}
+                    <span className="font-bold text-amber-500 uppercase tracking-wider text-[10px]">Reset Series Rating?</span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleScoreChange(null);
+                        setShowResetRatingConfirm(false);
+                      }}
+                      className="px-2 py-0.5 text-[10px] font-black uppercase rounded bg-amber-500 hover:bg-amber-400 text-slate-950 transition cursor-pointer"
+                    >
+                      Yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowResetRatingConfirm(false);
+                      }}
+                      className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded transition cursor-pointer ${
+                        theme === 'dark' ? 'bg-white/10 hover:bg-white/20 text-slate-300' : 'bg-neutral-200 hover:bg-neutral-300 text-slate-700'
+                      }`}
+                    >
+                      No
+                    </button>
                   </div>
-                  <span className="text-xs font-black text-amber-500 ml-0.5">{(show.userScore || "—")}</span>
-                </>
-              )}
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          disabled={isFriendView}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (show.userScore === star) {
+                              setShowResetRatingConfirm(true);
+                            } else {
+                              setShowResetRatingConfirm(false);
+                              handleScoreChange(star);
+                            }
+                          }}
+                          className={`transition-all p-0.5 text-amber-400 ${isFriendView ? "cursor-default" : "cursor-pointer hover:scale-125"}`}
+                          style={{ color: star <= (show.userScore || 0) ? '#fbbf24' : (theme === 'dark' ? '#334155' : '#cbd5e1') }}
+                          title={show.userScore === star ? "Click again to reset series rating" : `Rate Series ${star}/10`}
+                        >
+                          <Star className="w-3.5 h-3.5 fill-current" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Series Score Badge & Semantic Tag */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {show.userScore ? (
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-black text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-400/30 flex items-center gap-1">
+                      <Trophy className="w-3 h-3 text-amber-400" />
+                      <span>{show.userScore}/10</span>
+                    </span>
+                    <span className={`text-[10px] font-bold uppercase tracking-wider ${
+                      show.userScore >= 9 ? 'text-amber-400' : show.userScore >= 7 ? 'text-emerald-400' : 'text-slate-400'
+                    }`}>
+                      {show.userScore >= 10 ? 'Masterpiece' : show.userScore >= 9 ? 'Amazing' : show.userScore >= 8 ? 'Great' : show.userScore >= 7 ? 'Good' : show.userScore >= 6 ? 'Decent' : 'Average'}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-[10.5px] font-medium text-slate-500 italic">
+                    Unrated Series
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 

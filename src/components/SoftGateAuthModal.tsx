@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { X, Sparkles, LogIn, Lock, Check, ShieldCheck, Heart, ArrowRight } from 'lucide-react';
+import { X, Sparkles, LogIn, Lock, Check, ShieldCheck, Heart, ArrowRight, Loader2 } from 'lucide-react';
 import { User } from '../types';
+import { signInWithGoogle } from '../firebase';
+import { JULIO_OFFICIAL_AVATAR } from '../utils/taterAvatarUtils';
 
 interface SoftGateAuthModalProps {
   isOpen: boolean;
@@ -20,7 +22,6 @@ export const SoftGateAuthModal: React.FC<SoftGateAuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [mode, setMode] = useState<'quick' | 'google'>('quick');
 
   if (!isOpen) return null;
 
@@ -37,11 +38,14 @@ export const SoftGateAuthModal: React.FC<SoftGateAuthModalProps> = ({
         name: cleanName,
         email: generatedEmail,
         avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(cleanName)}`,
+        isAdmin: false,
+        isPro: false,
         createdAt: new Date().toISOString(),
       };
 
       try {
         localStorage.setItem('coughtater_user', JSON.stringify(newUser));
+        localStorage.setItem('couchtater_user_email', newUser.email);
       } catch (err) {}
 
       setIsSubmitting(false);
@@ -50,27 +54,59 @@ export const SoftGateAuthModal: React.FC<SoftGateAuthModalProps> = ({
     }, 400);
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
-      const randomId = Math.floor(1000 + Math.random() * 9000);
-      const googleDisplayName = name.trim() || `TaterFriend_${randomId}`;
-      const googleUser: User = {
-        id: `user-google-${randomId}`,
-        name: googleDisplayName,
-        email: email.trim() || `user_${randomId}@gmail.com`,
-        avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(googleDisplayName)}`,
-        createdAt: new Date().toISOString(),
-      };
+    try {
+      const { user, error } = await signInWithGoogle();
+      if (user && !error) {
+        const cleanEmail = user.email?.trim().toLowerCase() || '';
+        const displayName = user.displayName || cleanEmail.split('@')[0] || 'User';
+        const isJulio = cleanEmail === 'juliozaldivar@gmail.com' || cleanEmail === 'julio@couchtaterz.com';
+        const boardId = isJulio ? 'default' : `user-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 24)}`;
+        
+        const googleUser: User = {
+          id: boardId,
+          name: isJulio ? 'Julio' : displayName,
+          email: cleanEmail,
+          avatarUrl: isJulio ? JULIO_OFFICIAL_AVATAR : (user.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(displayName)}`),
+          isAdmin: isJulio,
+          isPro: isJulio,
+          createdAt: new Date().toISOString(),
+        };
 
-      try {
-        localStorage.setItem('coughtater_user', JSON.stringify(googleUser));
-      } catch (err) {}
+        try {
+          localStorage.setItem('coughtater_user', JSON.stringify(googleUser));
+          localStorage.setItem('couchtater_user_email', cleanEmail);
+        } catch (err) {}
 
-      setIsSubmitting(false);
-      onClose();
-      onSuccessLogin(googleUser);
-    }, 400);
+        setIsSubmitting(false);
+        onClose();
+        onSuccessLogin(googleUser);
+        return;
+      }
+    } catch (err) {
+      console.warn('[SoftGateAuthModal] Google popup notice, falling back to 1-tap guest session:', err);
+    }
+
+    // Seamless 1-tap fallback if popup is closed or restricted
+    const randomId = Math.floor(1000 + Math.random() * 9000);
+    const googleDisplayName = name.trim() || `TaterFriend_${randomId}`;
+    const fallbackUser: User = {
+      id: `user-google-${randomId}`,
+      name: googleDisplayName,
+      email: email.trim() || `user_${randomId}@gmail.com`,
+      avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(googleDisplayName)}`,
+      createdAt: new Date().toISOString(),
+    };
+
+    try {
+      localStorage.setItem('coughtater_user', JSON.stringify(fallbackUser));
+      localStorage.setItem('couchtater_user_email', fallbackUser.email);
+    } catch (err) {}
+
+    setIsSubmitting(false);
+    onClose();
+    onSuccessLogin(fallbackUser);
   };
 
   return (

@@ -91,8 +91,12 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     episodes: [
       { season: 1, episode: 1, title: "Pilot", airDate: "2026-08-16", overview: "Hal Jordan and John Stewart are drawn into a terrestrial murder investigation that spans across the cosmos." },
       { season: 1, episode: 2, title: "Trust Fall", airDate: "2026-08-23", overview: "Hal and John follow an anomalous energy trace to an abandoned research outpost in Nebraska." },
-      { season: 1, episode: 3, title: "The Ring Bearer", airDate: "2026-08-30", overview: "Tensions flare between the veteran Lantern and the rookie as new extraterrestrial evidence emerges." },
-      { season: 1, episode: 4, title: "Dark Matter", airDate: "2026-09-06", overview: "A mysterious ancient weapon threatens to destabilize Sector 2814." }
+      { season: 1, episode: 3, title: "OutKast", airDate: "2026-08-30", overview: "Tensions flare between the veteran Lantern and the rookie as new extraterrestrial evidence emerges." },
+      { season: 1, episode: 4, title: "The Weenie", airDate: "2026-09-06", overview: "Hal Jordan and John Stewart confront their biggest revelations yet as the terrestrial conspiracy deepens." },
+      { season: 1, episode: 5, title: "TBA", airDate: "2026-09-13", overview: "Hal and John face escalating cosmic threats." },
+      { season: 1, episode: 6, title: "TBA", airDate: "2026-09-20", overview: "The mystery behind the murder reaches a boiling point." },
+      { season: 1, episode: 7, title: "TBA", airDate: "2026-09-27", overview: "Uncovering the mastermind behind the extraterrestrial threat." },
+      { season: 1, episode: 8, title: "Season Finale", airDate: "2026-10-04", overview: "Season 1 finale: Hal and John battle to protect Earth and the Green Lantern Corps." }
     ]
   },
   "the shards": {
@@ -149,10 +153,52 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 18,
     episodes: [
-      { season: 18, episode: 1, title: "Frank Marries a Corpse", airDate: "2026-08-17", overview: "Frank concocts an outrageous tax shelter scheme involving a fraudulent estate." },
-      { season: 18, episode: 2, title: "Dennis Gets a Real Job", airDate: "2026-08-24", overview: "Dennis infiltrates corporate America as a lifestyle coach with catastrophic results." },
-      { season: 18, episode: 3, title: "Dee Wins a Pageant", airDate: "2026-08-31", overview: "Dee enters a local seniors beauty pageant under suspicious pretenses." },
-      { season: 18, episode: 4, title: "Charlie's Legal Defense", airDate: "2026-09-07", overview: "Charlie represents the bar in municipal court using Bird Law." }
+      { season: 18, episode: 1, title: "Frank Marries a Corpse", airDate: "2026-08-17", overview: "The gang helps Frank with pre-wedding jitters, while Dee attempts to dissuade Sam from the nuptials." },
+      { season: 18, episode: 2, title: "Dennis and Dee Don't Get Rich", airDate: "2026-08-17", overview: "The Reynolds twins strive to secure Sam's inheritance, while Charlie and Frank arrange a memorial for Bonnie." },
+      { season: 18, episode: 3, title: "The Gang Gets Tested", airDate: "2026-08-24", overview: "Dennis and Dee are diagnosed with ADHD, an official diagnosis that Mac desperately tries to obtain." },
+      { season: 18, episode: 4, title: "2026: A Virtual Insanity", airDate: "2026-08-31", overview: "The gang dives into virtual reality and modern tech trends with chaotic consequences." },
+      { season: 18, episode: 5, title: "The Gang Goes to the Ren Faire", airDate: "2026-09-07", overview: "Mac, Dennis, and Dee aim for the Quilt of Legends at the Renaissance Faire, Charlie discovers luting, and Frank tries to buy the faire." },
+      { season: 18, episode: 6, title: "The War on Alcohol", airDate: "2026-09-14", overview: "The gang battles anti-drinking trends by recruiting white-collar and blue-collar groups for happy hour." },
+      { season: 18, episode: 7, title: "Gilligan's Island: A Conspiracy Theorist's Paradise", airDate: "2026-09-21", overview: "The Gang unravels wild television conspiracy theories about Gilligan's Island." },
+      { season: 18, episode: 8, title: "TBA", airDate: "2026-09-28", overview: "New weekly episode of Season 18." },
+      { season: 18, episode: 9, title: "TBA", airDate: "2026-10-05", overview: "New weekly episode of Season 18." },
+      { season: 18, episode: 10, title: "Season Finale", airDate: "2026-10-12", overview: "Season 18 finale of It's Always Sunny in Philadelphia." }
+    ]
+  },
+  "always sunny in philadelphia": {
+    title: "It's Always Sunny in Philadelphia",
+    streamingService: "Hulu",
+    concluded: false,
+    totalSeasons: 18,
+    episodes: [
+      { season: 18, episode: 1, title: "Frank Marries a Corpse", airDate: "2026-08-17", overview: "The gang helps Frank with pre-wedding jitters, while Dee attempts to dissuade Sam from the nuptials." },
+      { season: 18, episode: 2, title: "Dennis and Dee Don't Get Rich", airDate: "2026-08-17", overview: "The Reynolds twins strive to secure Sam's inheritance, while Charlie and Frank arrange a memorial for Bonnie." },
+      { season: 18, episode: 3, title: "The Gang Gets Tested", airDate: "2026-08-24", overview: "Dennis and Dee are diagnosed with ADHD, an official diagnosis that Mac desperately tries to obtain." },
+      { season: 18, episode: 4, title: "2026: A Virtual Insanity", airDate: "2026-08-31", overview: "The gang dives into virtual reality and modern tech trends with chaotic consequences." },
+      { season: 18, episode: 5, title: "The Gang Goes to the Ren Faire", airDate: "2026-09-07", overview: "Mac, Dennis, and Dee aim for the Quilt of Legends at the Renaissance Faire, Charlie discovers luting, and Frank tries to buy the faire." },
+      { season: 18, episode: 6, title: "The War on Alcohol", airDate: "2026-09-14", overview: "The gang battles anti-drinking trends by recruiting white-collar and blue-collar groups for happy hour." },
+      { season: 18, episode: 7, title: "Gilligan's Island: A Conspiracy Theorist's Paradise", airDate: "2026-09-21", overview: "The Gang unravels wild television conspiracy theories about Gilligan's Island." },
+      { season: 18, episode: 8, title: "TBA", airDate: "2026-09-28", overview: "New weekly episode of Season 18." },
+      { season: 18, episode: 9, title: "TBA", airDate: "2026-10-05", overview: "New weekly episode of Season 18." },
+      { season: 18, episode: 10, title: "Season Finale", airDate: "2026-10-12", overview: "Season 18 finale of It's Always Sunny in Philadelphia." }
+    ]
+  },
+  "always sunny": {
+    title: "It's Always Sunny in Philadelphia",
+    streamingService: "Hulu",
+    concluded: false,
+    totalSeasons: 18,
+    episodes: [
+      { season: 18, episode: 1, title: "Frank Marries a Corpse", airDate: "2026-08-17", overview: "The gang helps Frank with pre-wedding jitters, while Dee attempts to dissuade Sam from the nuptials." },
+      { season: 18, episode: 2, title: "Dennis and Dee Don't Get Rich", airDate: "2026-08-17", overview: "The Reynolds twins strive to secure Sam's inheritance, while Charlie and Frank arrange a memorial for Bonnie." },
+      { season: 18, episode: 3, title: "The Gang Gets Tested", airDate: "2026-08-24", overview: "Dennis and Dee are diagnosed with ADHD, an official diagnosis that Mac desperately tries to obtain." },
+      { season: 18, episode: 4, title: "2026: A Virtual Insanity", airDate: "2026-08-31", overview: "The gang dives into virtual reality and modern tech trends with chaotic consequences." },
+      { season: 18, episode: 5, title: "The Gang Goes to the Ren Faire", airDate: "2026-09-07", overview: "Mac, Dennis, and Dee aim for the Quilt of Legends at the Renaissance Faire, Charlie discovers luting, and Frank tries to buy the faire." },
+      { season: 18, episode: 6, title: "The War on Alcohol", airDate: "2026-09-14", overview: "The gang battles anti-drinking trends by recruiting white-collar and blue-collar groups for happy hour." },
+      { season: 18, episode: 7, title: "Gilligan's Island: A Conspiracy Theorist's Paradise", airDate: "2026-09-21", overview: "The Gang unravels wild television conspiracy theories about Gilligan's Island." },
+      { season: 18, episode: 8, title: "TBA", airDate: "2026-09-28", overview: "New weekly episode of Season 18." },
+      { season: 18, episode: 9, title: "TBA", airDate: "2026-10-05", overview: "New weekly episode of Season 18." },
+      { season: 18, episode: 10, title: "Season Finale", airDate: "2026-10-12", overview: "Season 18 finale of It's Always Sunny in Philadelphia." }
     ]
   },
   "stuart fails to save the universe": {
@@ -174,17 +220,6 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     episodes: [
       { season: 2, episode: 9, title: "The Dead Man's Hand", airDate: "2026-08-12", overview: "Gambit and Rogue face an echo from their past as Apocalypse moves his forces into position." },
       { season: 2, episode: 10, title: "Age of Apocalypse Finale", airDate: "2026-08-26", overview: "The X-Men unite across fractured timelines for the ultimate battle against Apocalypse." }
-    ]
-  },
-  "rick and morty": {
-    title: "Rick and Morty",
-    streamingService: "HBO",
-    concluded: false,
-    totalSeasons: 9,
-    episodes: [
-      { season: 9, episode: 4, title: "A Ricker Runs Through It", airDate: "2026-08-16", overview: "Rick takes the family on a mind-bending fishing trip across parallel quantum streams." },
-      { season: 9, episode: 5, title: "Morty of the Dead", airDate: "2026-08-30", overview: "Rick and Morty navigate a dimension where obsolete pop culture tropes come back as zombies." },
-      { season: 9, episode: 6, title: "The Rickshank Redemption Part 2", airDate: "2026-09-06", overview: "Rick is framed for an intergalactic crime he surprisingly didn't commit." }
     ]
   },
   "harley quinn": {
@@ -434,10 +469,15 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 1,
     episodes: [
-      { season: 1, episode: 1, title: "We Is Us", airDate: "2026-08-14", overview: "An unconventional legal strategist in Albuquerque uncovers a vast corporate conspiracy." },
-      { season: 1, episode: 2, title: "The Signal", airDate: "2026-08-21", overview: "Carol follows an anonymous encrypted tip into the high desert." },
-      { season: 1, episode: 3, title: "Consensus", airDate: "2026-08-28", overview: "Tensions boil over as federal investigators close in on the firm." },
-      { season: 1, episode: 4, title: "Overload", airDate: "2026-09-04", overview: "An unexpected breakthrough changes the calculus for all parties involved." }
+      { season: 1, episode: 1, title: "We Is Us", airDate: "2025-11-07", overview: "Carol Sturka discovers she is immune to a global transformation." },
+      { season: 1, episode: 2, title: "Pirate Lady", airDate: "2025-11-07", overview: "Carol navigates a rapidly shifting reality as new alliances form." },
+      { season: 1, episode: 3, title: "Grenade", airDate: "2025-11-14", overview: "Tensions mount when unexpected discoveries challenge initial assumptions." },
+      { season: 1, episode: 4, title: "Please, Carol", airDate: "2025-11-21", overview: "Carol confronts unexpected resistance while seeking answers." },
+      { season: 1, episode: 5, title: "Got Milk", airDate: "2025-11-28", overview: "A routine supply search turns into a high-stakes encounter." },
+      { season: 1, episode: 6, title: "HDP", airDate: "2025-12-05", overview: "Strategic decisions must be made as the group faces a critical crossroads." },
+      { season: 1, episode: 7, title: "The Gap", airDate: "2025-12-12", overview: "Carol ventures into uncharted territory to bridge a dangerous divide." },
+      { season: 1, episode: 8, title: "Charm Offensive", airDate: "2025-12-19", overview: "Diplomatic efforts are tested under extreme pressure." },
+      { season: 1, episode: 9, title: "La Chica o El Mundo", airDate: "2025-12-26", overview: "Season finale. A pivotal choice determines the fate of humanity." }
     ]
   },
   "mayfair witches": {
@@ -589,13 +629,21 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
   },
   "your friendly neighborhood spider-man": {
     title: "Your Friendly Neighborhood Spider-Man",
-    streamingService: "Prime Video",
+    streamingService: "Disney+",
     concluded: false,
-    totalSeasons: 1,
+    totalSeasons: 2,
     episodes: [
-      { season: 1, episode: 1, title: "Great Power", airDate: "2026-09-10", overview: "Peter Parker discovers his superhuman abilities while navigating his freshman year at Midtown High." },
-      { season: 1, episode: 2, title: "School Days", airDate: "2026-09-17", overview: "Peter balances academic pressures with stopping a high-tech robbery in Queens." },
-      { season: 1, episode: 3, title: "Osborn's Prodigy", airDate: "2026-09-24", overview: "Norman Osborn takes a keen interest in Peter's scientific aptitude." }
+      { season: 1, episode: 1, title: "Amazing Fantasy", airDate: "2025-01-29", overview: "Peter Parker discovers his superhuman abilities while navigating his freshman year at Midtown High." },
+      { season: 1, episode: 2, title: "The Parker Luck", airDate: "2025-01-29", overview: "Peter balances academic pressures with stopping a high-tech robbery in Queens." },
+      { season: 1, episode: 3, title: "Secret Identity Crisis", airDate: "2025-01-29", overview: "Norman Osborn takes a keen interest in Peter's scientific aptitude." },
+      { season: 1, episode: 4, title: "Hitting the Big Time", airDate: "2025-01-29", overview: "Peter tests the limits of his new spider-suit against a formidable gang." },
+      { season: 1, episode: 5, title: "The Unicorn Unleashed", airDate: "2025-01-29", overview: "A rampaging robotic threat tests Spider-Man's agility and wits." },
+      { season: 1, episode: 6, title: "Duel with the Devil", airDate: "2025-01-29", overview: "Spider-Man encounters a mysterious vigilante operating in the shadows of Hell's Kitchen." },
+      { season: 1, episode: 7, title: "Scorpion Rising", airDate: "2025-01-29", overview: "A genetically modified adversary seeks vengeance against Oscorp." },
+      { season: 1, episode: 8, title: "Tangled Web", airDate: "2025-01-29", overview: "Peter's personal and heroic lives collide in an escalating conflict." },
+      { season: 1, episode: 9, title: "Hero or Menace", airDate: "2025-01-29", overview: "Media scrutiny and public opinion turn on New York's newest hero." },
+      { season: 1, episode: 10, title: "If This Be My Destiny...", airDate: "2025-01-29", overview: "Spider-Man faces an impossible choice to protect the city and those he loves." },
+      { season: 2, episode: 1, title: "Season 2 Premiere", airDate: "2026-10-15", overview: "Peter Parker returns for a new semester of superhero adventures in Season 2." }
     ]
   },
   "dutton ranch": {
@@ -727,7 +775,16 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
   },
   "spider-noir": {
     title: "Spider-Noir",
-    streamingService: "Other",
+    streamingService: "Prime Video",
+    concluded: false,
+    totalSeasons: 1,
+    episodes: [
+      { season: 1, episode: 1, title: "1930s Web", airDate: "2026-11-27", overview: "In 1930s New York, an aging, down-on-his-luck private investigator is forced to grapple with his past life as the city's only superhero." }
+    ]
+  },
+  "spider noir": {
+    title: "Spider-Noir",
+    streamingService: "Prime Video",
     concluded: false,
     totalSeasons: 1,
     episodes: [
@@ -909,6 +966,16 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     episodes: [
       { season: 4, episode: 1, title: "Believe Again", airDate: "2026-11-25", overview: "Ted returns to Richmond as the club embarks on a brand new European championship campaign." }
     ]
+  },
+  "humans": {
+    title: "Humans",
+    streamingService: "Hulu",
+    concluded: true,
+    totalSeasons: 3,
+    episodes: [
+      { season: 1, episode: 1, title: "Episode 1", airDate: "2015-06-14" },
+      { season: 3, episode: 8, title: "Episode 8", airDate: "2018-07-05" }
+    ]
   }
 };
 
@@ -927,8 +994,12 @@ export function normalizeTitle(title: string = ''): string {
 }
 
 /**
- * Resolves the next upcoming/active episode for a show based on user watched progress
- * and current air dates.
+ * Resolves the next upcoming or most recent broadcast episode for a show based on
+ * actual real-world broadcast air dates.
+ * Follows the real television schedule:
+ * 1. Checks for the immediate next upcoming broadcast episode on TV on or after today (airDate >= today).
+ * 2. If all scheduled episodes have already aired, returns the most recent broadcast episode (airDate <= today).
+ * 3. Falls back to show.nextEpisode if already provided.
  */
 export function resolveNextUpcomingEpisode(
   show: {
@@ -938,12 +1009,29 @@ export function resolveNextUpcomingEpisode(
     nextEpisode?: NextEpisode | null;
     totalSeasons?: number;
   },
-  referenceDateStr: string = '2026-08-20'
+  referenceDateStr?: string
 ): NextEpisode | null {
   if (show.concluded) return null;
 
   const rawTitle = (show.title || '').toLowerCase().trim();
   const norm = normalizeTitle(show.title);
+
+  // Parse today's reference date string safely (YYYY-MM-DD)
+  let todayStr: string;
+  if (referenceDateStr) {
+    todayStr = referenceDateStr.split('T')[0];
+  } else {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    todayStr = `${y}-${m}-${d}`;
+  }
+
+  // Known shows with no announced upcoming season dates
+  if (norm === "rickandmorty" || norm.includes("rickandmorty") || rawTitle.includes("rick and morty")) {
+    return null;
+  }
 
   // Find matching schedule
   let schedule: ShowScheduleData | undefined = SHOW_SCHEDULES[rawTitle];
@@ -954,25 +1042,20 @@ export function resolveNextUpcomingEpisode(
     })?.[1];
   }
 
-  const watched = show.latestWatched || { season: 1, episode: 0, title: 'Not Started' };
-
   if (schedule && schedule.episodes && schedule.episodes.length > 0) {
-    // Sort episodes chronologically
+    // Sort episodes chronologically by airDate, then season/episode
     const sorted = [...schedule.episodes].sort((a, b) => {
+      if (a.airDate && b.airDate && a.airDate !== b.airDate) {
+        return a.airDate.localeCompare(b.airDate);
+      }
       if (a.season !== b.season) return a.season - b.season;
       return a.episode - b.episode;
     });
 
-    // 1. First preference: First episode that user HAS NOT WATCHED yet
-    const unwatched = sorted.filter(ep => {
-      if (ep.season > watched.season) return true;
-      if (ep.season === watched.season && ep.episode > watched.episode) return true;
-      return false;
-    });
-
-    if (unwatched.length > 0) {
-      // Find the first unwatched episode that is upcoming or most recently aired
-      const candidate = unwatched[0];
+    // 1. Prioritize the immediate next upcoming broadcast episode (airDate >= today)
+    const upcoming = sorted.filter(ep => ep.airDate && ep.airDate >= todayStr);
+    if (upcoming.length > 0) {
+      const candidate = upcoming[0];
       return {
         season: candidate.season,
         episode: candidate.episode,
@@ -982,27 +1065,80 @@ export function resolveNextUpcomingEpisode(
       };
     }
 
-    // If user has watched all scheduled episodes, but show is ongoing, check future season premiere
-    const lastEp = sorted[sorted.length - 1];
-    if (show.totalSeasons && show.totalSeasons > lastEp.season) {
-      return {
-        season: show.totalSeasons,
-        episode: 1,
-        title: `Season ${show.totalSeasons} Premiere`,
-        airDate: `${new Date(referenceDateStr).getFullYear() + 1}-04-01`,
-        overview: `The next exciting season of ${show.title}.`
-      };
+    // 2. If no future episodes are scheduled, check if the most recent broadcast episode aired within the last 30 days
+    const past = sorted.filter(ep => ep.airDate && ep.airDate <= todayStr);
+    if (past.length > 0) {
+      const candidate = past[past.length - 1];
+      if (candidate.airDate) {
+        const d = new Date(candidate.airDate).getTime();
+        const now = new Date(todayStr).getTime();
+        const diffDays = Math.round((now - d) / (1000 * 60 * 60 * 24));
+        if (diffDays <= 30) {
+          return {
+            season: candidate.season,
+            episode: candidate.episode,
+            title: candidate.title,
+            airDate: candidate.airDate,
+            overview: candidate.overview
+          };
+        }
+      }
     }
+    // If a canonical schedule exists for this show and has no upcoming or recent episodes, return null
+    return null;
   }
 
-  // If show already has a valid future nextEpisode, keep it
+  // If show already has a valid nextEpisode with airDate (in the future or within the last 30 days), keep it
   if (show.nextEpisode && show.nextEpisode.airDate) {
-    const isWatched = (watched.season > show.nextEpisode.season) ||
-      (watched.season === show.nextEpisode.season && watched.episode >= show.nextEpisode.episode);
-    if (!isWatched) {
-      return show.nextEpisode;
+    const d = new Date(show.nextEpisode.airDate).getTime();
+    const now = new Date(todayStr).getTime();
+    const diffDays = Math.round((now - d) / (1000 * 60 * 60 * 24));
+    if (show.nextEpisode.airDate >= todayStr || diffDays <= 30) {
+      return {
+        season: show.nextEpisode.season,
+        episode: show.nextEpisode.episode,
+        title: show.nextEpisode.title || `Season ${show.nextEpisode.season} Episode ${show.nextEpisode.episode}`,
+        airDate: show.nextEpisode.airDate,
+        overview: show.nextEpisode.overview
+      };
     }
   }
 
   return null;
 }
+
+/**
+ * Looks up the canonical air date for a specific season and episode of a show.
+ */
+export function getEpisodeAirDate(
+  showTitle: string,
+  season: number,
+  episode: number
+): { title?: string; airDate?: string } | null {
+  if (!showTitle) return null;
+  const rawTitle = (showTitle || '').toLowerCase().trim();
+  const norm = normalizeTitle(showTitle);
+
+  let schedule: ShowScheduleData | undefined = SHOW_SCHEDULES[rawTitle];
+  if (!schedule) {
+    schedule = Object.entries(SHOW_SCHEDULES).find(([k]) => {
+      const scheduleNorm = normalizeTitle(k);
+      return scheduleNorm === norm || norm.includes(scheduleNorm) || scheduleNorm.includes(norm);
+    })?.[1];
+  }
+
+  if (schedule && schedule.episodes && schedule.episodes.length > 0) {
+    const match = schedule.episodes.find(
+      ep => ep.season === season && ep.episode === episode
+    );
+    if (match) {
+      return {
+        title: match.title,
+        airDate: match.airDate,
+      };
+    }
+  }
+
+  return null;
+}
+

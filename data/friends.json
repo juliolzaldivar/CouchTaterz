@@ -2,7 +2,8 @@
   "user-lilyann-4290": {
     "friends": [
       "default",
-      "user-stphsolowgmailcom-4369"
+      "user-stphsolowgmailcom-4369",
+      "user-lily-9367"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -10,7 +11,9 @@
   "user-rafael-9639": {
     "friends": [
       "default",
-      "user-kris-5139"
+      "user-kris-5139",
+      "user-hyunjin-6821",
+      "user-doug-5821"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -18,7 +21,9 @@
   "user-ejc-2841": {
     "friends": [
       "default",
-      "user-kris-5139"
+      "user-kris-5139",
+      "user-greg-3842",
+      "user-hyunjin-6821"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -27,7 +32,10 @@
     "friends": [
       "default",
       "user-julian-7667",
-      "user-lilyann-4290"
+      "user-lilyann-4290",
+      "user-greg-3842",
+      "user-hyunjin-6821",
+      "user-doug-5821"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -43,13 +51,22 @@
       "guest-demo",
       "user-danic-4753",
       "user-stphsolowgmailcom-4369",
-      "user-google-8850",
       "user-greg-3842",
       "user-hyunjin-6821",
       "user-jerry-4768",
       "user-doug-5821",
       "user-mongo-4825",
-      "user-liz-5349"
+      "user-liz-5349",
+      "user-jlz-2635",
+      "user-alt-j-9890",
+      "user-stef-4912",
+      "user-mpixel0079-gmail-com",
+      "user-greg-6244",
+      "user-hensonannadee-gmail-com",
+      "user-jylian-summers",
+      "user-el-dude-9821",
+      "user-jeremy-5492",
+      "user-jpbnelson-9644"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -65,7 +82,10 @@
     "friends": [
       "default",
       "user-rafael-9639",
-      "user-ejc-2841"
+      "user-ejc-2841",
+      "user-greg-3842",
+      "user-hyunjin-6821",
+      "user-doug-5821"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -73,7 +93,8 @@
   "user-julian-7667": {
     "friends": [
       "default",
-      "user-lily-9367"
+      "user-lily-9367",
+      "user-hyunjin-6821"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -86,19 +107,13 @@
     "pendingSent": [],
     "pendingReceived": []
   },
-  "user-google-8850": {
-    "friends": [
-      "default"
-    ],
-    "pendingSent": [],
-    "pendingReceived": []
-  },
   "user-greg-3842": {
     "friends": [
       "default",
       "user-kris-5139",
       "user-lily-9367",
-      "user-ejc-2841"
+      "user-ejc-2841",
+      "user-hyunjin-6821"
     ],
     "pendingSent": [],
     "pendingReceived": []
@@ -134,6 +149,92 @@
     "pendingReceived": []
   },
   "user-mongo-4825": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-jlz-2635": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [
+      "user-kris-5139"
+    ],
+    "pendingReceived": []
+  },
+  "user-alt-j-9890": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-jerry-4768": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-stef-4912": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-mpixel0079-gmail-com": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-greg-6244": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-hensonannadee-gmail-com": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-liz-5349": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-jylian-summers": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-el-dude-9821": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-jeremy-5492": {
+    "friends": [
+      "default"
+    ],
+    "pendingSent": [],
+    "pendingReceived": []
+  },
+  "user-jpbnelson-9644": {
     "friends": [
       "default"
     ],

@@ -29,7 +29,9 @@ export interface AskTaterzAIModalProps {
   buddies?: TaterzAIGroupBuddy[];
   initialIntent?: TaterzAIIntent;
   initialShowForRecap?: TvShow;
+  currentUser?: { id: string; name: string; email?: string } | null;
   theme?: 'dark' | 'light';
+  onOpenUpgradeModal?: () => void;
 }
 
 export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
@@ -40,7 +42,9 @@ export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
   buddies = [],
   initialIntent,
   initialShowForRecap,
-  theme = 'dark'
+  currentUser,
+  theme = 'dark',
+  onOpenUpgradeModal
 }) => {
   const {
     messages,
@@ -54,7 +58,14 @@ export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
     toggleProMode,
     resetCredits,
     clearMessages
-  } = useTaterzAI({ shows, preferences, buddies, initialShowForRecap });
+  } = useTaterzAI({ 
+    shows, 
+    preferences, 
+    buddies, 
+    initialShowForRecap,
+    userEmail: currentUser?.email,
+    userId: currentUser?.id
+  });
 
   const [input, setInput] = useState('');
   const [selectedShow, setSelectedShow] = useState<TvShow | null>(initialShowForRecap || null);
@@ -623,11 +634,18 @@ export const AskTaterzAIModal: React.FC<AskTaterzAIModalProps> = ({
                 </div>
 
                 <button
-                  onClick={toggleProMode}
-                  className="py-1.5 px-3 sm:py-2 sm:px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 transition flex items-center gap-1.5"
+                  type="button"
+                  onClick={() => {
+                    if (onOpenUpgradeModal) {
+                      onOpenUpgradeModal();
+                    } else {
+                      toggleProMode();
+                    }
+                  }}
+                  className="py-1.5 px-3 sm:py-2 sm:px-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/30 transition flex items-center gap-1.5 cursor-pointer"
                 >
                   <Zap className="w-3.5 h-3.5 fill-current" />
-                  <span>Upgrade to Pro</span>
+                  <span>Upgrade to VIP</span>
                 </button>
               </motion.div>
             )}

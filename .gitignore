@@ -1,10 +1,20 @@
 node_modules/
-dist/
-dist-ssr/
 coverage/
 .DS_Store
 *.log
 *.tmp
 *.bak
+bun.lock
+bun.lockb
 .env*
 !.env.example
+
+# Runtime caches and temporary test dumps
+cache.json
+curl_results.txt
+urls_to_test.txt
+
+# Backup files and snapshots (to keep workspace within WebContainer snapshot limits)
+*.backup*
+data/backups/
+data/snapshots/

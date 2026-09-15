@@ -15,12 +15,14 @@ interface NetworkMatrixTabProps {
   usersList: any[];
   networkConnections: Array<{ user1Id: string; user1Name: string; user2Id: string; user2Name: string }>;
   topShowsList: any[];
-  currentUser: { id: string; name: string; email?: string; avatarUrl?: string };
+  currentUser: { id: string; name: string; email?: string; avatarUrl?: string; isVip?: boolean; isPro?: boolean };
   theme?: 'dark' | 'light';
   onInspectUserLibrary: (userId: string) => void;
   onConnectUsers: (user1Id: string, user2Id: string) => Promise<void>;
   onUnfriendUsers: (user1Id: string, user2Id: string) => Promise<void>;
   onOpenUserConnectionsDrawer: (user: any) => void;
+  onOpenSharedWatchlists?: (options?: { show?: any; buddyId?: string }) => void;
+  onOpenUpgradeModal?: () => void;
 }
 
 export const NetworkMatrixTab: React.FC<NetworkMatrixTabProps> = ({
@@ -32,7 +34,9 @@ export const NetworkMatrixTab: React.FC<NetworkMatrixTabProps> = ({
   onInspectUserLibrary,
   onConnectUsers,
   onUnfriendUsers,
-  onOpenUserConnectionsDrawer
+  onOpenUserConnectionsDrawer,
+  onOpenSharedWatchlists,
+  onOpenUpgradeModal
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterUser, setFilterUser] = useState('');
@@ -157,6 +161,8 @@ export const NetworkMatrixTab: React.FC<NetworkMatrixTabProps> = ({
           theme={theme}
           onInspectUserLibrary={onInspectUserLibrary}
           currentUser={currentUser}
+          onOpenSharedWatchlists={onOpenSharedWatchlists}
+          onOpenUpgradeModal={onOpenUpgradeModal}
           scope="all"
           allowScopeToggle={true}
         />

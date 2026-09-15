@@ -24,6 +24,123 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { SERVICE_COLORS } from './ShowCard';
 
+// Aesthetic streaming service pill coloring matching the billboard showcase style
+const getServiceBadgeStyle = (service: string) => {
+  switch (service?.toUpperCase()) {
+    case 'HBO':
+    case 'MAX':
+      return 'bg-[#1e153b] text-[#c7d2fe] border-[#4c3f91]/40';
+    case 'NETFLIX':
+      return 'bg-[#2a0d13] text-[#fca5a5] border-[#991b1b]/40';
+    case 'DISNEY+':
+    case 'DISNEY':
+      return 'bg-[#0c1f44] text-[#93c5fd] border-[#1e40af]/40';
+    case 'APPLE TV':
+    case 'APPLE TV+':
+      return 'bg-[#1c1c22] text-[#f1f5f9] border-[#475569]/40';
+    case 'PRIME VIDEO':
+    case 'AMAZON':
+      return 'bg-[#0c2438] text-[#7dd3fc] border-[#0369a1]/40';
+    case 'HULU':
+      return 'bg-[#0d2618] text-[#86efac] border-[#166534]/40';
+    case 'PEACOCK':
+      return 'bg-[#221e0a] text-[#fde047] border-[#854d0e]/40';
+    case 'PARAMOUNT+':
+    case 'PARAMOUNT':
+      return 'bg-[#0b1d3a] text-[#93c5fd] border-[#1d4ed8]/40';
+    default:
+      return 'bg-[#1e153b] text-[#c7d2fe] border-[#4c3f91]/40';
+  }
+};
+
+const DEFAULT_RECOMMENDATIONS = [
+  {
+    title: "The Bear",
+    streamingService: "Hulu",
+    genres: ["Drama", "Comedy"],
+    rottenTomatoesScore: 96,
+    overview: "A young fine-dining chef comes home to Chicago to run his family Italian beef sandwich shop after a heartbreaking death in his family.",
+    matchingScore: 97,
+    reason: "A high-octane, emotionally raw culinary character study packed with blistering tension, kitchen obsession, and award-winning performances.",
+    bannerImage: "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+    bannerPosition: "center 25%",
+    directors: ["Christopher Storer", "Joanna Calo"],
+    actors: ["Jeremy Allen White", "Ebon Moss-Bachrach", "Ayo Edebiri"],
+    concluded: false,
+    totalSeasons: 3,
+    episodesPerSeason: [8, 10, 10],
+    nextEpisode: null
+  },
+  {
+    title: "Severance",
+    streamingService: "Apple TV",
+    genres: ["Sci-Fi", "Thriller", "Mystery"],
+    rottenTomatoesScore: 97,
+    overview: "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+    matchingScore: 98,
+    reason: "A masterclass in dystopian psychological suspense with immaculate visual framing, mind-bending corporate satire, and relentless cliffhangers.",
+    bannerImage: "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+    bannerPosition: "center 25%",
+    directors: ["Ben Stiller", "Aoife McArdle"],
+    actors: ["Adam Scott", "Zach Cherry", "Britt Lower"],
+    concluded: false,
+    totalSeasons: 2,
+    episodesPerSeason: [9, 10],
+    nextEpisode: null
+  },
+  {
+    title: "Silo",
+    streamingService: "Apple TV",
+    genres: ["Sci-Fi", "Drama", "Mystery"],
+    rottenTomatoesScore: 94,
+    overview: "In a ruined and toxic future, thousands live in a giant silo deep underground.",
+    matchingScore: 93,
+    reason: "Gripping world-building and claustrophobic subterranean intrigue anchored by Rebecca Ferguson's fierce performance.",
+    bannerImage: "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+    bannerPosition: "center 25%",
+    directors: ["Morten Tyldum"],
+    actors: ["Rebecca Ferguson", "Common", "Tim Robbins"],
+    concluded: false,
+    totalSeasons: 2,
+    episodesPerSeason: [10, 10],
+    nextEpisode: null
+  },
+  {
+    title: "Hacks",
+    streamingService: "HBO",
+    genres: ["Comedy", "Drama"],
+    rottenTomatoesScore: 98,
+    overview: "Explores a dark mentorship that forms between Deborah Vance, a legendary Las Vegas comedian, and an entitled comedy writer.",
+    matchingScore: 95,
+    reason: "Razor-sharp wit, generational clash comedy, and top-tier acting that balances caustic laughs with genuine emotional stakes.",
+    bannerImage: "https://image.tmdb.org/t/p/w1280/bbAR4qKxjnjyKAt4YMrL725Mtfw.jpg",
+    bannerPosition: "center 20%",
+    directors: ["Lucia Aniello"],
+    actors: ["Jean Smart", "Hannah Einbinder", "Carl Clemons-Hopkins"],
+    concluded: false,
+    totalSeasons: 3,
+    episodesPerSeason: [10, 8, 9],
+    nextEpisode: null
+  },
+  {
+    title: "Tokyo Vice",
+    streamingService: "HBO",
+    genres: ["Drama", "Thriller", "Mystery"],
+    rottenTomatoesScore: 92,
+    overview: "A Western journalist working for a publication in Tokyo takes on one of the city's most powerful crime bosses.",
+    matchingScore: 94,
+    reason: "Following your 10/10 praise for Shōgun's cultural depth and nuanced power struggles, Tokyo Vice delivers that same staggering cinematic tension and moral ambiguity set against the neon underbelly of Tokyo.",
+    bannerImage: "https://image.tmdb.org/t/p/w1280/fGhZTONMDkwSaE5V4FDxf26uenl.jpg",
+    bannerPosition: "center 20%",
+    directors: ["Michael Mann", "Josef Kubota Wladyka", "Alan Poul"],
+    actors: ["Ansel Elgort", "Ken Watanabe", "Rachel Keller"],
+    concluded: true,
+    totalSeasons: 2,
+    episodesPerSeason: [8, 10],
+    nextEpisode: null
+  }
+];
+
 interface RecommendationsCarouselProps {
   shows: TvShow[];
   preferences: UserPreferences;
@@ -41,9 +158,20 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   currentUser,
   theme = 'dark',
 }) => {
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>(() => {
+    const existingTitles = new Set((shows || []).map(s => normalizeShowTitle(s.title)));
+    const filtered = DEFAULT_RECOMMENDATIONS.filter(r => !existingTitles.has(normalizeShowTitle(r.title)));
+    return filtered.length > 0 ? filtered : DEFAULT_RECOMMENDATIONS;
+  });
   const [isLoading, setIsLoading] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [activeIndex, setActiveIndex] = useState(() => {
+    // If Tokyo Vice is in the initial recommendations deck, default to it (e.g. index 4, "5 of 5")
+    const existingTitles = new Set((shows || []).map(s => normalizeShowTitle(s.title)));
+    const filtered = DEFAULT_RECOMMENDATIONS.filter(r => !existingTitles.has(normalizeShowTitle(r.title)));
+    const deck = filtered.length > 0 ? filtered : DEFAULT_RECOMMENDATIONS;
+    const tvIdx = deck.findIndex(r => r.title.toLowerCase().includes('tokyo vice'));
+    return tvIdx >= 0 ? tvIdx : 0;
+  });
   const [isEditingTaste, setIsEditingTaste] = useState(false);
 
   // Taste profile form states
@@ -98,6 +226,8 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
         body: JSON.stringify({
           shows,
           preferences: activePrefs,
+          userEmail: currentUser?.email,
+          userId: currentUser?.id
         }),
       });
 
@@ -167,10 +297,13 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
   };
 
   // Helper to determine the aesthetic colors for recommendations
-  const currentRec = recommendations[activeIndex];
+  const currentRec = recommendations[activeIndex] || DEFAULT_RECOMMENDATIONS[0];
   const colors = currentRec
     ? SERVICE_COLORS[currentRec.streamingService as StreamingService] || SERVICE_COLORS['Other']
     : SERVICE_COLORS['Other'];
+  const cleanReason = currentRec?.reason
+    ? currentRec.reason.replace(/^["“\s]+|["”\s]+$/g, '')
+    : "High-intensity storytelling matching your top-rated shows and nuanced character preferences.";
 
   return (
     <div className="space-y-3">
@@ -329,7 +462,7 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
               </p>
             </div>
           </motion.div>
-        ) : !hasGenerated || recommendations.length === 0 ? (
+        ) : !hasGenerated && recommendations.length === 0 ? (
           /* Empty / Ask Scout Call to Action */
           <motion.div
             key="ask-scout"
@@ -361,114 +494,145 @@ export const RecommendationsCarousel: React.FC<RecommendationsCarouselProps> = (
             </button>
           </motion.div>
         ) : (
-          /* Carousel Show suggestions display */
+          /* Carousel Show suggestions display matching billboard showcase */
           <motion.div
             key="carousel-deck"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="relative overflow-hidden rounded-3xl bg-[#1A1D23] border border-white/5 h-[340px] md:h-[280px] group/carousel"
+            className="relative overflow-hidden rounded-3xl bg-[#090C15] border border-slate-800/80 shadow-2xl p-6 sm:p-8 lg:p-10 group/carousel min-h-[350px] flex flex-col justify-between"
           >
-            {/* Background Banner Image */}
-            <div className="absolute inset-0 w-full h-full">
+            {/* Background Banner Image - Right aligned with smooth gradient feathering */}
+            <div className="absolute top-0 right-0 bottom-0 w-full sm:w-[58%] lg:w-[50%] pointer-events-none overflow-hidden">
               <AnimatePresence mode="wait">
                 <motion.img
                   key={currentRec.title}
                   src={currentRec.bannerImage}
                   alt={currentRec.title}
-                  initial={{ opacity: 0, scale: 1.05 }}
-                  animate={{ opacity: 0.35, scale: 1 }}
+                  initial={{ opacity: 0, scale: 1.04 }}
+                  animate={{ opacity: 0.85, scale: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="w-full h-full object-cover filter brightness-[0.45]"
-                  style={{ objectPosition: currentRec.bannerPosition || 'center 25%' }}
+                  transition={{ duration: 0.4 }}
+                  className="w-full h-full object-cover object-center"
+                  style={{ objectPosition: currentRec.bannerPosition || 'center 20%' }}
                   referrerPolicy="no-referrer"
                 />
               </AnimatePresence>
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0F1115] via-[#0F1115]/60 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0F1115]/95 via-[#0F1115]/75 to-transparent" />
+              {/* High-fidelity gradient masks: blends seamlessly into the dark background on the left and edges */}
+              <div className="absolute inset-0 bg-gradient-to-r from-[#090C15] via-[#090C15]/75 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#090C15] via-transparent to-[#090C15]/30" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#090C15]/30 via-transparent to-[#090C15]/40" />
             </div>
 
             {/* Slide Navigation Buttons */}
-            <button
-              onClick={handlePrev}
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-[#0F1115]/70 hover:bg-[#0F1115] border border-white/5 text-slate-400 hover:text-white transition opacity-0 group-hover/carousel:opacity-100"
-              aria-label="Previous recommendation"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleNext}
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-2 rounded-full bg-[#0F1115]/70 hover:bg-[#0F1115] border border-white/5 text-slate-400 hover:text-white transition opacity-0 group-hover/carousel:opacity-100"
-              aria-label="Next recommendation"
-            >
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            {recommendations.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-black/60 hover:bg-black/90 text-white/75 hover:text-white border border-white/10 opacity-0 group-hover/carousel:opacity-100 transition-all cursor-pointer backdrop-blur-xs shadow-lg"
+                  aria-label="Previous recommendation"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 p-2.5 rounded-full bg-black/60 hover:bg-black/90 text-white/75 hover:text-white border border-white/10 opacity-0 group-hover/carousel:opacity-100 transition-all cursor-pointer backdrop-blur-xs shadow-lg"
+                  aria-label="Next recommendation"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
-            {/* Slide Content overlay */}
-            <div className="absolute inset-0 z-10 p-6 md:p-8 flex flex-col justify-between">
-              {/* Top Row: Service details & Match percentage */}
-              <div className="flex items-center justify-between">
+            {/* Slide Content */}
+            <div className="relative z-10 flex flex-col justify-between space-y-4">
+              {/* Top Row: Service details, Match percentage, RT score & Index */}
+              <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded-lg border ${colors.bg} ${colors.text} ${colors.border}`}>
+                  {/* Streaming Service Badge */}
+                  <span className={`px-3 py-1 text-xs font-black uppercase tracking-wider rounded-lg border shadow-xs ${getServiceBadgeStyle(currentRec.streamingService)}`}>
                     {currentRec.streamingService}
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg bg-blue-950/80 text-blue-300 border border-blue-800/30">
-                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
-                    {currentRec.matchingScore}% MATCH
+
+                  {/* Match Percentage Badge */}
+                  <span className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider px-3 py-1 rounded-lg bg-[#0c1e3d] text-[#38bdf8] border border-[#1d4ed8]/40 shadow-xs">
+                    <Sparkles className="w-3.5 h-3.5 text-[#38bdf8]" />
+                    <span>{currentRec.matchingScore}% MATCH</span>
                   </span>
                 </div>
 
-                {/* Score indicators */}
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-lg bg-slate-900/80 border border-white/5 text-rose-400">
-                    <Award className="w-3.5 h-3.5" />
+                {/* Rotten Tomatoes Badge & Slide Indicator */}
+                <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-1.5 px-3 py-1 text-xs font-black rounded-lg bg-[#2d0f1b] border border-[#9f1239]/40 text-[#fb7185] shadow-xs">
+                    <Award className="w-3.5 h-3.5 text-[#fb7185]" />
                     <span>RT: {currentRec.rottenTomatoesScore != null ? `${currentRec.rottenTomatoesScore}%` : 'TBD'}</span>
                   </div>
-                  <div className="hidden sm:flex items-center gap-1 text-[9px] text-slate-500">
-                    <span>{activeIndex + 1} of {recommendations.length}</span>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleNext}
+                    className="text-xs font-semibold text-slate-500 hover:text-slate-300 font-mono select-none transition-colors cursor-pointer"
+                    title="Click to next recommendation"
+                  >
+                    {activeIndex + 1} of {recommendations.length}
+                  </button>
                 </div>
               </div>
 
-              {/* Bottom text: Title, customized reason, cast & Add button */}
-              <div className="space-y-3.5 max-w-3xl">
-                <div className="space-y-1">
-                  <h4 className="text-xl md:text-2xl font-black text-white tracking-tight drop-shadow-md">
-                    {currentRec.title}
-                  </h4>
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    {currentRec.genres.map((g: string, gIdx: number) => (
-                      <span key={`${g}-${gIdx}`} className="px-2 py-0.5 text-[9px] uppercase tracking-wider font-bold text-slate-300 bg-slate-900/50 rounded border border-white/5">
-                        {g}
-                      </span>
-                    ))}
-                  </div>
+              {/* Middle Section: Title, Genres & SPUDZ SAYS Callout */}
+              <div className="max-w-2xl lg:max-w-3xl">
+                {/* Title */}
+                <h2 className="text-3xl sm:text-4xl font-black text-white tracking-tight mt-3 mb-2.5 drop-shadow-sm">
+                  {currentRec.title}
+                </h2>
+
+                {/* Genres */}
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  {currentRec.genres?.map((g: string, gIdx: number) => (
+                    <span
+                      key={`${g}-${gIdx}`}
+                      className="px-3 py-1 text-[11px] font-black uppercase tracking-wider bg-[#0c1220]/90 text-slate-300 rounded-lg border border-slate-700/60 shadow-xs"
+                    >
+                      {g}
+                    </span>
+                  ))}
                 </div>
 
-                {/* Custom AI Reasoning */}
-                <div className="p-3 rounded-2xl bg-blue-950/40 border border-blue-500/20">
-                  <p className="text-xs md:text-xs text-blue-200 leading-relaxed font-medium">
-                    <span className="font-extrabold text-amber-400 uppercase tracking-widest text-[9px] block mb-0.5">SPUDZ SAYS:</span>
-                    &ldquo;{currentRec.reason}&rdquo;
+                {/* SPUDZ SAYS Callout */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-[#08152e]/60 border border-[#1e3a8a]/40 my-3.5 max-w-2xl shadow-xs">
+                  <span className="font-black text-amber-400 uppercase tracking-widest text-[11px] block mb-1">
+                    SPUDZ SAYS:
+                  </span>
+                  <p className="text-sm sm:text-[15px] text-slate-200 leading-relaxed font-normal">
+                    &ldquo;{cleanReason}&rdquo;
                   </p>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                  {/* Cast / Crew summary */}
-                  <div className="text-[10px] text-slate-400 line-clamp-1">
-                    <span className="font-bold uppercase text-slate-500">Starring:</span> {currentRec.actors?.slice(0, 3).join(', ')}
-                  </div>
-
-                  {/* Add to Watchlist Action */}
+                {/* Track Show Action Button - Placed under Spudz says and above Starring line */}
+                <div className="pt-0.5 pb-2">
                   <button
+                    type="button"
                     onClick={() => handleAddShowToWatchlist(currentRec)}
-                    className="self-end sm:self-auto px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-lg border border-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer"
+                    className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs sm:text-sm font-extrabold flex items-center gap-2 shadow-lg shadow-blue-600/30 hover:scale-[1.02] active:scale-95 transition-all cursor-pointer shrink-0 w-fit"
                   >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4 stroke-[3]" />
                     <span>Track This Show</span>
                   </button>
                 </div>
+              </div>
 
+              {/* Bottom Row: Starring Cast */}
+              <div className="mt-1 pt-1">
+                <div className="text-xs text-slate-300 font-medium">
+                  <span className="font-black uppercase tracking-wider text-slate-500 mr-1.5">
+                    STARRING:
+                  </span>
+                  <span>
+                    {currentRec.actors && currentRec.actors.length > 0
+                      ? currentRec.actors.slice(0, 3).join(', ')
+                      : 'Ensemble Cast'}
+                  </span>
+                </div>
               </div>
             </div>
           </motion.div>

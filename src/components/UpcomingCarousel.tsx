@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { TvShow } from '../types';
 import { getShowBannerImage } from '../utils/showBanners';
+import { resolveNextUpcomingEpisode } from '../utils/showSchedules';
 import { Calendar, ChevronLeft, ChevronRight, Play, Sparkles, RefreshCw, Tag } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { SERVICE_COLORS } from './ShowCard';
@@ -19,6 +20,13 @@ interface UpcomingCarouselProps {
 
 export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSelectShow, onUpdateShow, theme = 'dark' }) => {
   const [activeIndex, setActiveIndex] = useState(0);
+
+  // Resolves the actual real-world broadcast episode for the show
+  const getEffectiveNextEpisode = (show: TvShow) => {
+    if (show.concluded) return null;
+    const canonical = resolveNextUpcomingEpisode(show);
+    return canonical || show.nextEpisode || null;
+  };
 
   // Helper to parse date string safely (returns null if invalid or falsy)
   const parseAirDate = (dateStr: string | null | undefined) => {
@@ -46,13 +54,11 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
     return `${shortMonth} ${d.getDate()} ${twoDigitYear}`;
   };
 
-  // Filter shows that are favorites OR are followed and currently airing (not concluded and has nextEpisode)
-  // and whose next episode is airing in no more than 30 days, EXCEPT those hidden by the user.
-  // BUT: If a show has been favorited (marked with the star icon), we always include/assign it to the banner 
-  // (unless it is explicitly hidden by the user).
+  // Calculate day differences based on actual broadcast episode air date
   const getDiffDays = (show: typeof shows[0]) => {
-    if (!show.nextEpisode || !show.nextEpisode.airDate) return null;
-    const d = parseAirDate(show.nextEpisode.airDate);
+    const ep = getEffectiveNextEpisode(show);
+    if (!ep || !ep.airDate) return null;
+    const d = parseAirDate(ep.airDate);
     if (!d) return null;
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -191,9 +197,10 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
   const currentShow = upcomingShows[safeActiveIndex];
   const colors = SERVICE_COLORS[currentShow.streamingService] || SERVICE_COLORS['Other'];
   
-  // Calculate relative time or human air date safely
+  // Calculate relative time or human air date safely using actual broadcast air date
+  const effectiveEpisode = getEffectiveNextEpisode(currentShow);
   const diffDays = getDiffDays(currentShow);
-  const airDate = currentShow.nextEpisode ? parseAirDate(currentShow.nextEpisode.airDate) : null;
+  const airDate = effectiveEpisode ? parseAirDate(effectiveEpisode.airDate) : null;
   
   // An episode is considered active/recent only if it is upcoming or aired within the last 30 days (1 month)
   const isRecentOrUpcoming = diffDays !== null ? diffDays >= -30 : false;
@@ -323,11 +330,11 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
 
           {/* Episode Pill & Description Group */}
           <div className="mt-3 md:mt-5 space-y-1.5 md:space-y-2">
-            {currentShow.nextEpisode && isRecentOrUpcoming && !currentShow.concluded && (
+            {effectiveEpisode && isRecentOrUpcoming && !currentShow.concluded && (
               <p className="text-[11px] md:text-xs font-bold text-blue-400 flex items-center gap-1.5 bg-blue-500/10 border border-blue-500/20 px-2 md:px-2.5 py-0.5 md:py-1 rounded-lg w-fit">
                 <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 animate-pulse" />
                 <span>
-                  {diffDays >= 0 ? 'Next Episode:' : 'Recent Episode:'} S{currentShow.nextEpisode.season}E{currentShow.nextEpisode.episode} &ldquo;{currentShow.nextEpisode.title}&rdquo;
+                  {diffDays >= 0 ? 'Next Episode:' : 'Recent Episode:'} S{effectiveEpisode.season}E{effectiveEpisode.episode} &ldquo;{effectiveEpisode.title}&rdquo;
                 </span>
               </p>
             )}
@@ -335,7 +342,7 @@ export const UpcomingCarousel: React.FC<UpcomingCarouselProps> = ({ shows, onSel
             <p className="text-xs md:text-sm text-slate-300 line-clamp-2 leading-relaxed drop-shadow-sm font-medium">
               {(() => {
                 const epSummary = (isRecentOrUpcoming && !currentShow.concluded)
-                  ? (currentShow.nextEpisode?.overview || currentShow.nextEpisode?.summary)
+                  ? (effectiveEpisode?.overview || (effectiveEpisode as any)?.summary)
                   : null;
                 const rawText = (epSummary || currentShow.overview || '').replace(/<[^>]*>?/gm, '').trim();
                 const text = rawText || `${currentShow.title} — tracked on CouchTaterz.`;

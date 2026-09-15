@@ -8,12 +8,15 @@ import {
   X, Users, Shield, Search, Mail, ExternalLink, Trash2, UserPlus, 
   UserCheck, Star, Tv, Film, Eye, Activity, BarChart2, Globe, Sparkles, 
   Check, Copy, RefreshCw, MessageSquare, Heart, Clock, Layers, ArrowRight, 
-  Share2, CheckCircle2, AlertCircle, TrendingUp, Filter, User
+  Share2, CheckCircle2, AlertCircle, TrendingUp, Filter, User, Bug
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { UserDirectoryTab } from './UserDirectoryTab';
 import { NetworkMatrixTab } from './NetworkMatrixTab';
 import { UserConnectionsDrawer } from './UserConnectionsDrawer';
+import { AiControlsTab } from './AiControlsTab';
+import { BugReportsTab } from './BugReportsTab';
+import { MetadataSyncTab } from './MetadataSyncTab';
 import { matchUserId, normalizeUserId } from '../utils/userUtils';
 
 interface UserAdminModalProps {
@@ -98,7 +101,7 @@ export const UserAdminModal: React.FC<UserAdminModalProps> = ({
   onDeleteUserProfile,
   onImpersonateUser
 }) => {
-  const [activeTab, setActiveTab] = useState<'profiles' | 'network' | 'trends' | 'commonalities' | 'reviews'>('profiles');
+  const [activeTab, setActiveTab] = useState<'profiles' | 'network' | 'trends' | 'commonalities' | 'reviews' | 'ai_controls' | 'bug_reports' | 'data_sync'>('profiles');
   const [loading, setLoading] = useState<boolean>(true);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +186,23 @@ export const UserAdminModal: React.FC<UserAdminModalProps> = ({
         };
       });
 
+      // Update local storage cache if available
+      try {
+        const k1 = `coughtater_friends_${u1}`;
+        const raw1 = localStorage.getItem(k1);
+        const p1 = raw1 ? JSON.parse(raw1) : { friends: [], pendingSent: [], pendingReceived: [] };
+        if (!p1.friends.includes(u2)) p1.friends.push(u2);
+        localStorage.setItem(k1, JSON.stringify(p1));
+
+        const k2 = `coughtater_friends_${u2}`;
+        const raw2 = localStorage.getItem(k2);
+        const p2 = raw2 ? JSON.parse(raw2) : { friends: [], pendingSent: [], pendingReceived: [] };
+        if (!p2.friends.includes(u1)) p2.friends.push(u1);
+        localStorage.setItem(k2, JSON.stringify(p2));
+      } catch (e) {}
+
+      window.dispatchEvent(new CustomEvent('couchtater_friends_updated', { detail: { user1Id: u1, user2Id: u2 } }));
+
       const res = await fetch('/api/friends/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -255,6 +275,8 @@ export const UserAdminModal: React.FC<UserAdminModalProps> = ({
           localStorage.setItem(k2, JSON.stringify(p2));
         }
       } catch (e) {}
+
+      window.dispatchEvent(new CustomEvent('couchtater_friends_updated', { detail: { user1Id: u1Id, user2Id: u2Id } }));
 
       const res = await fetch('/api/friends/respond', {
         method: 'POST',
@@ -573,6 +595,42 @@ export const UserAdminModal: React.FC<UserAdminModalProps> = ({
             <MessageSquare className="w-4 h-4" />
             <span>Reviews Feed ({summary.totalReviewsCount})</span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('ai_controls')}
+            className={`pb-3 px-3 text-xs font-bold border-b-2 flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'ai_controls'
+                ? 'border-purple-500 text-purple-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Shield className="w-4 h-4" />
+            <span>AI Beta Limits & Controls</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('bug_reports')}
+            className={`pb-3 px-3 text-xs font-bold border-b-2 flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'bug_reports'
+                ? 'border-blue-500 text-blue-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Bug className="w-4 h-4" />
+            <span>Feedback & Bug Tickets</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('data_sync')}
+            className={`pb-3 px-3 text-xs font-bold border-b-2 flex items-center gap-2 transition whitespace-nowrap cursor-pointer ${
+              activeTab === 'data_sync'
+                ? 'border-emerald-500 text-emerald-400'
+                : 'border-transparent text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <RefreshCw className="w-4 h-4" />
+            <span>Catalog Sync & Audit</span>
+          </button>
         </div>
 
         {/* Modal Body Container */}
@@ -655,9 +713,9 @@ export const UserAdminModal: React.FC<UserAdminModalProps> = ({
                         <span className="block text-slate-400 text-[10px]">Watching</span>
                         <span className="text-lg font-black text-blue-400">{summary.statusDistribution.Watching}</span>
                       </div>
-                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                      <div className="p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                         <span className="block text-slate-400 text-[10px]">Backlog (Plan to Watch)</span>
-                        <span className="text-lg font-black text-amber-400">{summary.statusDistribution.Backlog}</span>
+                        <span className="text-lg font-black text-orange-400">{summary.statusDistribution.Backlog}</span>
                       </div>
                       <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
                         <span className="block text-slate-400 text-[10px]">Completed</span>
@@ -802,6 +860,38 @@ export const UserAdminModal: React.FC<UserAdminModalProps> = ({
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* TAB 6: AI Beta Safeguards & Controls */}
+              {activeTab === 'ai_controls' && (
+                <AiControlsTab
+                  currentUser={currentUser}
+                  theme={theme}
+                  initialSettings={data?.aiBetaSettings}
+                  onSettingsUpdated={(newSettings) => {
+                    setData((prev: any) => ({
+                      ...prev,
+                      aiBetaSettings: newSettings
+                    }));
+                  }}
+                />
+              )}
+
+              {/* TAB 7: Bug Reports & Beta Feedback */}
+              {activeTab === 'bug_reports' && (
+                <BugReportsTab
+                  currentUser={currentUser}
+                  theme={theme}
+                  onInspectUserLibrary={onInspectUserLibrary}
+                />
+              )}
+
+              {/* TAB 8: Catalog Sync & Metadata Audit */}
+              {activeTab === 'data_sync' && (
+                <MetadataSyncTab
+                  theme={theme}
+                  adminEmail={currentUser.email}
+                />
               )}
             </>
           )}

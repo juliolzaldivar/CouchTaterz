@@ -38,6 +38,8 @@ export interface UseTaterzAIOptions {
   preferences?: UserPreferences;
   buddies?: TaterzAIGroupBuddy[];
   initialShowForRecap?: TvShow | null;
+  userEmail?: string;
+  userId?: string;
 }
 
 export function useTaterzAI(options?: UseTaterzAIOptions) {
@@ -81,7 +83,7 @@ export function useTaterzAI(options?: UseTaterzAIOptions) {
     return localStorage.getItem(STORAGE_PRO_KEY) === 'true';
   });
 
-  const CREDIT_LIMIT = 3;
+  const CREDIT_LIMIT = 10;
   const isLimitReached = !isPro && freeCreditsUsed >= CREDIT_LIMIT;
 
   // Persist credits and pro state
@@ -185,7 +187,9 @@ export function useTaterzAI(options?: UseTaterzAIOptions) {
           messages: [...messages, userMessage],
           userState: {
             isPro,
-            freeCreditsUsed
+            freeCreditsUsed,
+            email: options?.userEmail,
+            userId: options?.userId
           }
         };
 
@@ -219,7 +223,7 @@ export function useTaterzAI(options?: UseTaterzAIOptions) {
 
         if (!res.ok) {
           if (data.isLimitReached) {
-            setError("You've used your 3 free Spudz AI credits this week. Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks.");
+            setError(data.error || "You've used your 10 free daily Spudz AI requests. Your quota resets at midnight! Upgrade to Taterz Pro for unlimited zero-spoiler recaps & group picks.");
           } else {
             throw new Error(data.error || 'Failed to generate Spudz response');
           }

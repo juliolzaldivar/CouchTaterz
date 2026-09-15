@@ -4,6 +4,8 @@
  */
 
 import { TvShow } from '../types';
+import { resolveNextUpcomingEpisode } from './showSchedules';
+import { getTitleForEpisode } from './airedEpisodes';
 
 export interface CalendarEventInfo {
   showTitle: string;
@@ -169,15 +171,18 @@ export function downloadIcsFile(filename: string, icsContent: string): void {
  * Extracts a CalendarEventInfo object from a TvShow with nextEpisode
  */
 export function extractCalendarEvent(show: TvShow): CalendarEventInfo | null {
-  if (!show.nextEpisode || !show.nextEpisode.airDate || show.concluded) return null;
+  if (show.concluded) return null;
+  const ep = resolveNextUpcomingEpisode(show) || show.nextEpisode;
+  if (!ep || !ep.airDate) return null;
+  const resolvedTitle = getTitleForEpisode(show, ep.season, ep.episode) || ep.title;
   return {
     showTitle: show.title,
-    season: show.nextEpisode.season,
-    episode: show.nextEpisode.episode,
-    episodeTitle: show.nextEpisode.title,
-    airDate: show.nextEpisode.airDate.split('T')[0],
+    season: ep.season,
+    episode: ep.episode,
+    episodeTitle: resolvedTitle,
+    airDate: ep.airDate.split('T')[0],
     streamingService: show.streamingService,
-    overview: show.nextEpisode.overview
+    overview: ep.overview
   };
 }
 

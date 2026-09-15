@@ -1,5 +1,5 @@
-import { db, checkCloudSqlConnection } from './index.ts';
-import { boards, friends, users, merchandise } from './schema.ts';
+import { db, checkCloudSqlConnection } from './index';
+import { boards, friends, users, merchandise } from './schema';
 import { eq, ilike } from 'drizzle-orm';
 
 export interface BoardData {

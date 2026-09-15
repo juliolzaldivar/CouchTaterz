@@ -13,7 +13,16 @@ import {
   registerWithEmail, 
   resetPassword 
 } from '../firebase';
+import { 
+  resilientFetchBoard, 
+  resilientSaveBoard, 
+  saveUserToFirestore,
+  getAllUsersFromFirestore,
+  getCachedBoard
+} from '../utils/firestoreClientSync';
 import { JULIO_OFFICIAL_AVATAR } from '../utils/taterAvatarUtils';
+import { saveFriendsData, JULIO_USER_ID } from '../utils/friendsStorage';
+import { normalizeUserId } from '../utils/userUtils';
 import { 
   Tv, 
   User as UserIcon, 
@@ -31,7 +40,11 @@ import {
   Lock,
   Eye,
   EyeOff,
-  KeyRound
+  KeyRound,
+  Copy,
+  ExternalLink,
+  Globe,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -267,7 +280,7 @@ const MODERN_STARTER_SHOW_SELECTIONS: TvShow[] = [
   }
 ];
 
-const DEFAULT_ACTIVE_TESTERS: User[] = [
+export const OG_TATERZ_VIPS: User[] = [
   {
     id: "default",
     name: "Julio",
@@ -349,6 +362,8 @@ const DEFAULT_ACTIVE_TESTERS: User[] = [
   }
 ];
 
+const DEFAULT_ACTIVE_TESTERS: User[] = OG_TATERZ_VIPS;
+
 export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [users, setUsers] = useState<User[]>(DEFAULT_ACTIVE_TESTERS);
   
@@ -362,6 +377,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   const [authError, setAuthError] = useState<string | null>(null);
   const [authSuccessMsg, setAuthSuccessMsg] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [domainCopied, setDomainCopied] = useState(false);
 
   // Onboarding Wizard State
   const [wizardStep, setWizardStep] = useState(1);
@@ -414,41 +430,100 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   // Helper to load user's board after authenticated verification
   const loadUserBoard = async (userId: string, userObj?: User, options?: { isNewAccount?: boolean; showStarterPackAlert?: boolean; startTour?: boolean }) => {
     try {
-      const res = await fetch(`/api/boards?id=${encodeURIComponent(userId)}`);
-      if (res.ok) {
-        const boardData = await res.json();
+      // 1. Optimistic Fast-Path: If local cached board exists, log in immediately
+      const cached = getCachedBoard(userId);
+      if (cached && Array.isArray(cached.shows) && cached.shows.length > 0) {
         if (userObj) {
-          // Check if local storage has a custom avatar or name saved for this user
-          let cachedUser: User | null = null;
-          try {
-            const raw = localStorage.getItem(`couchtaterz_user_${userId}`) || localStorage.getItem('coughtater_user');
-            if (raw) cachedUser = JSON.parse(raw);
-          } catch {}
-
-          const existingName = boardData.owner?.name || (cachedUser?.id === userId ? cachedUser.name : undefined) || userObj.name;
-          const existingAvatar = boardData.owner?.avatarUrl || (cachedUser?.id === userId ? cachedUser.avatarUrl : undefined) || userObj.avatarUrl;
-
-          boardData.owner = {
+          cached.owner = {
             ...userObj,
-            ...boardData.owner,
+            ...cached.owner,
             id: userId,
-            name: existingName,
-            avatarUrl: existingAvatar,
-            email: userObj.email || boardData.owner?.email,
-            isAdmin: userObj.isAdmin ?? boardData.owner?.isAdmin,
-            isPro: userObj.isPro ?? boardData.owner?.isPro,
+            email: userObj.email || cached.owner?.email,
+            isAdmin: userObj.isAdmin ?? cached.owner?.isAdmin,
+            isPro: userObj.isPro ?? cached.owner?.isPro,
           };
+          saveUserToFirestore(cached.owner).catch(() => {});
         }
-        onLogin(boardData, options);
-      } else {
-        setAuthError("Failed to retrieve your queue data from the server. Please try again.");
+        onLogin(cached, options);
+
+        // Background revalidation to keep shows fresh without blocking UI
+        resilientFetchBoard(userId).then((fresh) => {
+          if (fresh && Array.isArray(fresh.shows)) {
+            try {
+              localStorage.setItem(`couchtater_board_${userId}`, JSON.stringify(fresh));
+            } catch {}
+          }
+        }).catch(() => {});
+        return;
       }
-    } catch (err) {
-      setAuthError("Connection error while loading your queue. Please check your internet connection.");
+
+      // 2. Resilient board fetcher (tries /api -> direct Firestore -> local cache)
+      let boardData = await resilientFetchBoard(userId);
+
+      // If no existing board in cloud/server, generate a default one
+      if (!boardData) {
+        const defaultName = userObj?.name || (userId === 'default' ? 'Julio' : 'My');
+        boardData = {
+          id: userId,
+          name: `${defaultName}'s Collection`,
+          shows: [],
+          owner: userObj,
+          updatedAt: new Date().toISOString()
+        };
+        await resilientSaveBoard(boardData);
+      }
+
+      if (userObj) {
+        // Check if local storage has a custom avatar or name saved for this user
+        let cachedUser: User | null = null;
+        try {
+          const raw = localStorage.getItem(`couchtaterz_user_${userId}`) || localStorage.getItem('coughtater_user');
+          if (raw) cachedUser = JSON.parse(raw);
+        } catch {}
+
+        const existingName = boardData.owner?.name || (cachedUser?.id === userId ? cachedUser.name : undefined) || userObj.name;
+        const existingAvatar = boardData.owner?.avatarUrl || (cachedUser?.id === userId ? cachedUser.avatarUrl : undefined) || userObj.avatarUrl;
+
+        boardData.owner = {
+          ...userObj,
+          ...boardData.owner,
+          id: userId,
+          name: existingName,
+          avatarUrl: existingAvatar,
+          email: userObj.email || boardData.owner?.email,
+          isAdmin: userObj.isAdmin ?? boardData.owner?.isAdmin,
+          isPro: userObj.isPro ?? boardData.owner?.isPro,
+        };
+
+        // Save user to cloud & local storage
+        saveUserToFirestore(boardData.owner).catch(() => {});
+        try {
+          localStorage.setItem(`couchtaterz_user_${userId}`, JSON.stringify(boardData.owner));
+          localStorage.setItem('coughtater_user', JSON.stringify(boardData.owner));
+        } catch {}
+      }
+
+      // Cache active board
+      try {
+        localStorage.setItem(`couchtater_board_${userId}`, JSON.stringify(boardData));
+      } catch {}
+
+      onLogin(boardData, options);
+    } catch (err: any) {
+      console.warn("Resilient board loader note:", err);
+      // Fallback: create emergency local board so user is never stuck
+      const fallbackBoard: Board = {
+        id: userId,
+        name: `${userObj?.name || 'My'}'s Collection`,
+        shows: [],
+        owner: userObj,
+        updatedAt: new Date().toISOString()
+      };
+      onLogin(fallbackBoard, options);
     }
   };
 
-  // 1. Google Sign-In Flow
+  // 1. Google Sign-In Flow (Real Google OAuth Popup via Firebase Auth)
   const handleGoogleSignIn = async () => {
     setIsProcessing(true);
     setAuthError(null);
@@ -457,30 +532,28 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const { user, error } = await signInWithGoogle();
     
     if (error || !user) {
-      // If popup was blocked or failed, give helpful guidance
       setIsProcessing(false);
-      setAuthError(error || "Google Sign-In was cancelled or not completed.");
+      if (error) setAuthError(error);
       return;
     }
 
     const email = user.email?.trim().toLowerCase() || '';
     const displayName = user.displayName || email.split('@')[0] || 'User';
     const isJulio = email === 'juliozaldivar@gmail.com' || email === 'julio@couchtaterz.com';
-    const boardId = isJulio ? 'default' : `user-${email.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 24)}`;
+    const normalizedId = normalizeUserId(email);
+    const boardId = isJulio ? 'default' : (normalizedId !== email ? normalizedId : `user-${email.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 24)}`);
 
     const verifiedUser: User = {
       id: boardId,
       name: displayName,
       email: email,
-      avatarUrl: isJulio ? JULIO_OFFICIAL_AVATAR : `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(displayName || email)}`,
+      avatarUrl: isJulio ? JULIO_OFFICIAL_AVATAR : (user.photoURL || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(displayName || email)}`),
       isAdmin: isJulio,
       isPro: isJulio,
       createdAt: new Date().toISOString()
     };
 
-    // Store verified session token info
     localStorage.setItem('couchtater_user_email', email);
-
     await loadUserBoard(boardId, verifiedUser);
     setIsProcessing(false);
   };
@@ -504,34 +577,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
     const cleanEmail = emailInput.trim().toLowerCase();
     const isJulio = cleanEmail === 'juliozaldivar@gmail.com' || cleanEmail === 'julio@couchtaterz.com';
 
-    // Attempt Firebase email sign in
-    const { user, error } = await loginWithEmail(cleanEmail, passwordInput);
+    // Real Firebase email sign in
+    const targetEmail = cleanEmail.includes('@') ? cleanEmail : `${cleanEmail}@couchtaterz.com`;
+    const { user, error } = await loginWithEmail(targetEmail, passwordInput);
 
     if (error || !user) {
-      // In beta environment, allow Julio with master admin verification if Firebase email isn't provisioned yet
-      if (isJulio && passwordInput.length >= 6) {
-        const boardId = 'default';
-        const verifiedUser: User = {
-          id: 'default',
-          name: 'Julio',
-          email: cleanEmail,
-          avatarUrl: JULIO_OFFICIAL_AVATAR,
-          isAdmin: true,
-          isPro: true,
-          createdAt: new Date().toISOString()
-        };
-        localStorage.setItem('couchtater_user_email', cleanEmail);
-        await loadUserBoard(boardId, verifiedUser);
-        setIsProcessing(false);
-        return;
-      }
-
       setIsProcessing(false);
-      setAuthError(error || "Invalid email or password. Please verify your credentials.");
+      setAuthError(error || "Invalid email or password. Please verify your credentials or create an account.");
       return;
     }
 
-    const boardId = isJulio ? 'default' : `user-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 24)}`;
+    const normalizedBoardId = normalizeUserId(cleanEmail);
+    const boardId = isJulio ? 'default' : (normalizedBoardId !== cleanEmail ? normalizedBoardId : `user-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '-').slice(0, 24)}`);
     const verifiedUser: User = {
       id: boardId,
       name: user.displayName || cleanEmail.split('@')[0],
@@ -625,7 +682,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
         return;
       }
 
-      const uniqueId = `user-${cleanName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`;
+      const normalizedId = normalizeUserId(cleanEmail);
+      const uniqueId = normalizedId !== cleanEmail
+        ? normalizedId
+        : `user-${cleanName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-')}-${Math.floor(1000 + Math.random() * 9000)}`;
 
       // Create User Object
       const newUser: User = {
@@ -685,6 +745,35 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       localStorage.setItem(`couchtater_user_${uniqueId}`, JSON.stringify(newUser));
       localStorage.setItem('couchtater_user_email', cleanEmail);
       localStorage.setItem('coughtater_user', JSON.stringify(newUser));
+
+      // Auto-connect with Julio/Admin immediately
+      saveFriendsData(uniqueId, {
+        friends: [JULIO_USER_ID],
+        pendingSent: [],
+        pendingReceived: []
+      });
+
+      // Also ensure Julio's local storage friend list includes this new user if present
+      try {
+        const rawJulioFriends = localStorage.getItem(`coughtater_friends_${JULIO_USER_ID}`);
+        if (rawJulioFriends) {
+          const parsed = JSON.parse(rawJulioFriends);
+          if (Array.isArray(parsed.friends) && !parsed.friends.includes(uniqueId)) {
+            parsed.friends.push(uniqueId);
+            localStorage.setItem(`coughtater_friends_${JULIO_USER_ID}`, JSON.stringify(parsed));
+          }
+        }
+      } catch {}
+
+      // Dispatch friend updated event so all dropdowns refresh
+      window.dispatchEvent(new CustomEvent('couchtater_friends_updated', { detail: { user1Id: uniqueId, user2Id: JULIO_USER_ID } }));
+
+      // Background connection request to server
+      fetch('/api/friends/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user1Id: uniqueId, user2Id: JULIO_USER_ID })
+      }).catch(() => {});
 
       // Save to server with timeout protection
       try {
@@ -782,7 +871,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           setViewMode('login');
         }}
         onOpenGuide={() => setIsGuideOpenOnLanding(true)}
-        registeredUsers={users}
+        registeredUsers={OG_TATERZ_VIPS}
       />
     );
   }
@@ -854,9 +943,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-xl shadow-blue-600/25 text-white mb-3">
             <Tv className="w-6 h-6 stroke-[2.2]" />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase leading-none">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase leading-none inline-flex items-center">
             <span className="text-blue-500">COUCH</span>
             <span className="text-white">TATERZ</span>
+            <span className="text-[10px] sm:text-xs font-bold text-slate-400 ml-0.5 select-none relative -top-1.5 leading-none">™</span>
           </h1>
           <div className="flex items-center gap-2 mt-1.5">
             <span className="text-[11px] font-extrabold tracking-[0.2em] text-slate-400 uppercase leading-none">
@@ -912,12 +1002,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               exit={{ opacity: 0, x: 10 }}
               className="space-y-4"
             >
-              {/* Google OAuth One-Click */}
+              {/* Google OAuth Authentication */}
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={isProcessing}
-                className="w-full py-3 px-4 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-blue-500/50 rounded-2xl text-xs sm:text-sm font-bold text-slate-100 hover:text-white flex items-center justify-center gap-2.5 transition-all shadow-sm cursor-pointer group disabled:opacity-50"
+                className="w-full py-3 px-4 bg-slate-950 hover:bg-slate-900 border border-slate-800 hover:border-blue-500/50 rounded-2xl text-xs sm:text-sm font-bold text-slate-100 hover:text-white flex items-center justify-center gap-2.5 transition-all shadow-sm cursor-pointer group disabled:opacity-50"
               >
                 <Chrome className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                 <span>Continue with Google</span>
@@ -982,10 +1072,108 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                 </div>
 
                 {authError && (
-                  <div className="flex items-start gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
-                    <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-rose-400" />
-                    <span>{authError}</span>
-                  </div>
+                  authError.includes('Unauthorized Domain') || authError.includes('unauthorized-domain') ? (
+                    <div className="text-xs text-amber-300 bg-amber-950/40 border border-amber-500/40 p-3.5 rounded-2xl space-y-2.5 shadow-lg shadow-amber-950/30">
+                      <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Firebase Authorized Domain Setup Required</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Firebase blocks popup OAuth requests on newly deployed domains until the domain is added to Authorized Domains in your Firebase project.
+                      </p>
+                      
+                      <div className="flex items-center justify-between gap-2 p-2 rounded-xl bg-slate-950/80 border border-amber-500/30">
+                        <div className="flex items-center gap-1.5 overflow-hidden">
+                          <Globe className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <code className="text-[11px] text-amber-200 font-mono truncate">
+                            {typeof window !== 'undefined' ? window.location.hostname : 'your-domain.vercel.app'}
+                          </code>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (typeof window !== 'undefined') {
+                              navigator.clipboard.writeText(window.location.hostname);
+                              setDomainCopied(true);
+                              setTimeout(() => setDomainCopied(false), 3000);
+                            }
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] font-bold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
+                        >
+                          {domainCopied ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-400" />
+                              <span className="text-emerald-400">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Copy Domain</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="text-[11px] text-slate-300 space-y-1 pt-1 border-t border-amber-500/20">
+                        <div className="font-semibold text-amber-400 text-[10px] uppercase tracking-wider">Setup Steps:</div>
+                        <ol className="list-decimal list-inside space-y-0.5 text-slate-300">
+                          <li>Open <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-0.5">Firebase Console <ExternalLink className="w-2.5 h-2.5 inline" /></a> &gt; <strong>Authentication</strong>.</li>
+                          <li>Click the <strong>Settings</strong> tab &gt; <strong>Authorized domains</strong>.</li>
+                          <li>Click <strong>Add domain</strong> and paste <code className="text-amber-300">{typeof window !== 'undefined' ? window.location.hostname : 'your-app.vercel.app'}</code>.</li>
+                        </ol>
+                      </div>
+                    </div>
+                  ) : authError.includes('API key') || authError.includes('api-key') || authError.includes('Identity Toolkit') ? (
+                    <div className="text-xs text-amber-300 bg-amber-950/40 border border-amber-500/40 p-3.5 rounded-2xl space-y-2.5 shadow-lg shadow-amber-950/30">
+                      <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Google Cloud API Key & Identity Toolkit Verification</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Google Cloud rejected the authentication request with <code className="text-amber-300 font-mono">auth/api-key-not-valid</code>.
+                      </p>
+                      <div className="p-2.5 rounded-xl bg-slate-950/80 border border-slate-800 text-[11px] space-y-1 font-mono text-slate-300">
+                        <div><strong>Target Project ID:</strong> <span className="text-amber-300">witty-skyline-9dw25</span></div>
+                        <div><strong>Project Number:</strong> <span className="text-slate-400">424771510171</span></div>
+                        <div><strong>API Key:</strong> <span className="text-slate-400">AIzaSyAhtm8...FwMgI</span></div>
+                      </div>
+                      <div className="text-[11px] text-slate-300 space-y-1.5 pt-1 border-t border-amber-500/20">
+                        <div className="font-semibold text-amber-400 text-[10px] uppercase tracking-wider">Quick Direct Links:</div>
+                        <ul className="space-y-1.5 text-slate-300">
+                          <li>
+                            1. <a href="https://console.cloud.google.com/apis/library/identitytoolkit.googleapis.com?project=witty-skyline-9dw25" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-0.5 font-medium">Enable Identity Toolkit API <ExternalLink className="w-2.5 h-2.5 inline" /></a>: Ensure status is "API Enabled".
+                          </li>
+                          <li>
+                            2. <a href="https://console.cloud.google.com/apis/credentials?project=witty-skyline-9dw25" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-0.5 font-medium">GCP Credentials (API Key) <ExternalLink className="w-2.5 h-2.5 inline" /></a>: Click your API key &rarr; set <em>Application restrictions</em> to <strong>None</strong> (or add <code className="text-amber-300">{typeof window !== 'undefined' ? window.location.hostname : '*.run.app'}</code>) and <em>API restrictions</em> to <strong>Don't restrict key</strong>.
+                          </li>
+                          <li>
+                            3. <a href="https://console.firebase.google.com/project/witty-skyline-9dw25/authentication/providers" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-0.5 font-medium">Firebase Sign-In Provider <ExternalLink className="w-2.5 h-2.5 inline" /></a>: Ensure Google is toggled <strong>Enabled</strong>.
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  ) : authError.includes('not enabled') || authError.includes('operation-not-allowed') ? (
+                    <div className="text-xs text-amber-300 bg-amber-950/40 border border-amber-500/40 p-3.5 rounded-2xl space-y-2.5 shadow-lg shadow-amber-950/30">
+                      <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+                        <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span>Enable Google Sign-In in Firebase Console</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Google authentication must be enabled in your Firebase Project configuration:
+                      </p>
+                      <ol className="list-decimal list-inside space-y-1 text-[11px] text-slate-300">
+                        <li>Open <a href="https://console.firebase.google.com" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline inline-flex items-center gap-0.5">Firebase Console <ExternalLink className="w-2.5 h-2.5 inline" /></a>.</li>
+                        <li>Navigate to <strong>Authentication</strong> &gt; <strong>Sign-in method</strong>.</li>
+                        <li>Click <strong>Add new provider</strong> &gt; <strong>Google</strong> &gt; Toggle <strong>Enable</strong>.</li>
+                        <li>Select your project support email and click <strong>Save</strong>.</li>
+                      </ol>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-2 text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl">
+                      <ShieldAlert className="w-4 h-4 mt-0.5 shrink-0 text-rose-400" />
+                      <span>{authError}</span>
+                    </div>
+                  )
                 )}
 
                 {authSuccessMsg && (
@@ -1004,20 +1192,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
-                      <span>Sign In to CouchTaterz</span>
+                      <span>Sign In to CouchTaterz™</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </>
                   )}
                 </button>
               </form>
 
-              {/* Admin Note Badge */}
+              {/* Security Protection Badge */}
               <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
                 <span className="flex items-center gap-1">
                   <Lock className="w-3 h-3 text-amber-400" />
-                  Admin account protected
+                  Firebase Protected Authentication
                 </span>
-                <span>Requires verified authentication</span>
+                <span>Encrypted & Verified</span>
               </div>
             </motion.div>
           )}
@@ -1130,8 +1318,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               {wizardStep === 1 && (
                 <div className="space-y-3.5">
                   <div className="space-y-0.5">
-                    <h2 className="text-sm font-extrabold text-slate-200 uppercase tracking-tight">Create Tester Account</h2>
-                    <p className="text-[11px] text-slate-400">Set up your secure credentials to isolate your personal queue and recs.</p>
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-sm font-extrabold text-slate-200 uppercase tracking-tight">Create Free Beta Account</h2>
+                      <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        &lt; 60s Setup
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">100% free beta access. Set up your private queue, friend link, and Spudz AI recaps.</p>
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-[11px] text-slate-300 flex items-center gap-2">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <span>No credit card required. Auto-generates your starter queue in seconds.</span>
                   </div>
 
                   <div className="space-y-2.5 pt-1">

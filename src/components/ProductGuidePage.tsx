@@ -335,16 +335,17 @@ export const ProductGuidePage: React.FC<ProductGuidePageProps> = ({
             <div 
               className="flex items-center gap-2.5 sm:gap-3 cursor-pointer select-none group shrink-0"
               onClick={scrollToTop}
-              title="CouchTaterz: Guide & Manual"
+              title="CouchTaterz™: Guide & Manual"
             >
               <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 flex items-center justify-center shadow-md shadow-blue-600/25 text-white shrink-0 group-hover:scale-105 transition-transform">
                 <Tv className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.2]" />
               </div>
               <div className="flex flex-col justify-center">
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <h1 className="text-sm sm:text-lg font-black tracking-tight uppercase leading-none whitespace-nowrap">
+                  <h1 className="text-sm sm:text-lg font-black tracking-tight uppercase leading-none whitespace-nowrap inline-flex items-center">
                     <span className="text-blue-500">COUCH</span>
                     <span className="text-white">TATERZ</span>
+                    <span className="text-[8px] sm:text-[9px] font-bold text-slate-400 ml-0.5 select-none relative -top-1 leading-none">™</span>
                   </h1>
                   <span className="px-1.5 sm:px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-blue-500/30 whitespace-nowrap">
                     Guide & Manual
@@ -426,7 +427,7 @@ export const ProductGuidePage: React.FC<ProductGuidePageProps> = ({
             transition={{ delay: 0.06 }}
             className="text-3xl sm:text-5xl md:text-6xl font-black tracking-tight text-white max-w-4xl mx-auto leading-[1.1]"
           >
-            CouchTaterz: User Guide & Feature Manual
+            CouchTaterz™: User Guide & Feature Manual
           </motion.h1>
 
           <motion.p
@@ -575,7 +576,7 @@ export const ProductGuidePage: React.FC<ProductGuidePageProps> = ({
             <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white">
               <Tv className="w-3.5 h-3.5" />
             </div>
-            <span>COUCHTATERZ</span>
+            <span>COUCHTATERZ™</span>
             <span className="text-slate-600">•</span>
             <span className="text-slate-400 font-semibold">YOUR BINGE BUDDY</span>
           </div>

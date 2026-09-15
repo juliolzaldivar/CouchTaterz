@@ -1,0 +1,48 @@
+{
+  "user_greg_3842_show_greg_1786739095414_7_s3e10_2026_09_04": {
+    "id": "user_greg_3842_show_greg_1786739095414_7_s3e10_2026_09_04",
+    "userId": "user-greg-3842",
+    "userEmail": "greg@taterz.com",
+    "showId": "show-greg-1786739095414-7",
+    "showTitle": "Silo",
+    "season": 3,
+    "episode": 10,
+    "episodeTitle": "Legacy",
+    "airDate": "2026-09-04",
+    "sentAt": "2026-09-02T21:33:33.000Z",
+    "provider": "simulated",
+    "status": "dismissed"
+  },
+  "default_show_9_s3e10_2026_09_04": {
+    "id": "default_show_9_s3e10_2026_09_04",
+    "userId": "default",
+    "userEmail": "julio@couchtaterz.com",
+    "showId": "show-9",
+    "showTitle": "Silo",
+    "season": 3,
+    "episode": 10,
+    "episodeTitle": "Legacy",
+    "airDate": "2026-09-04",
+    "sentAt": "2026-09-02T21:33:33.001Z",
+    "provider": "simulated",
+    "status": "dismissed"
+  },
+  "default_silo": {
+    "id": "default_silo",
+    "userId": "default",
+    "showTitle": "Silo",
+    "status": "dismissed",
+    "sentAt": "2026-09-02T21:41:19.388Z",
+    "airDate": "2026-09-04",
+    "provider": "dismissed"
+  },
+  "default_show_9": {
+    "id": "default_show_9",
+    "userId": "default",
+    "showTitle": "Silo",
+    "status": "dismissed",
+    "sentAt": "2026-09-02T21:41:19.388Z",
+    "airDate": "2026-09-04",
+    "provider": "dismissed"
+  }
+}

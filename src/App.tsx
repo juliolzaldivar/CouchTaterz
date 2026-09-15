@@ -25,7 +25,26 @@ import { SocialStoryCardModal } from './components/SocialStoryCardModal';
 import { SoftGateAuthModal } from './components/SoftGateAuthModal';
 import { TaterzAvatarBuilderModal } from './components/TaterzAvatarBuilderModal';
 import { ProductGuidePage } from './components/ProductGuidePage';
+import { ReportBugModal } from './components/ReportBugModal';
+import { VipUpgradeModal } from './components/VipUpgradeModal';
+import { SharedVipWatchlistsModal } from './components/SharedVipWatchlistsModal';
+import { FandomHubModal } from './components/FandomHubModal';
+import { 
+  computeShowFandoms, 
+  getFandomForShow, 
+  toggleFandomMembership, 
+  getJoinedFandomsFromStorage, 
+  saveJoinedFandomsToStorage 
+} from './utils/fandomUtils';
+import { ShowFandom } from './types';
 import { logOutUser } from './firebase';
+import { 
+  getBoardFromFirestore, 
+  saveBoardToFirestore, 
+  getAllBoardsFromFirestore, 
+  resilientFetchBoard, 
+  resilientSaveBoard 
+} from './utils/firestoreClientSync';
 import { 
   getFriendsData, 
   fetchFriendsDataAsync, 
@@ -36,15 +55,17 @@ import {
   FriendRequestDetail 
 } from './utils/friendsStorage';
 import { normalizeShowTitle, isSameShowTitle, getCanonicalShowTitle } from './utils/titleUtils';
+import { createCleanShowFromFriend, sanitizeBoardForUser, sanitizeShowForNonOwner } from './utils/reviewSanitizer';
 import { JULIO_OFFICIAL_AVATAR } from './utils/taterAvatarUtils';
+import { isUserInFriendList, formatDisplayNameFromId } from './utils/userUtils';
 
 // Helper checks for Julio and user equality
 const isUserJulio = (user?: { id?: string; email?: string; name?: string; isAdmin?: boolean; isPro?: boolean } | null) => {
   if (!user) return false;
   const email = user.email?.trim().toLowerCase();
   if (email === 'juliozaldivar@gmail.com' || email === 'julio@couchtaterz.com' || email === 'julio@taterz.com') return true;
-  if (user.id === 'default' || user.id === 'user-julio') return true;
-  if (user.name?.trim().toLowerCase() === 'julio' && (!user.id || user.id === 'default' || user.id === 'user-julio' || user.id.startsWith('user-julio-'))) return true;
+  if (user.id === 'default' || user.id === 'user-julio' || user.id === 'user-google-8850') return true;
+  if (user.name?.trim().toLowerCase() === 'julio' && (!user.id || user.id === 'default' || user.id === 'user-julio' || user.id === 'user-google-8850' || user.id.startsWith('user-julio-'))) return true;
   return false;
 };
 
@@ -94,12 +115,18 @@ import {
   UserCheck,
   Bell,
   Radio,
-  BookOpen
+  BookOpen,
+  Bug,
+  Crown,
+  Bookmark,
+  BellOff,
+  Flame,
+  Trophy
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import { getNormalizedGenres } from './utils/genreUtils';
-import { getShowBannerImage } from './utils/showBanners';
+import { getShowBannerImage, normalizeTitleForComparison } from './utils/showBanners';
 export { getNormalizedGenres, getShowBannerImage };
 
 const normalizeClientBoardId = (id: string): string => {
@@ -159,6 +186,10 @@ export default function App() {
     const queryBoard = params.get('board') || params.get('list');
     if (queryBoard) {
       return normalizeClientBoardId(queryBoard);
+    }
+    const inviteFrom = params.get('inviteFrom') || params.get('inviteCode');
+    if (inviteFrom) {
+      return normalizeClientBoardId(inviteFrom);
     }
     const saved = localStorage.getItem('coughtater_user');
     if (saved) {
@@ -273,12 +304,8 @@ export default function App() {
       setCurrentUserPrefs(board.preferences || { genres: [], actors: [], directors: [], services: [] });
     } else {
       let isMounted = true;
-      fetch(`/api/boards?id=${currentUser.id}`)
-        .then(res => {
-          if (res.ok) return res.json();
-          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-        })
-        .then((data: Board) => {
+      resilientFetchBoard(currentUser.id)
+        .then((data: Board | null) => {
           if (isMounted && data) {
             if (Array.isArray(data.shows)) {
               setCurrentUserShows(data.shows);
@@ -296,7 +323,16 @@ export default function App() {
         })
         .catch(err => {
           if (isMounted) {
-            console.error("Failed to fetch current user's shows and preferences:", err?.message || err);
+            // Gracefully handle any transient fetch error without console spam
+            const cachedKey = `couchtater_board_${currentUser.id}`;
+            const cached = localStorage.getItem(cachedKey);
+            if (cached) {
+              try {
+                const parsed = JSON.parse(cached);
+                if (parsed && Array.isArray(parsed.shows)) setCurrentUserShows(parsed.shows);
+                if (parsed && parsed.preferences) setCurrentUserPrefs(parsed.preferences);
+              } catch (e) {}
+            }
           }
         });
 
@@ -392,14 +428,29 @@ export default function App() {
   const [isSendingReplyMap, setIsSendingReplyMap] = useState<Record<string, boolean>>({});
   const [replySentSuccessMap, setReplySentSuccessMap] = useState<Record<string, string>>({});
 
-  // Sync friends state when currentUser changes (syncing local + server)
+  // Sync friends state when currentUser changes (syncing local + server and listening for admin/buddy updates)
   useEffect(() => {
-    if (currentUser) {
+    if (!currentUser) return;
+
+    const refreshFriends = () => {
       setFriendsState(getFriendsData(currentUser.id));
       fetchFriendsDataAsync(currentUser.id).then(serverData => {
         setFriendsState(serverData);
       });
-    }
+    };
+
+    refreshFriends();
+
+    const handleFriendsUpdated = () => {
+      refreshFriends();
+    };
+
+    window.addEventListener('couchtater_friends_updated', handleFriendsUpdated);
+    window.addEventListener('storage', handleFriendsUpdated);
+    return () => {
+      window.removeEventListener('couchtater_friends_updated', handleFriendsUpdated);
+      window.removeEventListener('storage', handleFriendsUpdated);
+    };
   }, [currentUser]);
 
   // Compute pending incoming requests list with full details
@@ -447,15 +498,37 @@ export default function App() {
 
   // Handle URL invite link parameter (?inviteFrom=userId or ?inviteCode=userId)
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlInviteFrom = params.get('inviteFrom') || params.get('inviteCode');
+    const urlInviterName = params.get('inviterName');
+
+    if (urlInviteFrom) {
+      try {
+        sessionStorage.setItem('couchtater_pending_invite', JSON.stringify({
+          inviteFrom: urlInviteFrom,
+          inviterName: urlInviterName || allUsers.find(u => u.id === urlInviteFrom)?.name || 'Julio'
+        }));
+      } catch (e) {}
+    }
+
     if (!currentUser) return;
 
-    const params = new URLSearchParams(window.location.search);
-    const inviteFrom = params.get('inviteFrom') || params.get('inviteCode');
+    let pendingInvite: { inviteFrom?: string; inviterName?: string } | null = null;
+    try {
+      const stored = sessionStorage.getItem('couchtater_pending_invite');
+      if (stored) pendingInvite = JSON.parse(stored);
+    } catch (e) {}
+
+    const inviteFrom = urlInviteFrom || pendingInvite?.inviteFrom;
 
     if (inviteFrom && inviteFrom !== currentUser.id) {
       autoConnectUsers(currentUser.id, inviteFrom);
       const updated = getFriendsData(currentUser.id);
       setFriendsState(updated);
+
+      try {
+        sessionStorage.removeItem('couchtater_pending_invite');
+      } catch (e) {}
 
       // Clean invite URL parameters without removing the board parameter
       try {
@@ -466,7 +539,7 @@ export default function App() {
         window.history.replaceState({}, document.title, url.toString());
       } catch (e) {}
 
-      const inviterName = params.get('inviterName') || allUsers.find(u => u.id === inviteFrom)?.name || 'a CouchTaterz friend';
+      const inviterName = urlInviterName || pendingInvite?.inviterName || allUsers.find(u => u.id === inviteFrom)?.name || 'a CouchTaterz friend';
       setInviteConnectedToast(`🎉 Connected with ${inviterName}! You are now Binge Buddies on CouchTaterz.`);
       setTimeout(() => setInviteConnectedToast(null), 5000);
     }
@@ -476,8 +549,16 @@ export default function App() {
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [addModalInitialTab, setAddModalInitialTab] = useState<'search' | 'buddies'>('search');
   const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareModalTab, setShareModalTab] = useState<'network' | 'invite' | 'search' | 'buddies'>('network');
   const [isBuddyMenuOpen, setIsBuddyMenuOpen] = useState(false);
   const buddyMenuRef = useRef<HTMLDivElement>(null);
+  const [buddyMenuTab, setBuddyMenuTab] = useState<'buddies' | 'fandoms'>('buddies');
+  const [expandedFandomShow, setExpandedFandomShow] = useState<string | null>(null);
+  const [isFandomHubOpen, setIsFandomHubOpen] = useState(false);
+  const [fandomHubShow, setFandomHubShow] = useState<ShowFandom | null>(null);
+  const [joinedFandoms, setJoinedFandoms] = useState<string[]>(() => getJoinedFandomsFromStorage());
+  const [fandomViewContext, setFandomViewContext] = useState<{ showTitle: string; memberName: string } | null>(null);
+  const [fandomToast, setFandomToast] = useState<string | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false); // Mobile chat panel toggle
   const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false); // Desktop sidebar toggle
   const chatAgentRef = useRef<HTMLDivElement>(null);
@@ -487,6 +568,7 @@ export default function App() {
   const [isStatsOpen, setIsStatsOpen] = useState(false);
   const [isPreferencesOpen, setIsPreferencesOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [isReportBugOpen, setIsReportBugOpen] = useState(false);
   const [showQueueOnboarding, setShowQueueOnboarding] = useState(false);
 
   // AskTaterz AI Engine Modal State
@@ -525,6 +607,20 @@ export default function App() {
   // Custom Taterz Avatar Studio State
   const [isAvatarStudioOpen, setIsAvatarStudioOpen] = useState(false);
 
+  // VIP Membership & Checkout Modal State
+  const [isVipModalOpen, setIsVipModalOpen] = useState(false);
+
+  // Shared VIP Watchlists Modal State
+  const [isSharedWatchlistsOpen, setIsSharedWatchlistsOpen] = useState(false);
+  const [sharedWatchlistInitialShow, setSharedWatchlistInitialShow] = useState<any>(null);
+  const [sharedWatchlistInitialBuddyId, setSharedWatchlistInitialBuddyId] = useState<string | null>(null);
+
+  const handleOpenSharedWatchlists = (options?: { show?: any; buddyId?: string }) => {
+    setSharedWatchlistInitialShow(options?.show || null);
+    setSharedWatchlistInitialBuddyId(options?.buddyId || null);
+    setIsSharedWatchlistsOpen(true);
+  };
+
   // Feature Guide & Field Manual Modal State
   const [isFeatureGuideOpen, setIsFeatureGuideOpen] = useState<boolean>(() => {
     try {
@@ -541,7 +637,7 @@ export default function App() {
     }
   });
 
-  // Auto-open guide if ?guide=true, #guide, /guide, /help, /docs in URL
+  // Auto-open guide or VIP checkout confirmation from URL query
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -553,6 +649,10 @@ export default function App() {
         window.location.pathname.startsWith('/docs');
       if (isGuideRoute) {
         setIsFeatureGuideOpen(true);
+      }
+
+      if (params.get('checkout') === 'success' || params.get('vip') === 'true') {
+        setIsVipModalOpen(true);
       }
     } catch (e) {}
   }, []);
@@ -605,6 +705,11 @@ export default function App() {
     setCurrentUser(user);
     localStorage.setItem('coughtater_user', JSON.stringify(user));
     setIsSoftGateOpen(false);
+
+    if (user.id !== JULIO_USER_ID && user.id !== 'default') {
+      getFriendsData(user.id);
+      fetchFriendsDataAsync(user.id).catch(() => {});
+    }
     
     let myBoard: Board | null = null;
     try {
@@ -753,6 +858,20 @@ export default function App() {
   const lastBoardIdRef = useRef<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
+
+  // Stable ordering refs to prevent jarring in-flight card jumps during episode increments and quick edits
+  const stableOrderRef = useRef<string[] | null>(null);
+  const prevCriteriaRef = useRef<string>('');
+
+  // Status transition toast state with Undo action
+  const [statusChangeToast, setStatusChangeToast] = useState<{
+    showTitle: string;
+    showId: string;
+    fromStatus: ShowStatus;
+    toStatus: ShowStatus;
+    targetTabName: string;
+    targetTabKey: 'active' | 'queue' | 'library' | 'all';
+  } | null>(null);
 
   // Global keyboard shortcut ('/' or 'Cmd/Ctrl+K') to focus search
   useEffect(() => {
@@ -963,7 +1082,20 @@ export default function App() {
             setIsLoadingFamilyBoards(false);
           }
         })
-        .catch(err => {
+        .catch(async err => {
+          // If server API fails (e.g. on Vercel), load directly from Firestore
+          try {
+            const firestoreBoards = await getAllBoardsFromFirestore();
+            if (isMounted && Object.keys(firestoreBoards).length > 0) {
+              setFamilyBoards(firestoreBoards);
+              setIsLoadingFamilyBoards(false);
+              if (boardId && firestoreBoards[boardId]) {
+                setBoard(firestoreBoards[boardId]);
+              }
+              return;
+            }
+          } catch (fsErr) {}
+
           if (!isMounted) return;
           if (attempt < 3) {
             retryTimer = setTimeout(() => {
@@ -986,12 +1118,14 @@ export default function App() {
     };
   }, [currentUser?.id]);
 
-  // Load board code from URL query parameter
+  // Load board code from URL query parameter or invite link
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const queryBoard = params.get('board') || params.get('list');
-    if (queryBoard) {
-      const cleanCode = normalizeClientBoardId(queryBoard);
+    const inviteFrom = params.get('inviteFrom') || params.get('inviteCode');
+    const targetBoardCode = queryBoard || inviteFrom;
+    if (targetBoardCode) {
+      const cleanCode = normalizeClientBoardId(targetBoardCode);
       if (cleanCode && cleanCode !== boardId) {
         setBoardId(cleanCode);
       }
@@ -1026,15 +1160,20 @@ export default function App() {
 
     // Check memory (familyBoards) or disk cache first for instant synchronous board update
     if (familyBoards[boardId] && (!board || board.id !== boardId)) {
-      setBoard(familyBoards[boardId]);
+      setBoard(sanitizeBoardForUser(familyBoards[boardId], currentUser).board);
     } else {
       const localKey = `couchtater_board_${boardId}`;
       const localSaved = localStorage.getItem(localKey);
       if (localSaved && (!board || board.id !== boardId)) {
         try {
           const parsed = JSON.parse(localSaved);
-          if (parsed && parsed.shows) {
-            setBoard(parsed);
+          if (parsed && Array.isArray(parsed.shows)) {
+            // Never mount a stale 15-show truncated seed for Julio/default board
+            if ((boardId === 'default' || boardId === 'user-julio') && parsed.shows.length <= 15) {
+              // Ignore stale seed
+            } else {
+              setBoard(sanitizeBoardForUser(parsed, currentUser).board);
+            }
           }
         } catch (e) {}
       }
@@ -1047,27 +1186,36 @@ export default function App() {
         const localKey = `couchtater_board_${boardId}`;
         const localSaved = localStorage.getItem(localKey);
 
-        const res = await fetch(`/api/boards?id=${encodeURIComponent(boardId)}`);
-        const contentType = res.headers.get('content-type');
-        if (res.ok && contentType && contentType.includes('application/json')) {
-          const data = await res.json();
-          if (!isSubscribed) return;
+        const data = await resilientFetchBoard(boardId);
+        if (!isSubscribed) return;
 
+        if (data && data.shows) {
           let finalBoard = data;
           if (localSaved) {
             try {
               const localParsed = JSON.parse(localSaved);
               const localTime = new Date(localParsed.updatedAt || 0).getTime();
               const serverTime = new Date(data.updatedAt || 0).getTime();
-              if (localTime > serverTime && localParsed.shows) {
+              const localCount = Array.isArray(localParsed.shows) ? localParsed.shows.length : 0;
+              const serverCount = Array.isArray(data.shows) ? data.shows.length : 0;
+              // Never let a truncated local cache (e.g. 15 shows) overwrite a larger server board (e.g. 230+ shows)
+              if (localCount >= serverCount && localTime > serverTime && localParsed.shows) {
                 finalBoard = localParsed;
               }
             } catch (e) {}
           }
 
-          setBoard(finalBoard);
-          localStorage.setItem(localKey, JSON.stringify(finalBoard));
-          setFamilyBoards(prev => ({ ...prev, [boardId]: finalBoard }));
+          const { board: sanitizedBoard, changed } = sanitizeBoardForUser(finalBoard, currentUser);
+          setBoard(sanitizedBoard);
+          localStorage.setItem(localKey, JSON.stringify(sanitizedBoard));
+          setFamilyBoards(prev => ({ ...prev, [boardId]: sanitizedBoard }));
+          if (changed && boardId !== 'default' && boardId !== 'user-julio') {
+            fetch('/api/boards', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(sanitizedBoard)
+            }).catch(() => {});
+          }
         } else {
           // Fallback if requested board fails to return OK
           if (!board) {
@@ -1171,7 +1319,7 @@ export default function App() {
     }
   }, [board]);
 
-  // Sync board updates back to server
+  // Sync board updates back to server & cloud database
   const saveBoardToServer = async (updatedShows: TvShow[], customName?: string, deletedShowId?: string) => {
     if (!board) return;
     try {
@@ -1190,7 +1338,13 @@ export default function App() {
       // Instantly cache locally so progress is never lost
       localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(updatedBoard));
 
-      const res = await fetch('/api/boards', {
+      // Direct Firestore Cloud write (works on Vercel)
+      saveBoardToFirestore(updatedBoard).catch(err => {
+        console.warn("Firestore direct write note:", err);
+      });
+
+      // Optional Server API call
+      fetch('/api/boards', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -1198,29 +1352,36 @@ export default function App() {
           'X-User-Id': currentUser?.id || ''
         },
         body: JSON.stringify(updatedBoard),
-      });
-
-      if (res.ok) {
-        const savedData = await res.json();
-        if (savedData && savedData.updatedAt) {
-          setBoard(prevBoard => {
-            if (!prevBoard) return savedData;
-            const serverTime = new Date(savedData.updatedAt).getTime();
-            const localTime = new Date(prevBoard.updatedAt).getTime();
-            if (serverTime >= localTime) {
-              localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(savedData));
-              return savedData;
-            }
-            return prevBoard;
-          });
+      }).then(async res => {
+        if (res.ok) {
+          const savedData = await res.json();
+          if (savedData && savedData.updatedAt) {
+            setBoard(prevBoard => {
+              if (!prevBoard) return savedData;
+              const serverTime = new Date(savedData.updatedAt).getTime();
+              const localTime = new Date(prevBoard.updatedAt).getTime();
+              if (serverTime >= localTime) {
+                localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(savedData));
+                return savedData;
+              }
+              return prevBoard;
+            });
+          }
         }
-      }
+      }).catch(() => {
+        // Non-blocking for static Vercel deployments
+      });
     } catch (err) {
-      console.error("Failed to save board updates to server:", err);
+      console.error("Failed to save board updates:", err);
     }
   };
 
   const handleSavePreferences = (updatedPrefs: UserPreferences) => {
+    setCurrentUserPrefs(updatedPrefs);
+    try {
+      localStorage.setItem('coughtater_preferences', JSON.stringify(updatedPrefs));
+    } catch (e) {}
+
     if (!board) return;
     const updatedBoard: Board = {
       ...board,
@@ -1229,12 +1390,14 @@ export default function App() {
     };
     setBoard(updatedBoard);
 
+    resilientSaveBoard(updatedBoard).catch(err => console.error("Failed to resilientSaveBoard:", err));
+
     fetch('/api/boards', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
         'X-User-Email': currentUser?.email || '',
-        'X-User-Id': currentUser?.id || ''
+        'X-User-Id': currentUser?.id || board.id
       },
       body: JSON.stringify(updatedBoard),
     }).catch(err => console.error("Failed to save board preferences:", err));
@@ -1244,6 +1407,9 @@ export default function App() {
     setCurrentUser(updatedUser);
     localStorage.setItem('coughtater_user', JSON.stringify(updatedUser));
     setCurrentUserPrefs(updatedPrefs);
+    try {
+      localStorage.setItem('coughtater_preferences', JSON.stringify(updatedPrefs));
+    } catch (e) {}
 
     if (!board) return;
 
@@ -1269,9 +1435,15 @@ export default function App() {
     };
     setBoard(updatedBoard);
 
+    resilientSaveBoard(updatedBoard).catch(err => console.error("Failed to resilientSaveBoard:", err));
+
     fetch('/api/boards', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-User-Email': updatedUser?.email || currentUser?.email || '',
+        'X-User-Id': updatedUser?.id || currentUser?.id || board.id
+      },
       body: JSON.stringify(updatedBoard),
     })
     .then(() => {
@@ -1294,7 +1466,8 @@ export default function App() {
     if (!board) return;
 
     const canonicalTitle = getCanonicalShowTitle(rawNewShow.title, board.shows);
-    const newShow = { ...rawNewShow, title: canonicalTitle };
+    const isJulio = isUserJulio(currentUser) || isUserJulio(board.owner);
+    const newShow = sanitizeShowForNonOwner({ ...rawNewShow, title: canonicalTitle }, isJulio);
 
     // Progress Step 3 to Step 4 when a show is added
     if (onboardingStep === 3) {
@@ -1371,9 +1544,40 @@ export default function App() {
       triggerCompletionConfetti(updatedShow);
     }
 
+    // If status changed and the show will move out of the currently viewed tab, provide an immediate informative toast with Undo
+    if (prevShow && prevShow.status !== updatedShow.status) {
+      const fromStatus = prevShow.status;
+      const toStatus = updatedShow.status;
+      const targetTabMap: Record<ShowStatus, { name: string; key: 'active' | 'queue' | 'library' | 'all' }> = {
+        'Watching': { name: 'Active Tracker', key: 'active' },
+        'Backlog': { name: 'Queue', key: 'queue' },
+        'Completed': { name: 'Library (Watched)', key: 'library' },
+        'Dropped': { name: 'Library (Dropped)', key: 'library' }
+      };
+
+      const target = targetTabMap[toStatus] || { name: toStatus, key: 'all' };
+      const willBeHidden = (activeTab === 'active' && toStatus !== 'Watching') ||
+                           (activeTab === 'queue' && toStatus !== 'Backlog') ||
+                           (activeTab === 'library' && toStatus !== 'Completed' && toStatus !== 'Dropped');
+
+      if (willBeHidden && !searchQuery.trim() && selectedGenre === 'All' && selectedService === 'All') {
+        setStatusChangeToast({
+          showTitle: updatedShow.title,
+          showId: updatedShow.id,
+          fromStatus,
+          toStatus,
+          targetTabName: target.name,
+          targetTabKey: target.key
+        });
+      }
+    }
+
+    const nowIso = new Date().toISOString();
+    const isStatusChanged = prevShow && prevShow.status !== updatedShow.status;
     const showWithTimestamp: TvShow = {
       ...updatedShow,
-      updatedAt: updatedShow.updatedAt || new Date().toISOString()
+      updatedAt: nowIso,
+      ...(isStatusChanged ? { statusUpdatedAt: nowIso } : (updatedShow.statusUpdatedAt ? { statusUpdatedAt: updatedShow.statusUpdatedAt } : {}))
     };
 
     const updatedShows = board.shows.map(s => s.id === updatedShow.id ? showWithTimestamp : s);
@@ -1460,6 +1664,13 @@ export default function App() {
     if (loggedBoard.owner) {
       setCurrentUser(loggedBoard.owner);
       localStorage.setItem('coughtater_user', JSON.stringify(loggedBoard.owner));
+
+      // Ensure user is connected with Julio/Admin
+      if (loggedBoard.owner.id !== JULIO_USER_ID && loggedBoard.owner.id !== 'default') {
+        getFriendsData(loggedBoard.owner.id);
+        fetchFriendsDataAsync(loggedBoard.owner.id).catch(() => {});
+      }
+
       if (options?.isNewAccount) {
         setIsNewlyRegisteredUser(true);
         localStorage.setItem(`coughtater_starter_pack_${loggedBoard.owner.id}`, 'true');
@@ -1469,8 +1680,9 @@ export default function App() {
         localStorage.removeItem(`coughtater_is_new_user_${loggedBoard.owner.id}`);
       }
     }
-    setBoard(loggedBoard);
-    setBoardId(loggedBoard.id);
+    const { board: sanitizedLoggedBoard } = sanitizeBoardForUser(loggedBoard, loggedBoard.owner || currentUser);
+    setBoard(sanitizedLoggedBoard);
+    setBoardId(sanitizedLoggedBoard.id);
     setSearchFamily(false);
     const params = new URLSearchParams(window.location.search);
     params.set('board', loggedBoard.id);
@@ -1872,8 +2084,11 @@ export default function App() {
   };
 
   // Dismiss notification
-  const handleDismissNotification = async (notifId: string) => {
+  const handleDismissNotification = async (notifId: string, customShow?: TvShow) => {
     if (!board) return;
+
+    const notif = (board.notifications || []).find(n => n.id === notifId);
+    const targetShow = customShow || notif?.show;
 
     // Immediately record in localStorage to ensure it is never shown again, bypassing any polling delay
     try {
@@ -1882,15 +2097,44 @@ export default function App() {
       if (!dismissedIds.includes(notifId)) {
         localStorage.setItem(`dismissed_notifications_${board.id}`, JSON.stringify([...dismissedIds, notifId]));
       }
+
+      if (targetShow) {
+        const dismissedKeysRaw = localStorage.getItem(`dismissed_alert_keys_${board.id}`);
+        const dismissedKeys: string[] = dismissedKeysRaw ? JSON.parse(dismissedKeysRaw) : [];
+        const newKeys = [targetShow.title?.toLowerCase(), targetShow.id?.toLowerCase()].filter(Boolean) as string[];
+        const mergedKeys = Array.from(new Set([...dismissedKeys, ...newKeys]));
+        localStorage.setItem(`dismissed_alert_keys_${board.id}`, JSON.stringify(mergedKeys));
+      }
     } catch (e) {
       console.error("Failed to save dismissed notification locally:", e);
     }
 
     const updatedNotifs = (board.notifications || []).filter(n => n.id !== notifId);
-    setBoard({
+
+    // Also disable air date reminder on the show so alerts stop resurrecting
+    let updatedShows = board.shows;
+    if (targetShow) {
+      updatedShows = board.shows.map(s => {
+        if (
+          (targetShow.id && s.id === targetShow.id) ||
+          (targetShow.title && s.title && s.title.toLowerCase() === targetShow.title.toLowerCase())
+        ) {
+          return { ...s, hasAirDateReminder: false };
+        }
+        return s;
+      });
+    }
+
+    const updatedBoard = {
       ...board,
-      notifications: updatedNotifs
-    });
+      shows: updatedShows,
+      notifications: updatedNotifs,
+      dismissedNotificationIds: Array.from(new Set([...(board.dismissedNotificationIds || []), notifId])),
+      dismissedAlertKeys: targetShow 
+        ? Array.from(new Set([...(board.dismissedAlertKeys || []), targetShow.title?.toLowerCase() || '', targetShow.id || ''])).filter(Boolean)
+        : board.dismissedAlertKeys
+    };
+    setBoard(updatedBoard);
 
     try {
       await fetch('/api/notifications/dismiss', {
@@ -1898,7 +2142,10 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           boardId: board.id,
-          notificationId: notifId
+          notificationId: notifId,
+          showId: targetShow?.id,
+          showTitle: targetShow?.title,
+          disableReminder: true
         })
       });
     } catch (err) {
@@ -2035,15 +2282,7 @@ export default function App() {
         return;
       }
 
-      const clonedShow: TvShow = {
-        ...friendShow,
-        id: `show-${Date.now()}-${Math.floor(Math.random() * 1000000)}`,
-        status: 'Backlog',
-        latestWatched: { season: 1, episode: 0, title: 'Not Started' },
-        userScore: null,
-        userNotes: '',
-        createdAt: new Date().toISOString()
-      };
+      const clonedShow: TvShow = createCleanShowFromFriend(friendShow, 'Backlog');
 
       const updatedShows = [clonedShow, ...myBoard.shows];
       const updatedBoard: Board = {
@@ -2080,11 +2319,48 @@ export default function App() {
     if (!currentUser) return [];
     const isCurrentUserJulio = isUserJulio(currentUser);
 
-    return allUsers.filter(u => {
+    // 1. Matched users from allUsers
+    const list: User[] = allUsers.filter(u => {
       if (isUserSelf(u, currentUser)) return false;
       if (isCurrentUserJulio && isUserJulio(u)) return false;
-      return (!isCurrentUserJulio && isUserJulio(u)) || friendsState.friends.includes(u.id);
+      // Julio (admin/creator) is automatically buddies with every user account!
+      if (isCurrentUserJulio) return true;
+      return isUserJulio(u) || isUserInFriendList(u, friendsState.friends);
     });
+
+    // 2. Synthesize entries for any friend ID in friendsState.friends not yet in allUsers
+    const existingIds = new Set(list.map(u => u.id.toLowerCase().trim()));
+    if (Array.isArray(friendsState.friends)) {
+      friendsState.friends.forEach(fId => {
+        if (!fId || isUserSelf({ id: fId }, currentUser)) return;
+        if (isCurrentUserJulio && isUserJulio({ id: fId })) return;
+        const cleanF = fId.toLowerCase().trim();
+        const alreadyInList = list.some(u => isUserInFriendList(u, [fId]));
+        if (!alreadyInList && !existingIds.has(cleanF)) {
+          existingIds.add(cleanF);
+          list.push({
+            id: fId,
+            name: formatDisplayNameFromId(fId),
+            email: `${cleanF.replace(/^user-/, '')}@couchtaterz.com`,
+            avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(fId)}`,
+            createdAt: new Date().toISOString()
+          });
+        }
+      });
+    }
+
+    // 3. Guarantee Jylian is always present in buddies list for Julio
+    if (isCurrentUserJulio && !list.some(u => isUserInFriendList(u, ['user-jylian-summers', 'jylian_summers@yahoo.com']))) {
+      list.push({
+        id: 'user-jylian-summers',
+        name: 'Jylian',
+        email: 'jylian_summers@yahoo.com',
+        avatarUrl: 'https://api.dicebear.com/7.x/pixel-art/svg?seed=Jylian',
+        createdAt: '2026-08-20T10:00:00.000Z'
+      });
+    }
+
+    return list;
   }, [allUsers, currentUser, friendsState]);
 
   // Compute list of shows to filter based on search scope
@@ -2109,7 +2385,7 @@ export default function App() {
         const isJulioBoard = isUserJulio(b.owner) || bId === JULIO_USER_ID || bId === 'default' || bId === 'user-julio' || (b.name && b.name.toLowerCase().includes('julio'));
         if (isCurrentUserJulio && isJulioBoard) return;
 
-        const isConnectedBuddy = friendsState.friends.includes(bId) || (b.owner?.id && friendsState.friends.includes(b.owner.id));
+        const isConnectedBuddy = isCurrentUserJulio || isUserInFriendList({ id: bId }, friendsState.friends) || (b.owner?.id && isUserInFriendList(b.owner, friendsState.friends));
 
         if (!isJulioBoard && !isConnectedBuddy) {
           return;
@@ -2159,6 +2435,67 @@ export default function App() {
     return consolidatedShows;
   }, [searchFamily, familyBoards, board, currentUser, allUsers, friendsState]);
 
+  // Fandoms computed from all connected boards & current board
+  const computedFandoms = useMemo(() => {
+    return computeShowFandoms(familyBoards, board, currentUser, joinedFandoms);
+  }, [familyBoards, board, currentUser, joinedFandoms]);
+
+  // Shows user explicitly pinned/joined to keep the quick dropdown uncluttered
+  const pinnedFandoms = useMemo(() => {
+    return computedFandoms.filter(f => f.isUserJoined);
+  }, [computedFandoms]);
+
+  const handleToggleFandom = useCallback((showOrTitle: TvShow | string) => {
+    const title = typeof showOrTitle === 'string' ? showOrTitle : showOrTitle.title;
+    const { isJoined, updatedList } = toggleFandomMembership(title, joinedFandoms);
+    setJoinedFandoms(updatedList);
+
+    // If the show exists on current user's board, update its isFandomActive state
+    if (board && Array.isArray(board.shows)) {
+      const norm = normalizeTitleForComparison(title);
+      const existing = board.shows.find(s => normalizeTitleForComparison(s.title) === norm);
+      if (existing) {
+        handleUpdateShow({
+          ...existing,
+          isFandomActive: isJoined,
+          fandomJoinedAt: isJoined ? new Date().toISOString() : undefined
+        });
+      }
+    }
+
+    if (isJoined) {
+      try {
+        confetti({
+          particleCount: 35,
+          spread: 60,
+          origin: { y: 0.8 },
+          colors: ['#F59E0B', '#FBBF24', '#D97706', '#FFFFFF']
+        });
+      } catch (e) {
+        // ignore
+      }
+      setFandomToast(`🔥 Joined the ${title} Fandom! Connected with superfans & member boards.`);
+    } else {
+      setFandomToast(`Removed from ${title} Fandom.`);
+    }
+  }, [joinedFandoms, board, handleUpdateShow]);
+
+  const handleOpenFandomHub = useCallback((showOrTitle: TvShow | string) => {
+    const title = typeof showOrTitle === 'string' ? showOrTitle : showOrTitle.title;
+    const fandom = getFandomForShow(title, computedFandoms);
+    if (fandom) {
+      setFandomHubShow(fandom);
+      setIsFandomHubOpen(true);
+    }
+  }, [computedFandoms]);
+
+  useEffect(() => {
+    if (fandomToast) {
+      const t = setTimeout(() => setFandomToast(null), 3500);
+      return () => clearTimeout(t);
+    }
+  }, [fandomToast]);
+
   const buddyShowsForModal = useMemo(() => {
     if (!board) return [];
     const isCurrentUserJulio = isUserJulio(currentUser);
@@ -2173,7 +2510,7 @@ export default function App() {
       const isJulioBoard = isUserJulio(fBoard.owner) || bId === JULIO_USER_ID || bId === 'default' || bId === 'user-julio' || (fBoard.name && fBoard.name.toLowerCase().includes('julio'));
       if (isCurrentUserJulio && isJulioBoard) return;
 
-      const isConnectedBuddy = friendsState.friends.includes(bId) || (fBoard.owner?.id && friendsState.friends.includes(fBoard.owner.id));
+      const isConnectedBuddy = isCurrentUserJulio || isUserInFriendList({ id: bId }, friendsState.friends) || (fBoard.owner?.id && isUserInFriendList(fBoard.owner, friendsState.friends));
 
       if (!isJulioBoard && !isConnectedBuddy) {
         return;
@@ -2207,45 +2544,6 @@ export default function App() {
     return list;
   }, [familyBoards, board, allUsers, friendsState, currentUser]);
 
-  if (isFeatureGuideOpen) {
-    const handleCloseGuide = () => {
-      setIsFeatureGuideOpen(false);
-      try {
-        if (window.location.pathname.startsWith('/guide') || window.location.pathname.startsWith('/help') || window.location.pathname.startsWith('/docs') || window.location.search.includes('guide=true')) {
-          window.history.pushState({}, '', '/');
-        }
-      } catch (e) {
-        // ignore
-      }
-    };
-
-    return (
-      <ProductGuidePage
-        onBack={handleCloseGuide}
-        onNavigateTo={(target) => {
-          handleCloseGuide();
-          handleNavigateFromGuide(target);
-        }}
-        onLaunchApp={handleCloseGuide}
-        isLoggedIn={!!currentUser}
-      />
-    );
-  }
-
-  const isSharedRoute = window.location.pathname.startsWith('/list/') || window.location.pathname.startsWith('/p/') || window.location.search.includes('board=') || window.location.search.includes('list=') || boardId !== 'default';
-  if (!currentUser && boardId === 'default' && !isSharedRoute) {
-    return <LoginPage onLogin={handleLogin} />;
-  }
-
-  if (!board) {
-    return (
-      <div className="min-h-screen bg-[#0F1115] flex flex-col justify-center items-center text-center p-6 space-y-4">
-        <Tv className="w-12 h-12 text-slate-700 animate-pulse" />
-        <p className="text-slate-400 font-medium text-xs">Assembling your television dashboard...</p>
-      </div>
-    );
-  }
-
   // Compute list of unique normalized genres present in the searched shows list with 'All' at the front
   const ALL_PREFERRED_GENRES_ORDER = ['Action', 'Animation', 'Comedy', 'Drama', 'Dystopian', 'Fantasy', 'Horror', 'Mystery', 'Sci-Fi', 'Thriller', 'Western'];
 
@@ -2265,9 +2563,12 @@ export default function App() {
 
   const allGenres = ['All', ...sortedGenreList];
 
-  // Filter & Sort shows
-  const filteredShows = showsToSearch
-    .filter(s => {
+  // Stable Sort Criteria Key: Updates fresh order when view, filters, search, sort mode, or show counts change
+  const sortCriteriaKey = `${board?.id}_${activeTab}_${sortBy}_${searchQuery.trim().toLowerCase()}_${selectedGenre}_${selectedService}_${searchFamily}_${showsToSearch.length}_${onboardingStep}_${onboardingTargetShowId}`;
+
+  // Filter & Sort shows with layout stability (prevents jarring in-flight card jumps during episode increments and quick edits)
+  const filteredShows = useMemo(() => {
+    const matched = showsToSearch.filter(s => {
       const matchesSearch = s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             s.actors.some(a => a.toLowerCase().includes(searchQuery.toLowerCase())) ||
                             s.directors.some(d => d.toLowerCase().includes(searchQuery.toLowerCase()));
@@ -2296,76 +2597,174 @@ export default function App() {
       }
 
       return matchesSearch && matchesService && matchesGenre && matchesTab;
-    })
-    .sort((a, b) => {
-      if (onboardingStep === 1 || onboardingStep === 2) {
-        const targetId = onboardingTargetShowId || (board?.shows.find(s => s.status === 'Backlog')?.id);
-        if (targetId) {
-          if (a.id === targetId && b.id !== targetId) return -1;
-          if (b.id === targetId && a.id !== targetId) return 1;
-        }
-      }
-      if (sortBy === 'airingNext') {
-        const getAirTime = (s: typeof a) => {
-          if (s.concluded || !s.nextEpisode || !s.nextEpisode.airDate) {
-            return Infinity;
+    });
+
+    const sortShowsList = (items: typeof matched) => {
+      return [...items].sort((a, b) => {
+        if (onboardingStep === 1 || onboardingStep === 2) {
+          const targetId = onboardingTargetShowId || (board?.shows.find(s => s.status === 'Backlog')?.id);
+          if (targetId) {
+            if (a.id === targetId && b.id !== targetId) return -1;
+            if (b.id === targetId && a.id !== targetId) return 1;
           }
-          const parts = s.nextEpisode.airDate.split('-');
-          let airTime = Infinity;
-          if (parts.length === 3) {
-            const year = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1;
-            const day = parseInt(parts[2], 10);
-            if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
-              airTime = new Date(year, month, day).getTime();
+        }
+        if (sortBy === 'airingNext') {
+          const getAirTime = (s: typeof a) => {
+            if (s.concluded || !s.nextEpisode || !s.nextEpisode.airDate) {
+              return Infinity;
             }
-          } else {
-            const parsed = new Date(s.nextEpisode.airDate).getTime();
-            if (!isNaN(parsed)) {
-              airTime = parsed;
+            const parts = s.nextEpisode.airDate.split('-');
+            let airTime = Infinity;
+            if (parts.length === 3) {
+              const year = parseInt(parts[0], 10);
+              const month = parseInt(parts[1], 10) - 1;
+              const day = parseInt(parts[2], 10);
+              if (!isNaN(year) && !isNaN(month) && !isNaN(day)) {
+                airTime = new Date(year, month, day).getTime();
+              }
+            } else {
+              const parsed = new Date(s.nextEpisode.airDate).getTime();
+              if (!isNaN(parsed)) {
+                airTime = parsed;
+              }
             }
+
+            // Filter out past air dates by comparing to start of today
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (airTime < today.getTime()) {
+              return Infinity;
+            }
+
+            return airTime;
+          };
+
+          const timeA = getAirTime(a);
+          const timeB = getAirTime(b);
+
+          if (timeA !== timeB) {
+            return timeA - timeB;
           }
-
-          // Filter out past air dates by comparing to start of today
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          if (airTime < today.getTime()) {
-            return Infinity;
+          return a.title.localeCompare(b.title);
+        }
+        if (sortBy === 'recent') {
+          return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
+        }
+        if (sortBy === 'rtScore') {
+          return (b.rottenTomatoesScore ?? -1) - (a.rottenTomatoesScore ?? -1);
+        }
+        if (sortBy === 'userScore') {
+          return (b.userScore || 0) - (a.userScore || 0);
+        }
+        if (sortBy === 'title') {
+          return a.title.localeCompare(b.title);
+        }
+        if (sortBy === 'category') {
+          const catA = a.genres[0] || '';
+          const catB = b.genres[0] || '';
+          if (catA !== catB) {
+            return catA.localeCompare(catB);
           }
-
-          return airTime;
-        };
-
-        const timeA = getAirTime(a);
-        const timeB = getAirTime(b);
-
-        if (timeA !== timeB) {
-          return timeA - timeB;
+          return a.title.localeCompare(b.title);
         }
-        return a.title.localeCompare(b.title);
-      }
-      if (sortBy === 'recent') {
-        return new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime();
-      }
-      if (sortBy === 'rtScore') {
-        return (b.rottenTomatoesScore ?? -1) - (a.rottenTomatoesScore ?? -1);
-      }
-      if (sortBy === 'userScore') {
-        return (b.userScore || 0) - (a.userScore || 0);
-      }
-      if (sortBy === 'title') {
-        return a.title.localeCompare(b.title);
-      }
-      if (sortBy === 'category') {
-        const catA = a.genres[0] || '';
-        const catB = b.genres[0] || '';
-        if (catA !== catB) {
-          return catA.localeCompare(catB);
-        }
-        return a.title.localeCompare(b.title);
-      }
+        return 0;
+      });
+    };
+
+    // If criteria changed (tab, sort option, query, filter, show count), re-compute the established sort order
+    if (prevCriteriaRef.current !== sortCriteriaKey || !stableOrderRef.current) {
+      prevCriteriaRef.current = sortCriteriaKey;
+      const freshlySorted = sortShowsList(matched);
+      stableOrderRef.current = freshlySorted.map(s => s.id || s.title);
+      return freshlySorted;
+    }
+
+    // Maintain stable order during in-place show mutations (episode progress, quick score change, notes)
+    const orderMap = new Map<string, number>();
+    stableOrderRef.current.forEach((id, index) => orderMap.set(id, index));
+
+    const stabilized = [...matched].sort((a, b) => {
+      const keyA = a.id || a.title;
+      const keyB = b.id || b.title;
+      const orderA = orderMap.has(keyA) ? orderMap.get(keyA)! : Infinity;
+      const orderB = orderMap.has(keyB) ? orderMap.get(keyB)! : Infinity;
+      if (orderA !== orderB) return orderA - orderB;
       return 0;
     });
+
+    return stabilized;
+  }, [
+    showsToSearch,
+    sortCriteriaKey,
+    searchQuery,
+    selectedService,
+    selectedGenre,
+    activeTab,
+    sortBy,
+    onboardingStep,
+    onboardingTargetShowId,
+    board?.id,
+    board?.shows
+  ]);
+
+  if (isFeatureGuideOpen) {
+    const handleCloseGuide = () => {
+      setIsFeatureGuideOpen(false);
+      try {
+        if (window.location.pathname.startsWith('/guide') || window.location.pathname.startsWith('/help') || window.location.pathname.startsWith('/docs') || window.location.search.includes('guide=true')) {
+          window.history.pushState({}, '', '/');
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+
+    return (
+      <ProductGuidePage
+        onBack={handleCloseGuide}
+        onNavigateTo={(target) => {
+          handleCloseGuide();
+          handleNavigateFromGuide(target);
+        }}
+        onLaunchApp={handleCloseGuide}
+        isLoggedIn={!!currentUser}
+      />
+    );
+  }
+
+  const searchParams = new URLSearchParams(window.location.search);
+  const hasInviteParam = searchParams.has('inviteFrom') || searchParams.has('inviteCode') || searchParams.has('inviterName');
+  const hasBoardParam = searchParams.has('board') || searchParams.has('list');
+  const hasShowParam = searchParams.has('show');
+  const isSharedPath = window.location.pathname.startsWith('/list/') || window.location.pathname.startsWith('/p/');
+  const hasPendingInvite = (() => {
+    try {
+      return Boolean(sessionStorage.getItem('couchtater_pending_invite'));
+    } catch {
+      return false;
+    }
+  })();
+
+  const isSharedRoute = 
+    isSharedPath || 
+    hasBoardParam || 
+    hasInviteParam || 
+    hasShowParam || 
+    hasPendingInvite || 
+    (boardId !== 'default' && (!currentUser || boardId !== currentUser.id));
+
+  if (!currentUser && boardId === 'default' && !isSharedRoute) {
+    return <LoginPage onLogin={handleLogin} />;
+  }
+
+  if (!board) {
+    return (
+      <div className="min-h-screen bg-[#0F1115] flex flex-col justify-center items-center text-center p-6 space-y-4">
+        <Tv className="w-12 h-12 text-slate-700 animate-pulse" />
+        <p className="text-slate-400 font-medium text-xs">Assembling your television dashboard...</p>
+      </div>
+    );
+  }
 
   const activeStreamingServices: StreamingService[] = [
     'HBO', 'Disney+', 'Prime Video', 'Netflix', 'Hulu', 'Paramount+', 'Apple TV', 'Peacock', 'AMC+', 'Starz'
@@ -2397,31 +2796,56 @@ export default function App() {
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  // Find shows in Backlog (Queue) with upcoming episodes in the next 30 days
+  // Find shows in Backlog (Queue) with upcoming episodes in the user's notification lead window (default 30 days)
+  const notificationLeadDays = currentUserPrefs?.notificationLeadDays ?? board?.preferences?.notificationLeadDays ?? 30;
   const matchingBacklogShows = !isFriendView && board
     ? board.shows.filter(s => {
         if (s.status !== 'Backlog' || !s.nextEpisode || !s.nextEpisode.airDate) return false;
         if (dismissedActivationIds.includes(s.id)) return false;
 
         const diffDays = getDaysUntilEpisode(s.nextEpisode.airDate);
-        return diffDays >= 0 && diffDays <= 30;
+        return diffDays >= 0 && diffDays <= notificationLeadDays;
       })
     : [];
 
   const handleActivateShow = (show: TvShow) => {
-    const updatedShow = { ...show, status: 'Watching' as const };
+    const nowIso = new Date().toISOString();
+    const updatedShow = { 
+      ...show, 
+      status: 'Watching' as const,
+      updatedAt: nowIso,
+      statusUpdatedAt: nowIso
+    };
+
+    if (board) {
+      const newDismissedIds = Array.from(new Set([...dismissedActivationIds, show.id]));
+      setDismissedActivationIds(newDismissedIds);
+      localStorage.setItem(`dismissed_activation_shows_${board.id}`, JSON.stringify(newDismissedIds));
+    }
+
     handleUpdateShow(updatedShow);
   };
 
   const handleActivateAllShows = () => {
     if (!board) return;
     const showIdsToActivate = matchingBacklogShows.map(s => s.id);
+    const nowIso = new Date().toISOString();
     const updatedShows = board.shows.map(s => {
       if (showIdsToActivate.includes(s.id)) {
-        return { ...s, status: 'Watching' as const };
+        return { 
+          ...s, 
+          status: 'Watching' as const,
+          updatedAt: nowIso,
+          statusUpdatedAt: nowIso
+        };
       }
       return s;
     });
+
+    const newDismissedIds = Array.from(new Set([...dismissedActivationIds, ...showIdsToActivate]));
+    setDismissedActivationIds(newDismissedIds);
+    localStorage.setItem(`dismissed_activation_shows_${board.id}`, JSON.stringify(newDismissedIds));
+
     saveBoardToServer(updatedShows);
   };
 
@@ -2433,13 +2857,50 @@ export default function App() {
     localStorage.setItem(`dismissed_activation_shows_${board.id}`, JSON.stringify(uniqueDismissedIds));
   };
 
-  // Filter out any notifications that have been dismissed locally to avoid polling race conditions or "pestering"
+  // Filter out any notifications that have been dismissed locally or on server to avoid polling race conditions or "pestering"
   const activeNotifications = board?.notifications
     ? board.notifications.filter(n => {
         try {
+          // Check local storage dismissed IDs
           const dismissed = localStorage.getItem(`dismissed_notifications_${board.id}`);
           const dismissedIds = dismissed ? JSON.parse(dismissed) : [];
-          return !dismissedIds.includes(n.id);
+          if (dismissedIds.includes(n.id)) return false;
+
+          // Check server-side recorded dismissed IDs
+          if (board.dismissedNotificationIds && board.dismissedNotificationIds.includes(n.id)) {
+            return false;
+          }
+
+          // Check local storage dismissed show alert keys
+          const dismissedAlertKeysRaw = localStorage.getItem(`dismissed_alert_keys_${board.id}`);
+          const dismissedAlertKeys: string[] = dismissedAlertKeysRaw ? JSON.parse(dismissedAlertKeysRaw) : [];
+          if (n.show) {
+            const titleLower = (n.show.title || '').toLowerCase();
+            const idLower = (n.show.id || '').toLowerCase();
+            if (dismissedAlertKeys.includes(titleLower) || dismissedAlertKeys.includes(idLower)) {
+              return false;
+            }
+          }
+          if (n.message && dismissedAlertKeys.some(key => key && n.message!.toLowerCase().includes(key))) {
+            return false;
+          }
+
+          // Check server-side recorded dismissed alert keys
+          if (board.dismissedAlertKeys && board.dismissedAlertKeys.length > 0) {
+            const serverAlertKeys = board.dismissedAlertKeys.map(k => String(k).toLowerCase());
+            if (n.show) {
+              const titleLower = (n.show.title || '').toLowerCase();
+              const idLower = (n.show.id || '').toLowerCase();
+              if (serverAlertKeys.includes(titleLower) || serverAlertKeys.includes(idLower)) {
+                return false;
+              }
+            }
+            if (n.message && serverAlertKeys.some(key => key && n.message!.toLowerCase().includes(key))) {
+              return false;
+            }
+          }
+
+          return true;
         } catch {
           return true;
         }
@@ -2475,7 +2936,7 @@ export default function App() {
               </div>
               <div>
                 <p className="font-extrabold text-white text-xs sm:text-sm">
-                  Viewing {board?.owner?.name || board?.name || 'Shared'}'s Public Binge List
+                  Viewing {board?.owner?.name || (board?.name ? board.name.replace(/'s Collection$/i, '') : null) || new URLSearchParams(window.location.search).get('inviterName') || 'Julio'}'s Public Binge List
                 </p>
                 <p className="text-[10px] sm:text-xs text-purple-300/80">
                   Join their Binge Buddies on CouchTaterz to vote, rate, and sync watch lists!
@@ -2497,16 +2958,27 @@ export default function App() {
           <div className="flex flex-row items-center justify-between gap-2 px-1 sm:px-2 text-[11px] text-slate-500 dark:text-slate-400">
             {/* Board Selector & Invite Buddy Tool on Left */}
             <div className="flex items-center gap-1.5 shrink min-w-0">
-              {/* Custom Board / Watch Buddies Selector with Sticky Top Invite Action */}
+              {/* Custom Board / Watch Buddies & Fandoms Selector with Segmented Switcher */}
               <div className="relative shrink min-w-0" ref={buddyMenuRef}>
                 <button
+                  id="header-buddy-fandom-toggle-button"
                   onClick={() => setIsBuddyMenuOpen(!isBuddyMenuOpen)}
-                  className="bg-blue-600 hover:bg-blue-500 text-white text-[10px] sm:text-[11px] font-extrabold rounded-xl px-2.5 py-1 sm:py-1.5 flex items-center gap-1.5 shadow-md border border-blue-500 transition-colors cursor-pointer max-w-[130px] xs:max-w-[190px] sm:max-w-none"
-                  title="Switch TV Shows View or Invite Buddies"
+                  className={`text-white text-[10px] sm:text-[11px] font-extrabold rounded-xl px-2.5 py-1 sm:py-1.5 flex items-center gap-1.5 shadow-md border transition-colors cursor-pointer max-w-[140px] xs:max-w-[200px] sm:max-w-none ${
+                    fandomViewContext
+                      ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 border-amber-400'
+                      : 'bg-blue-600 hover:bg-blue-500 border-blue-500'
+                  }`}
+                  title="Switch TV Shows View, Explore Fandoms or Invite Buddies"
                 >
-                  <Users className="w-3 h-3 text-white/90 shrink-0" />
+                  {fandomViewContext ? (
+                    <Flame className="w-3 h-3 text-amber-200 fill-current shrink-0 animate-pulse" />
+                  ) : (
+                    <Users className="w-3 h-3 text-white/90 shrink-0" />
+                  )}
                   <span className="truncate">
-                    {isFriendView ? (
+                    {fandomViewContext ? (
+                      `${fandomViewContext.showTitle} Fandom`
+                    ) : isFriendView ? (
                       boardId === JULIO_USER_ID ? "Julio's Shows" : `${allUsers.find(u => u.id === boardId)?.name || 'Buddy'}'s Shows`
                     ) : (
                       "Binge Buddies"
@@ -2515,7 +2987,7 @@ export default function App() {
                   <ChevronDown className={`w-3 h-3 text-white/80 shrink-0 transition-transform ${isBuddyMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Custom Popover Dropdown Menu with Sticky Invite Header */}
+                {/* Custom Popover Dropdown Menu with Segmented Buddies vs Fandoms Switcher */}
                 <AnimatePresence>
                   {isBuddyMenuOpen && (
                     <motion.div
@@ -2524,137 +2996,482 @@ export default function App() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 4, scale: 0.98 }}
                       transition={{ duration: 0.15 }}
-                      className={`absolute left-0 top-full mt-1.5 w-64 xs:w-72 max-w-[calc(100vw-2rem)] border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col text-xs transition-colors ${
+                      className={`absolute left-0 top-full mt-1.5 w-72 xs:w-80 max-w-[calc(100vw-1.5rem)] border rounded-2xl shadow-2xl z-50 overflow-hidden flex flex-col text-xs transition-colors ${
                         theme === 'dark' ? 'bg-[#141720] border-white/10 text-white' : 'bg-neutral-200 border-neutral-300 text-neutral-950'
                       }`}
                     >
-                      {/* Sticky Top Header: Invite & Add Buddy Action */}
-                      <div className={`p-2 border-b sticky top-0 z-10 shadow-sm ${
-                        theme === 'dark' ? 'bg-[#1B1F2C] border-white/10' : 'bg-neutral-300 border-neutral-300'
+                      {/* Segmented Switcher: Binge Buddies vs Show Fandoms */}
+                      <div className={`p-1.5 border-b flex items-center gap-1 shrink-0 ${
+                        theme === 'dark' ? 'bg-[#181C28] border-white/10' : 'bg-neutral-300 border-neutral-300'
                       }`}>
                         <button
-                          onClick={() => {
-                            setIsBuddyMenuOpen(false);
-                            setIsShareOpen(true);
-                          }}
-                          className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-md shadow-purple-950/50 border border-purple-400/30 active:scale-[0.98]"
+                          id="popover-tab-buddies"
+                          type="button"
+                          onClick={() => setBuddyMenuTab('buddies')}
+                          className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                            buddyMenuTab === 'buddies'
+                              ? 'bg-blue-600 text-white shadow-xs'
+                              : theme === 'dark'
+                                ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                                : 'text-neutral-700 hover:text-neutral-950 hover:bg-neutral-200'
+                          }`}
                         >
-                          <UserPlus className="w-3.5 h-3.5 text-purple-200" />
-                          <span>+ Add & Manage Buddies</span>
+                          <Users className="w-3.5 h-3.5 shrink-0" />
+                          <span>Buddies</span>
+                          <span className="text-[10px] opacity-75 font-mono">({connectedBuddies.length})</span>
+                        </button>
+
+                        <button
+                          id="popover-tab-fandoms"
+                          type="button"
+                          onClick={() => setBuddyMenuTab('fandoms')}
+                          className={`flex-1 py-1.5 px-2 rounded-xl text-xs font-extrabold flex items-center justify-center gap-1.5 transition cursor-pointer ${
+                            buddyMenuTab === 'fandoms'
+                              ? 'bg-amber-500 text-black shadow-xs font-black'
+                              : theme === 'dark'
+                                ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                                : 'text-neutral-700 hover:text-neutral-950 hover:bg-neutral-200'
+                          }`}
+                        >
+                          <Flame className={`w-3.5 h-3.5 shrink-0 ${buddyMenuTab === 'fandoms' ? 'fill-current text-black' : 'text-amber-400'}`} />
+                          <span>Fandoms</span>
+                          <span className="text-[10px] opacity-85 font-mono font-black">
+                            ({pinnedFandoms.length})
+                          </span>
                         </button>
                       </div>
 
-                      {/* Scrollable List of Boards / Buddies */}
-                      <div className="max-h-60 overflow-y-auto p-1.5 space-y-1 scrollbar-thin">
-                        {currentUser && (
-                          <button
-                            onClick={() => {
-                              handleJoinBoard(currentUser.id);
-                              setIsBuddyMenuOpen(false);
-                            }}
-                            className={`w-full text-left px-3 py-2 rounded-xl transition flex items-center justify-between cursor-pointer ${
-                              !isFriendView
-                                ? theme === 'dark'
-                                  ? 'bg-blue-600/20 text-blue-300 font-extrabold border border-blue-500/30'
-                                  : 'bg-blue-100 text-blue-950 font-extrabold border border-blue-300 shadow-2xs'
-                                : theme === 'dark'
-                                  ? 'hover:bg-white/5 text-slate-300'
-                                  : 'hover:bg-neutral-300 text-neutral-900 font-bold'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2 truncate">
-                              <div className="relative shrink-0">
-                                <img
-                                  src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
-                                  alt={currentUser.name}
-                                  className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-blue-500/30' : 'border-blue-500'}`}
-                                />
-                                <span
-                                  className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#141720] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
-                                  title="Active now (Logged in)"
-                                />
-                              </div>
-                              <span className="truncate">My TV Shows</span>
-                            </div>
-                            {!isFriendView && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-700'}`} />}
-                          </button>
-                        )}
-
-                        {/* Section Header */}
-                        <div className={`px-2 pt-2.5 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider font-black border-t mt-1 ${
-                          theme === 'dark' ? 'text-slate-400 border-white/5' : 'text-neutral-900 border-neutral-300'
-                        }`}>
-                          <span className="flex items-center gap-1.5">
-                            <Users className={`w-3 h-3 shrink-0 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-700'}`} />
-                            Binge Buddies
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black shrink-0 ${
-                            theme === 'dark' ? 'bg-purple-500/15 text-purple-300 border-purple-500/20' : 'bg-purple-200 text-purple-950 border-purple-300'
+                      {/* TAB 1: BINGE BUDDIES VIEW */}
+                      {buddyMenuTab === 'buddies' && (
+                        <>
+                          {/* Sticky Header: Add / Invite Buddy Action */}
+                          <div className={`p-2 border-b sticky top-0 z-10 shadow-sm ${
+                            theme === 'dark' ? 'bg-[#1B1F2C] border-white/10' : 'bg-neutral-300 border-neutral-300'
                           }`}>
-                            {connectedBuddies.length}
-                          </span>
-                        </div>
+                            <button
+                              id="dropdown-invite-buddy-action"
+                              onClick={() => {
+                                setIsBuddyMenuOpen(false);
+                                setIsShareOpen(true);
+                              }}
+                              className="w-full py-1.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 transition cursor-pointer shadow-md shadow-purple-950/50 border border-purple-400/30 active:scale-[0.98]"
+                            >
+                              <UserPlus className="w-3.5 h-3.5 text-purple-200" />
+                              <span>+ Add & Manage Buddies</span>
+                            </button>
+                          </div>
 
-                        {/* List of Buddies */}
-                        {connectedBuddies.map((u, idx) => {
-                          const isSelected = isFriendView && boardId === u.id;
-                          const isJulio = u.id === JULIO_USER_ID || u.id === 'default' || u.id === 'user-julio';
-                          const isOnline = isUserSelf(u, currentUser) || (u as any).isOnline === true;
-                            return (
+                          {/* Scrollable List of Boards / Buddies */}
+                          <div className="max-h-64 overflow-y-auto p-1.5 space-y-1 scrollbar-thin">
+                            {currentUser && (
                               <button
-                                key={`${u.id}-${idx}`}
                                 onClick={() => {
-                                  handleJoinBoard(u.id);
+                                  setFandomViewContext(null);
+                                  handleJoinBoard(currentUser.id);
                                   setIsBuddyMenuOpen(false);
                                 }}
                                 className={`w-full text-left px-3 py-2 rounded-xl transition flex items-center justify-between cursor-pointer ${
-                                  isSelected
+                                  !isFriendView && !fandomViewContext
                                     ? theme === 'dark'
-                                      ? 'bg-purple-600/20 text-purple-300 font-extrabold border border-purple-500/30'
-                                      : 'bg-purple-100 text-purple-950 font-extrabold border border-purple-300 shadow-2xs'
+                                      ? 'bg-blue-600/20 text-blue-300 font-extrabold border border-blue-500/30'
+                                      : 'bg-blue-100 text-blue-950 font-extrabold border border-blue-300 shadow-2xs'
                                     : theme === 'dark'
-                                      ? 'hover:bg-white/5 text-slate-300 font-medium'
+                                      ? 'hover:bg-white/5 text-slate-300'
                                       : 'hover:bg-neutral-300 text-neutral-900 font-bold'
                                 }`}
                               >
                                 <div className="flex items-center gap-2 truncate">
                                   <div className="relative shrink-0">
                                     <img
-                                      src={u.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${u.name}`}
-                                      alt={u.name}
-                                      className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-white/10' : 'border-neutral-400'}`}
+                                      src={currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name}`}
+                                      alt={currentUser.name}
+                                      className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-blue-500/30' : 'border-blue-500'}`}
                                     />
                                     <span
-                                      className={`w-1.5 h-1.5 rounded-full absolute -bottom-0.5 -right-0.5 ${
-                                        isOnline
-                                          ? 'bg-emerald-500 ring-1 ring-[#141720] shadow-[0_0_4px_rgba(16,185,129,0.9)]'
-                                          : 'bg-slate-400 ring-1 ring-white'
-                                      }`}
-                                      title={isOnline ? "Active now" : "Offline"}
+                                      className="w-1.5 h-1.5 rounded-full bg-emerald-500 ring-1 ring-[#141720] absolute -bottom-0.5 -right-0.5 shadow-[0_0_4px_rgba(16,185,129,0.9)]"
+                                      title="Active now (Logged in)"
                                     />
                                   </div>
-                                  <span className="truncate">
-                                    {isJulio ? "Julio's Shows" : `${u.name}'s Shows`}
-                                  </span>
-                                  {isJulio && (
-                                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${
-                                      theme === 'dark'
-                                        ? 'bg-purple-500/20 text-purple-300'
-                                        : 'bg-purple-200 text-purple-950 border border-purple-300'
-                                    }`}>
-                                      Host
+                                  <span className="truncate">My TV Shows</span>
+                                </div>
+                                {!isFriendView && !fandomViewContext && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-blue-400' : 'text-blue-700'}`} />}
+                              </button>
+                            )}
+
+                            {/* Section Header */}
+                            <div className={`px-2 pt-2.5 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider font-black border-t mt-1 ${
+                              theme === 'dark' ? 'text-slate-400 border-white/5' : 'text-neutral-900 border-neutral-300'
+                            }`}>
+                              <span className="flex items-center gap-1.5">
+                                <Users className={`w-3 h-3 shrink-0 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-700'}`} />
+                                Binge Buddies
+                              </span>
+                              <span className={`px-2 py-0.5 rounded-full border text-[10px] font-black shrink-0 ${
+                                theme === 'dark' ? 'bg-purple-500/15 text-purple-300 border-purple-500/20' : 'bg-purple-200 text-purple-950 border-purple-300'
+                              }`}>
+                                {connectedBuddies.length}
+                              </span>
+                            </div>
+
+                            {/* List of Buddies */}
+                            {connectedBuddies.map((u, idx) => {
+                              const isSelected = isFriendView && boardId === u.id && !fandomViewContext;
+                              const isJulio = u.id === JULIO_USER_ID || u.id === 'default' || u.id === 'user-julio';
+                              const isOnline = isUserSelf(u, currentUser) || (u as any).isOnline === true;
+                              return (
+                                <button
+                                  key={`${u.id}-${idx}`}
+                                  onClick={() => {
+                                    setFandomViewContext(null);
+                                    handleJoinBoard(u.id);
+                                    setIsBuddyMenuOpen(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 rounded-xl transition flex items-center justify-between cursor-pointer ${
+                                    isSelected
+                                      ? theme === 'dark'
+                                        ? 'bg-purple-600/20 text-purple-300 font-extrabold border border-purple-500/30'
+                                        : 'bg-purple-100 text-purple-950 font-extrabold border border-purple-300 shadow-2xs'
+                                      : theme === 'dark'
+                                        ? 'hover:bg-white/5 text-slate-300 font-medium'
+                                        : 'hover:bg-neutral-300 text-neutral-900 font-bold'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 truncate">
+                                    <div className="relative shrink-0">
+                                      <img
+                                        src={u.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${u.name}`}
+                                        alt={u.name}
+                                        className={`w-4 h-4 rounded-full border shrink-0 object-cover ${theme === 'dark' ? 'border-white/10' : 'border-neutral-400'}`}
+                                      />
+                                      <span
+                                        className={`w-1.5 h-1.5 rounded-full absolute -bottom-0.5 -right-0.5 ${
+                                          isOnline
+                                            ? 'bg-emerald-500 ring-1 ring-[#141720] shadow-[0_0_4px_rgba(16,185,129,0.9)]'
+                                            : 'bg-slate-400 ring-1 ring-white'
+                                        }`}
+                                        title={isOnline ? "Active now" : "Offline"}
+                                      />
+                                    </div>
+                                    <span className="truncate">
+                                      {isJulio ? "Julio's Shows" : `${u.name}'s Shows`}
                                     </span>
+                                    {isJulio && (
+                                      <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 ${
+                                        theme === 'dark'
+                                          ? 'bg-purple-500/20 text-purple-300'
+                                          : 'bg-purple-200 text-purple-950 border border-purple-300'
+                                      }`}>
+                                        Host
+                                      </span>
+                                    )}
+                                  </div>
+                                  {isSelected && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-700'}`} />}
+                                </button>
+                              );
+                            })}
+
+                            {/* Value Proposition / Incentive Card for Binge Buddies */}
+                            <div className={`p-2.5 rounded-xl border mt-2 ${
+                              theme === 'dark'
+                                ? 'bg-purple-950/20 border-purple-500/20 text-slate-300'
+                                : 'bg-purple-50/80 border-purple-200 text-purple-950'
+                            }`}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <Sparkles className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-600'}`} />
+                                <span className="font-extrabold text-[11px] tracking-tight">
+                                  Why Add Binge Buddies?
+                                </span>
+                              </div>
+                              <ul className="space-y-1 text-[10.5px] leading-snug">
+                                <li className="flex items-start gap-1.5">
+                                  <span className="text-purple-500 font-black shrink-0">•</span>
+                                  <span><strong className={theme === 'dark' ? 'text-white font-bold' : 'text-purple-950 font-bold'}>Copy Shows:</strong> Borrow top picks directly into your watchlist in 1-click.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="text-purple-500 font-black shrink-0">•</span>
+                                  <span><strong className={theme === 'dark' ? 'text-white font-bold' : 'text-purple-950 font-bold'}>Micro-Reviews:</strong> Read real friend verdicts before you start streaming.</span>
+                                </li>
+                                <li className="flex items-start gap-1.5">
+                                  <span className="text-purple-500 font-black shrink-0">•</span>
+                                  <span><strong className={theme === 'dark' ? 'text-white font-bold' : 'text-purple-950 font-bold'}>Group AI:</strong> Blend watchlists to find what to watch together.</span>
+                                </li>
+                              </ul>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* TAB 2: SHOW FANDOMS VIEW (FILTERED TO PINNED ONLY TO SOLVE CHOICE OVERLOAD) */}
+                      {buddyMenuTab === 'fandoms' && (
+                        <div className="max-h-88 overflow-y-auto p-1.5 space-y-1.5 scrollbar-thin">
+                          <div className={`px-2 pt-1 pb-1 flex items-center justify-between text-[10px] uppercase tracking-wider font-black ${
+                            theme === 'dark' ? 'text-amber-400' : 'text-amber-700'
+                          }`}>
+                            <span className="flex items-center gap-1.5">
+                              <Flame className="w-3 h-3 fill-current text-amber-400" />
+                              <span>My Pinned Fandoms ({pinnedFandoms.length})</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-normal">Active Shows</span>
+                          </div>
+
+                          {/* Empty State when user has not pinned any fandoms */}
+                          {pinnedFandoms.length === 0 ? (
+                            <div className={`p-3 rounded-xl border text-center space-y-2.5 my-1 ${
+                              theme === 'dark' ? 'bg-black/30 border-white/5 text-slate-300' : 'bg-amber-50/60 border-amber-200 text-neutral-800'
+                            }`}>
+                              <div className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center mx-auto">
+                                <Flame className="w-4 h-4 fill-current animate-pulse" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <h6 className="font-black text-xs">No Pinned Fandoms Yet</h6>
+                                <p className="text-[10.5px] text-slate-400 leading-snug">
+                                  Tap the <strong className="text-amber-400">🔥 flame icon</strong> on any show card on your dashboard to pin your favorites here for quick access.
+                                </p>
+                              </div>
+
+                              {computedFandoms.length > 0 && (
+                                <div className="pt-2 border-t border-white/5 text-left space-y-1.5">
+                                  <span className="text-[9.5px] font-black text-slate-400 uppercase tracking-wider block">
+                                    Suggested Community Fandoms:
+                                  </span>
+                                  <div className="space-y-1">
+                                    {computedFandoms.slice(0, 3).map(popFandom => (
+                                      <div
+                                        key={`suggested-${popFandom.normalizedTitle}`}
+                                        className={`p-1.5 rounded-lg flex items-center justify-between gap-2 text-xs border ${
+                                          theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-white border-neutral-200'
+                                        }`}
+                                      >
+                                        <div className="min-w-0 flex-1">
+                                          <span className="font-extrabold text-[11px] truncate block">{popFandom.showTitle}</span>
+                                          <span className="text-[9px] text-slate-400">{popFandom.memberCount} {popFandom.memberCount === 1 ? 'Fan' : 'Fans'}</span>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleToggleFandom(popFandom.showTitle);
+                                          }}
+                                          className="px-2 py-0.5 rounded-md bg-amber-500 hover:bg-amber-400 text-black font-black text-[10px] flex items-center gap-1 cursor-pointer shrink-0 transition shadow-2xs"
+                                        >
+                                          <Flame className="w-2.5 h-2.5 fill-current" />
+                                          <span>Pin</span>
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            /* Render ONLY pinned fandoms */
+                            pinnedFandoms.map(fandom => {
+                              const isExpanded = expandedFandomShow === fandom.normalizedTitle;
+                              const isJoined = fandom.isUserJoined;
+
+                              return (
+                                <div
+                                  key={fandom.normalizedTitle}
+                                  className={`rounded-xl border transition-all overflow-hidden ${
+                                    isExpanded
+                                      ? theme === 'dark'
+                                        ? 'bg-[#181C28] border-amber-500/40 shadow-sm'
+                                        : 'bg-amber-50/80 border-amber-300 shadow-2xs'
+                                      : theme === 'dark'
+                                        ? 'bg-white/5 border-white/5 hover:border-white/10'
+                                        : 'bg-white border-neutral-200 hover:border-neutral-300'
+                                  }`}
+                                >
+                                  {/* LEVEL 1: SHOW ROW */}
+                                  <div className="p-2 flex items-center justify-between gap-1.5">
+                                    {/* Clickable Area to Toggle Level 2 Member Accordion */}
+                                    <button
+                                      type="button"
+                                      onClick={() => setExpandedFandomShow(isExpanded ? null : fandom.normalizedTitle)}
+                                      className="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer group"
+                                      title={isExpanded ? "Collapse members" : "Click to view top superfans & boards"}
+                                    >
+                                      <ChevronRight className={`w-3.5 h-3.5 shrink-0 text-slate-400 transition-transform ${isExpanded ? 'rotate-90 text-amber-400' : 'group-hover:text-white'}`} />
+                                      
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <span className="font-black text-xs truncate">
+                                            {fandom.showTitle}
+                                          </span>
+                                          {isJoined && (
+                                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                              PINNED
+                                            </span>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-[10px] text-slate-400">
+                                          <span>{fandom.memberCount} {fandom.memberCount === 1 ? 'Fan' : 'Fans'}</span>
+                                          {fandom.avgRating !== null && (
+                                            <span className="flex items-center gap-0.5 text-amber-400 font-bold">
+                                              <Star className="w-2.5 h-2.5 fill-current" />
+                                              {fandom.avgRating}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </button>
+
+                                    {/* Actions: Hub Modal + 1-Click Join/Pin Toggle */}
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleOpenFandomHub(fandom.showTitle);
+                                          setIsBuddyMenuOpen(false);
+                                        }}
+                                        className="px-2 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 hover:text-purple-200 border border-purple-500/30 text-[10px] font-extrabold transition cursor-pointer"
+                                        title="Open Full Fandom Hub Modal"
+                                      >
+                                        Hub
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleToggleFandom(fandom.showTitle);
+                                        }}
+                                        className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                                          isJoined
+                                            ? 'bg-amber-500 text-black border-amber-400 shadow-xs'
+                                            : 'bg-white/5 border-white/10 text-slate-400 hover:text-amber-400 hover:border-amber-500/40'
+                                        }`}
+                                        title={isJoined ? "Unpin Fandom" : "Pin Fandom"}
+                                      >
+                                        <Flame className={`w-3.5 h-3.5 ${isJoined ? 'fill-current' : ''}`} />
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {/* LEVEL 2: DRILLDOWN INTO SUPERFANS */}
+                                  {isExpanded && (
+                                    <div className={`p-2 border-t space-y-1.5 ${
+                                      theme === 'dark' ? 'bg-black/30 border-white/5' : 'bg-white/80 border-amber-200'
+                                    }`}>
+                                      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 pb-0.5 px-1">
+                                        <span>TOP ACTIVE SUPERFANS</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            handleOpenFandomHub(fandom.showTitle);
+                                            setIsBuddyMenuOpen(false);
+                                          }}
+                                          className="text-amber-400 hover:underline flex items-center gap-0.5 cursor-pointer font-extrabold"
+                                        >
+                                          <span>Full Leaderboard</span>
+                                          <ChevronRight className="w-2.5 h-2.5" />
+                                        </button>
+                                      </div>
+
+                                      {fandom.members.length === 0 ? (
+                                        <p className="text-[11px] text-slate-400 px-1 py-1">No other fans discovered yet.</p>
+                                      ) : (
+                                        fandom.members.slice(0, 6).map((member, mIdx) => {
+                                          const isSelf = currentUser && member.userId === currentUser.id;
+                                          const isSelected = isFriendView && boardId === member.userId;
+
+                                          return (
+                                            <div
+                                              key={`${fandom.normalizedTitle}-${member.userId}-${mIdx}`}
+                                              className={`p-1.5 rounded-lg flex items-center justify-between gap-2 text-xs transition ${
+                                                isSelected
+                                                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-200'
+                                                  : 'hover:bg-white/5'
+                                              }`}
+                                            >
+                                              <div className="flex items-center gap-2 min-w-0">
+                                                <img
+                                                  src={member.userAvatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${member.userName}`}
+                                                  alt={member.userName}
+                                                  className="w-5 h-5 rounded-full object-cover shrink-0 border border-amber-500/30"
+                                                />
+                                                <div className="min-w-0">
+                                                  <div className="flex items-center gap-1">
+                                                    <span className="font-extrabold text-[11px] truncate">
+                                                      {member.userName}
+                                                    </span>
+                                                    {isSelf && <span className="text-[8px] text-blue-400 font-bold">YOU</span>}
+                                                  </div>
+                                                  <span className="text-[9px] text-slate-400 truncate block">
+                                                    {member.status} {member.userScore ? `• ★ ${member.userScore}` : ''}
+                                                  </span>
+                                                </div>
+                                              </div>
+
+                                              {/* View Shows Button */}
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  handleJoinBoard(member.userId);
+                                                  setFandomViewContext({ showTitle: fandom.showTitle, memberName: member.userName });
+                                                  setIsBuddyMenuOpen(false);
+                                                }}
+                                                className="px-2 py-1 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[10px] transition cursor-pointer shrink-0 shadow-2xs"
+                                                title={`Switch view to ${member.userName}'s board & borrow shows`}
+                                              >
+                                                View Shows
+                                              </button>
+                                            </div>
+                                          );
+                                        })
+                                      )}
+                                    </div>
                                   )}
                                 </div>
-                                {isSelected && <Check className={`w-3.5 h-3.5 shrink-0 ${theme === 'dark' ? 'text-purple-400' : 'text-purple-700'}`} />}
-                              </button>
-                            );
-                          })}
-                      </div>
+                              );
+                            })
+                          )}
+
+                          {/* Browse All Shows Action Button */}
+                          <div className="pt-2 border-t border-white/10 space-y-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const targetFandom = pinnedFandoms[0] || computedFandoms[0];
+                                if (targetFandom) {
+                                  handleOpenFandomHub(targetFandom.showTitle);
+                                }
+                                setIsBuddyMenuOpen(false);
+                              }}
+                              className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 to-amber-600/20 hover:from-amber-500/30 hover:to-amber-600/30 border border-amber-500/40 text-amber-300 font-extrabold text-xs flex items-center justify-between gap-2 shadow-xs transition cursor-pointer group"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Flame className="w-3.5 h-3.5 text-amber-400 fill-current group-hover:scale-110 transition-transform" />
+                                <span>Browse All Show Fandoms</span>
+                              </div>
+                              <span className="text-[10px] font-mono font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                                {computedFandoms.length} Shows
+                              </span>
+                            </button>
+                            <p className="text-[9.5px] text-center text-slate-500">
+                              Tap 🔥 on any show card to pin/unpin it from this quick list
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
+
+              {/* Add / Invite Binge Buddy Icon directly to the right of Binge Buddies dropdown */}
+              <button
+                id="header-invite-buddy-button"
+                onClick={() => {
+                  setShareModalTab('invite');
+                  setIsShareOpen(true);
+                }}
+                className="p-1 sm:p-1.5 rounded-xl hover:bg-purple-500/10 dark:hover:bg-purple-500/15 text-slate-400 hover:text-purple-400 transition-all cursor-pointer shrink-0 flex items-center justify-center border border-transparent hover:border-purple-500/30"
+                title="Add Binge Buddy — Share watchlists, borrow picks & compare reviews"
+              >
+                <UserPlus className="w-3.5 h-3.5 sm:w-4 sm:h-4 stroke-[2]" />
+              </button>
             </div>
 
             {/* Active Session info on Right */}
@@ -2680,6 +3497,27 @@ export default function App() {
                     <span className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors max-w-[100px] sm:max-w-none truncate">{currentUser.name}</span>
                   </button>
 
+                  {/* VIP & VIP Watchlists Triggers - Hidden for beta testing phase */}
+                  {/*
+                  <button
+                    onClick={() => setIsVipModalOpen(true)}
+                    className="px-2 py-1 rounded-xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/30 text-amber-300 text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-sm shadow-amber-500/10"
+                    title="CouchTaterz VIP Membership & Upgrade"
+                  >
+                    <Crown className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="hidden sm:inline">VIP</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleOpenSharedWatchlists()}
+                    className="px-2 py-1 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-purple-300 text-xs font-black transition-all cursor-pointer shrink-0 flex items-center gap-1 shadow-sm"
+                    title="Shared VIP Watchlists & Squad Voting"
+                  >
+                    <Users className="w-3.5 h-3.5 text-purple-400" />
+                    <span className="hidden sm:inline">VIP Watchlists</span>
+                  </button>
+                  */}
+
                   {/* CouchTaterz Manual / Product Guide Trigger */}
                   <button
                     onClick={() => setIsFeatureGuideOpen(true)}
@@ -2687,6 +3525,15 @@ export default function App() {
                     title="CouchTaterz User Guide & Feature Manual"
                   >
                     <BookOpen className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  </button>
+
+                  {/* Feedback & Bug Reporting Trigger */}
+                  <button
+                    onClick={() => setIsReportBugOpen(true)}
+                    className="p-1 sm:p-1.5 rounded-xl hover:bg-white/5 dark:hover:bg-white/10 text-slate-400 hover:text-rose-400 transition-all cursor-pointer shrink-0 flex items-center justify-center border border-transparent hover:border-rose-500/30"
+                    title="Report Bug / Submit Feedback"
+                  >
+                    <Bug className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
 
                   <span className="text-slate-300 dark:text-slate-800">|</span>
@@ -2735,9 +3582,10 @@ export default function App() {
                 <Tv className="w-5 h-5 stroke-[2.2]" />
               </div>
               <div className="flex flex-col justify-center">
-                <h1 className="text-base sm:text-lg font-black tracking-tight uppercase leading-none">
+                <h1 className="text-base sm:text-lg font-black tracking-tight uppercase leading-none inline-flex items-center">
                   <span className="text-blue-500">COUCH</span>
                   <span className={theme === 'dark' ? 'text-white' : 'text-slate-900'}>TATERZ</span>
+                  <span className={`text-[8px] sm:text-[9px] font-bold ml-0.5 select-none relative -top-1 leading-none ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>™</span>
                 </h1>
                 <p className="text-[9.5px] sm:text-[10.5px] font-extrabold tracking-[0.2em] text-slate-400 uppercase mt-1 leading-none whitespace-nowrap">
                   YOUR BINGE BUDDY
@@ -2751,14 +3599,14 @@ export default function App() {
               {isUserJulio(currentUser) && (
                 <button
                   onClick={() => setIsAdminOpen(true)}
-                  className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition-all duration-200 hover:scale-110 active:scale-95 cursor-pointer shadow-md ${
+                  className={`p-2 sm:p-2.5 rounded-xl sm:rounded-2xl border transition hover:scale-105 cursor-pointer ${
                     theme === 'dark'
-                      ? 'bg-gradient-to-br from-indigo-500/25 via-purple-600/30 to-violet-700/30 border-purple-400/50 text-purple-300 hover:text-white hover:border-purple-300 hover:shadow-purple-500/25'
-                      : 'bg-gradient-to-br from-indigo-500 via-purple-600 to-violet-700 border-purple-400 text-white hover:opacity-90 shadow-purple-500/30'
+                      ? 'bg-[#262A33] border-white/5 text-slate-400 hover:bg-[#1A1D23] hover:text-slate-300'
+                      : 'bg-neutral-100 border-neutral-200 text-neutral-600 hover:bg-neutral-200 hover:text-neutral-800'
                   }`}
                   title="Central User Administration & Community Insights Dashboard"
                 >
-                  <Shield className="w-4 h-4 text-purple-300 dark:text-purple-200" />
+                  <Shield className="w-4 h-4" />
                 </button>
               )}
 
@@ -2910,11 +3758,12 @@ export default function App() {
                     airTime = new Date(airDateStr).getTime();
                   }
                   
-                  const thirtyDaysLater = new Date();
-                  thirtyDaysLater.setDate(thirtyDaysLater.getDate() + 30);
-                  const thirtyDaysTime = thirtyDaysLater.setHours(23, 59, 59, 999);
+                  const userLeadDays = currentUserPrefs?.notificationLeadDays ?? board?.preferences?.notificationLeadDays ?? 30;
+                  const leadDaysLater = new Date();
+                  leadDaysLater.setDate(leadDaysLater.getDate() + userLeadDays);
+                  const leadDaysTime = leadDaysLater.setHours(23, 59, 59, 999);
                   
-                  return airTime <= thirtyDaysTime;
+                  return airTime <= leadDaysTime;
                 }).length} Featured & Airing
               </span>
               <ChevronRight className="w-3.5 h-3.5" />
@@ -3016,7 +3865,7 @@ export default function App() {
 
                       <div className="pt-1 border-t border-white/5">
                         <div className="text-[10px] text-slate-500 font-bold flex items-center gap-1">
-                          <span className="text-orange-400">💡 Pro-Tip:</span> Move shows instantly between pipelines using the Status controls on any Show Card!
+                          <span className="text-amber-400">💡 Pro-Tip:</span> Move shows instantly between pipelines using the Status controls on any Show Card!
                         </div>
                       </div>
                     </div>
@@ -3116,7 +3965,7 @@ export default function App() {
                 : activeTab === 'active'
                 ? theme === 'dark' ? 'bg-[#1A1D23] border-blue-500/30 shadow-[0_4px_20px_-4px_rgba(37,99,235,0.15)]' : 'bg-white border-blue-200 shadow-sm'
                 : activeTab === 'queue'
-                ? theme === 'dark' ? 'bg-[#1A1D23] border-amber-500/30 shadow-[0_4px_20px_-4px_rgba(217,119,6,0.15)]' : 'bg-white border-amber-200 shadow-sm'
+                ? theme === 'dark' ? 'bg-[#1A1D23] border-amber-500/30 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.15)]' : 'bg-white border-amber-200 shadow-sm'
                 : theme === 'dark' ? 'bg-[#1A1D23] border-emerald-500/30 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.15)]' : 'bg-white border-emerald-200 shadow-sm'
             }`}>
               {(() => {
@@ -3646,19 +4495,33 @@ export default function App() {
                                   : 'from-purple-100/50 to-transparent')
                           }`} />
 
-                          {/* Show Banner Image Layer fading in from right (only for show recommendations or alerts with show) */}
+                          {/* Show Banner Image Layer fading in from right with seamless multi-stop feathering */}
                           {notif.show && (
-                            <div className="absolute right-0 top-0 bottom-0 w-2/5 sm:w-1/2 pointer-events-none overflow-hidden z-0">
+                            <div 
+                              className="absolute inset-0 pointer-events-none overflow-hidden z-0"
+                              style={{
+                                maskImage: 'linear-gradient(to right, transparent 0%, transparent 20%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 1) 100%)',
+                                WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 20%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 1) 100%)'
+                              }}
+                            >
                               <img
                                 src={getShowBannerImage(notif.show)}
                                 alt={notif.show.title || 'Show'}
-                                className="w-full h-full object-cover opacity-25 md:opacity-35 transition-opacity"
+                                className="w-full h-full object-cover object-right opacity-30 md:opacity-40 transition-opacity"
                                 referrerPolicy="no-referrer"
                               />
                               <div className={`absolute inset-0 bg-gradient-to-r ${
                                 theme === 'dark'
-                                  ? (isSystemAlert ? 'from-[#151922] via-[#151922]/50 to-transparent' : 'from-[#1A1D23] via-[#1A1D23]/40 to-transparent')
-                                  : 'from-white via-white/40 to-transparent'
+                                  ? (isSystemAlert 
+                                      ? 'from-[#151922] via-[#151922]/85 via-45% to-transparent' 
+                                      : isShowRec
+                                      ? 'from-[#1A1D23] via-[#1A1D23]/85 via-45% to-transparent'
+                                      : 'from-[#181524] via-[#181524]/85 via-45% to-transparent')
+                                  : (isSystemAlert
+                                      ? 'from-[#F0F9FF] via-[#F0F9FF]/90 via-45% to-transparent'
+                                      : isShowRec
+                                      ? 'from-white via-white/90 via-45% to-transparent'
+                                      : 'from-[#FAF5FF] via-[#FAF5FF]/90 via-45% to-transparent')
                               }`} />
                             </div>
                           )}
@@ -3720,7 +4583,7 @@ export default function App() {
 
                                   <div className="flex gap-2 flex-wrap items-center pt-0.5">
                                     <button
-                                      onClick={() => handleDismissNotification(notif.id)}
+                                      onClick={() => handleDismissNotification(notif.id, notif.show)}
                                       className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition cursor-pointer active:scale-95 flex items-center gap-1.5 ${
                                         theme === 'dark'
                                           ? 'bg-sky-600 hover:bg-sky-500 text-white shadow-sm shadow-sky-950/30'
@@ -3730,6 +4593,20 @@ export default function App() {
                                       <Check className="w-3.5 h-3.5" />
                                       <span>Dismiss Alert</span>
                                     </button>
+                                    {notif.show && (
+                                      <button
+                                        onClick={() => handleDismissNotification(notif.id, notif.show)}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-xl transition cursor-pointer active:scale-95 flex items-center gap-1.5 ${
+                                          theme === 'dark'
+                                            ? 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10'
+                                            : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700 border border-neutral-300'
+                                        }`}
+                                        title={`Turn off automated air date alerts for ${notif.show.title}`}
+                                      >
+                                        <BellOff className="w-3.5 h-3.5 text-slate-400" />
+                                        <span>Don't remind again</span>
+                                      </button>
+                                    )}
                                   </div>
                                 </>
                               ) : notif.show ? (
@@ -4035,9 +4912,38 @@ export default function App() {
                 >
                   <div className={`p-4 sm:p-5 border rounded-2xl relative overflow-hidden transition-all shadow-md ${
                     theme === 'dark'
-                      ? 'bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-[#1A1D23]/30 border-amber-500/25 shadow-amber-950/5'
-                      : 'bg-gradient-to-r from-amber-50 to-white border-amber-200 shadow-amber-100/50'
+                      ? 'bg-[#1A1D23] border-amber-500/25 shadow-amber-950/5'
+                      : 'bg-white border-amber-200 shadow-amber-100/50'
                   }`}>
+                    {/* Tint Overlay */}
+                    <div className={`absolute inset-0 pointer-events-none z-0 bg-gradient-to-r ${
+                      theme === 'dark'
+                        ? 'from-amber-500/10 via-amber-500/5 to-transparent'
+                        : 'from-amber-50/70 to-transparent'
+                    }`} />
+
+                    {/* Show Banner Image Layer fading in from right with seamless multi-stop feathering */}
+                    {matchingBacklogShows[0] && (
+                      <div 
+                        className="absolute inset-0 pointer-events-none overflow-hidden z-0"
+                        style={{
+                          maskImage: 'linear-gradient(to right, transparent 0%, transparent 20%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 1) 100%)',
+                          WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 20%, rgba(0, 0, 0, 0.2) 45%, rgba(0, 0, 0, 0.8) 75%, rgba(0, 0, 0, 1) 100%)'
+                        }}
+                      >
+                        <img
+                          src={getShowBannerImage(matchingBacklogShows[0])}
+                          alt={matchingBacklogShows[0].title || 'Show'}
+                          className="w-full h-full object-cover object-right opacity-30 md:opacity-40 transition-opacity"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className={`absolute inset-0 bg-gradient-to-r ${
+                          theme === 'dark'
+                            ? 'from-[#1A1D23] via-[#1A1D23]/85 via-45% to-transparent'
+                            : 'from-white via-white/90 via-45% to-transparent'
+                        }`} />
+                      </div>
+                    )}
                     <div className="absolute top-0 right-0 p-3 z-10">
                       <button 
                         onClick={handleDismissActivationAlert}
@@ -4068,7 +4974,7 @@ export default function App() {
                           <p className={`text-[11px] font-medium leading-relaxed mt-1 ${
                             theme === 'dark' ? 'text-slate-300' : 'text-neutral-600'
                           }`}>
-                            You have {matchingBacklogShows.length} {matchingBacklogShows.length === 1 ? 'show' : 'shows'} in your <span className="font-bold underline decoration-amber-500/40">Up Next</span> with new episodes airing in the next 30 days! Would you like to activate them for tracking?
+                            You have {matchingBacklogShows.length} {matchingBacklogShows.length === 1 ? 'show' : 'shows'} in your <span className="font-bold underline decoration-amber-500/40">Up Next</span> with new episodes airing in the next {notificationLeadDays} days! Would you like to activate them for tracking?
                           </p>
                         </div>
 
@@ -4150,7 +5056,7 @@ export default function App() {
                   <div className="space-y-0.5">
                     <h5 className="text-xs font-black text-purple-300 uppercase tracking-wider">Viewing Buddy Picks</h5>
                     <p className="text-[11px] text-slate-400 leading-relaxed">
-                      You are viewing shows tracked by your binge buddies. Click <span className="text-orange-400 font-extrabold">+ Add to Up Next</span> on any card to import it directly to your page!
+                      You are viewing shows tracked by your binge buddies. Click <span className="text-amber-400 font-extrabold">+ Add to Up Next</span> on any card to import it directly to your page!
                     </p>
                   </div>
                 </div>
@@ -4169,6 +5075,58 @@ export default function App() {
               </motion.div>
             )}
 
+            {/* Fandom Exploration Banner */}
+            {fandomViewContext && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="sticky top-3 z-30 mb-6 p-3.5 sm:p-4 rounded-2xl bg-[#14161C] border border-amber-500/40 shadow-2xl shadow-amber-950/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 transition-colors duration-200"
+                id="fandom-exploration-banner"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0 mt-0.5">
+                    <Flame className="w-4 h-4 fill-current animate-pulse text-amber-400" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <h5 className="text-xs font-black text-amber-300 uppercase tracking-wider">
+                        {fandomViewContext.showTitle} Fandom Network
+                      </h5>
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Full Buddy Perks
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400 leading-relaxed">
+                      Exploring <strong>{fandomViewContext.memberName}’s</strong> shows as a fellow fan. You can read their reviews, inspect their ratings, and click <strong className="text-amber-300">+ Add to Up Next</strong> to borrow shows directly into your watchlist!
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleOpenFandomHub(fandomViewContext.showTitle);
+                    }}
+                    className="px-3 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 font-extrabold text-[10px] rounded-xl transition cursor-pointer"
+                  >
+                    Fandom Hub
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFandomViewContext(null);
+                      handleJoinBoard(currentUser?.id || 'default');
+                    }}
+                    className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-[10px] rounded-xl transition shadow-lg shadow-amber-950/30 active:scale-[0.98] cursor-pointer flex items-center gap-1.5"
+                    id="fandom-back-to-my-shows-btn"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to My Shows</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
+
             {filteredShows.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 {filteredShows.map((show, idx) => {
@@ -4176,7 +5134,7 @@ export default function App() {
                   const belongsToOther = show.ownerNames ? !show.ownerNames.includes(myName) : show.ownerName !== myName;
                   return (
                     <ShowCard
-                      key={searchFamily ? `consolidated-${show.id}-${show.title.toLowerCase().trim()}-${idx}` : `${show.ownerName}-${show.id}-${show.title.toLowerCase().trim()}-${idx}`}
+                      key={searchFamily ? `consolidated-${show.id || normalizeShowTitle(show.title)}` : `show-${show.id || normalizeShowTitle(show.title)}`}
                       show={show}
                       onUpdateShow={handleUpdateShow}
                       onDeleteShow={handleDeleteShow}
@@ -4202,6 +5160,9 @@ export default function App() {
                       onOpenStoryCard={handleOpenStoryCard}
                       onRequireAuth={handleRequireAuth}
                       onOpenTaterzAiRecap={handleOpenTaterzAiRecap}
+                      notificationLeadDays={currentUserPrefs?.notificationLeadDays ?? board?.preferences?.notificationLeadDays ?? 30}
+                      onOpenFandom={handleOpenFandomHub}
+                      onToggleFandom={handleToggleFandom}
                     />
                   );
                 })}
@@ -4352,24 +5313,24 @@ export default function App() {
         </section>
       </div>
 
-      {/* Floating Action Buttons for all screens (Mobile, Tablet & Desktop) - hidden when any modal is active so they never block modal close buttons or actions */}
-      {!(isAddOpen || isShareOpen || isCalendarOpen || isPreferencesOpen || isManageActiveOpen || isStatsOpen || showQueueOnboarding || isChatOpen) && (
-        <div className="fixed bottom-6 right-6 z-30 flex flex-col gap-3.5 items-end pointer-events-auto">
-          {/* AI Companion Floating Action Button */}
+      {/* Floating Action Buttons for all screens (Mobile, Tablet & Desktop) - hidden when full-screen blocking modals are active */}
+      {!(isAddOpen || isShareOpen || isCalendarOpen || isPreferencesOpen || isManageActiveOpen || isStatsOpen || isAdminOpen || isReportBugOpen) && (
+        <div className="fixed bottom-6 right-4 sm:right-6 z-40 flex flex-col gap-2.5 items-end pointer-events-auto select-none pb-[env(safe-area-inset-bottom,0px)] pr-[env(safe-area-inset-right,0px)]">
+          {/* Invite Binge Buddy Sticky Action Button */}
           <div className="relative flex items-center group">
-            <span className="absolute right-14 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-amber-300 border border-amber-500/20 shadow-2xl">
-              ASK SPUDZ
+            <span className="absolute right-14 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity duration-150 whitespace-nowrap px-2.5 py-1.5 rounded-xl bg-slate-950/90 text-[10px] font-black tracking-widest uppercase text-purple-300 border border-purple-500/20 shadow-2xl">
+              INVITE BINGE BUDDY
             </span>
             <button
-              onClick={handleOpenTaterzAiGeneral}
-              className={`p-3.5 rounded-full transition-all duration-150 flex items-center justify-center border shadow-xl backdrop-blur-md cursor-pointer hover:scale-105 active:scale-95 ${
-                theme === 'dark'
-                  ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 hover:from-amber-500/30 hover:to-yellow-500/30 text-amber-300 border-amber-500/30 shadow-[0_0_18px_rgba(245,158,11,0.25)]'
-                  : 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-[0_4px_16px_rgba(245,158,11,0.3)]'
-              }`}
-              title="Ask Spudz"
+              id="sticky-invite-buddy-button"
+              onClick={() => {
+                setShareModalTab('invite');
+                setIsShareOpen(true);
+              }}
+              className="w-[44px] h-[44px] rounded-full bg-[#9333EA] hover:bg-[#A855F7] border border-[#A855F7] shadow-[0_4px_14px_rgba(147,51,234,0.45)] hover:shadow-[0_6px_20px_rgba(168,85,247,0.55)] transition-all duration-150 ease-[cubic-bezier(0.4,0,0.2,1)] flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95"
+              title="Invite a Binge Buddy"
             >
-              <Bot className={`w-5 h-5 ${theme === 'dark' ? 'text-amber-400' : 'text-white'}`} />
+              <UserPlus className="w-5 h-5 text-white stroke-[2.2]" strokeWidth={2.2} />
             </button>
           </div>
 
@@ -4380,8 +5341,9 @@ export default function App() {
                 Search & Add Show
               </span>
               <button
+                id="sticky-add-show-button"
                 onClick={() => setIsAddOpen(true)}
-                className="p-4 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-2xl shadow-blue-950/40 transition-colors duration-150 flex items-center justify-center border border-blue-500/20 cursor-pointer"
+                className="w-12 h-12 rounded-full bg-blue-600 hover:bg-blue-500 text-white shadow-2xl shadow-blue-950/40 transition-colors duration-150 flex items-center justify-center border border-blue-500/20 cursor-pointer"
                 title="Search & Add a Show"
               >
                 <Plus className="w-5 h-5" />
@@ -4419,6 +5381,9 @@ export default function App() {
               setFriendsState(getFriendsData(currentUser?.id || JULIO_USER_ID));
             }}
             onOpenGroupWatchAi={handleOpenTaterzAiGroup}
+            onOpenSharedWatchlists={handleOpenSharedWatchlists}
+            onOpenUpgradeModal={() => setIsVipModalOpen(true)}
+            initialTab={shareModalTab}
             theme={theme}
           />
         )}
@@ -4429,13 +5394,13 @@ export default function App() {
             onClose={() => setIsTaterzAiOpen(false)}
             shows={board?.shows || []}
             preferences={currentUserPrefs}
+            currentUser={currentUser}
             buddies={
-              (friendsState.friends || []).map((fId) => {
-                const uObj = allUsers.find((u) => u.id === fId);
+              connectedBuddies.map((u) => {
                 return {
-                  id: fId,
-                  name: uObj?.name || 'Binge Buddy',
-                  avatarUrl: uObj?.avatarUrl,
+                  id: u.id,
+                  name: u.name || 'Binge Buddy',
+                  avatarUrl: u.avatarUrl,
                   topShows: [
                     { title: 'Shogun', rating: 10, streamingService: 'Hulu' },
                     { title: 'The Bear', rating: 9, streamingService: 'Hulu' }
@@ -4446,6 +5411,7 @@ export default function App() {
             initialIntent={taterzAiIntent}
             initialShowForRecap={taterzAiShow}
             theme={theme}
+            onOpenUpgradeModal={() => setIsVipModalOpen(true)}
           />
         )}
         {isManageActiveOpen && (
@@ -4471,13 +5437,22 @@ export default function App() {
           <PreferencesModal
             key="preferences-modal"
             currentUser={currentUser}
-            preferences={board?.preferences || currentUserPrefs || { genres: [], actors: [], directors: [] }}
+            preferences={{
+              genres: [],
+              actors: [],
+              directors: [],
+              services: [],
+              ...board?.preferences,
+              ...currentUserPrefs,
+              notificationLeadDays: currentUserPrefs?.notificationLeadDays ?? board?.preferences?.notificationLeadDays ?? 14
+            }}
             existingShows={board?.shows || []}
             onSave={handleUpdateProfileAndPreferences}
             onDelete={handleDeleteProfileAndStartOver}
             onClose={() => setIsPreferencesOpen(false)}
             showWorkflowGuide={showWorkflowGuide}
             theme={theme}
+            onOpenUpgradeModal={() => setIsVipModalOpen(true)}
             onToggleWorkflowGuide={(show) => {
               setShowWorkflowGuide(show);
               if (currentUser) {
@@ -4617,7 +5592,7 @@ export default function App() {
                 {completedShowToast.title}
               </h4>
               <p className="text-[10px] text-slate-400 leading-normal mt-1">
-                Officially added to your <span className="text-emerald-400 font-bold">Library</span> pipeline! Keep on streaming with CouchTaterz! 🥔🏆✨
+                Officially added to your <span className="text-emerald-400 font-bold">Library</span> pipeline! Keep on streaming with CouchTaterz! 🏆✨
               </p>
             </div>
 
@@ -4628,6 +5603,64 @@ export default function App() {
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          </motion.div>
+        )}
+
+        {/* Status Transition Toast with Undo & View Actions */}
+        {statusChangeToast && (
+          <motion.div
+            key="status-change-toast"
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+            className="fixed bottom-6 left-6 right-6 md:left-6 md:right-auto z-50 max-w-md bg-[#161920]/95 backdrop-blur-xl border border-purple-500/35 rounded-3xl p-4 shadow-[0_20px_50px_rgba(168,85,247,0.22)] select-none flex items-center justify-between gap-3 overflow-hidden"
+          >
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-purple-600/20 text-purple-400 rounded-2xl border border-purple-500/30 shrink-0">
+                <Bookmark className="w-5 h-5" />
+              </div>
+              <div className="pr-2">
+                <p className="text-xs font-bold text-white leading-snug">
+                  "{statusChangeToast.showTitle}" moved to {statusChangeToast.targetTabName}
+                </p>
+                <p className="text-[10px] text-slate-400">
+                  Updated status to <span className="text-purple-400 font-semibold">{statusChangeToast.toStatus}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab(statusChangeToast.targetTabKey);
+                  setStatusChangeToast(null);
+                }}
+                className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] uppercase tracking-wider rounded-xl transition cursor-pointer"
+              >
+                View
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const showToRevert = board?.shows.find(s => s.id === statusChangeToast.showId);
+                  if (showToRevert) {
+                    handleUpdateShow({ ...showToRevert, status: statusChangeToast.fromStatus });
+                  }
+                  setStatusChangeToast(null);
+                }}
+                className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-slate-200 font-black text-[10px] uppercase tracking-wider rounded-xl transition cursor-pointer"
+              >
+                Undo
+              </button>
+              <button
+                type="button"
+                onClick={() => setStatusChangeToast(null)}
+                className="text-slate-500 hover:text-white p-1 ml-0.5"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </motion.div>
         )}
         {/* Hidden stats functionality for now */}
@@ -4641,6 +5674,9 @@ export default function App() {
         currentUser={currentUser}
         boardId={boardId}
         triggerReason={storyTriggerReason}
+        allUsers={allUsers}
+        friendsList={friendsState.friends}
+        theme={theme}
       />
 
       {/* Soft Gate Auth Modal for Guest Users */}
@@ -4696,7 +5732,107 @@ export default function App() {
           }
         }}
         isPro={localStorage.getItem('couchtaterz_is_pro') === 'true'}
+        currentUserId={currentUser?.id || 'default'}
+        onOpenUpgradeModal={() => setIsVipModalOpen(true)}
       />
+
+      {/* VIP All-Access Upgrade & Checkout Modal */}
+      <VipUpgradeModal
+        isOpen={isVipModalOpen}
+        onClose={() => setIsVipModalOpen(false)}
+        currentUser={currentUser}
+        onVipStatusChanged={(isVip) => {
+          if (currentUser) {
+            const updated = { ...currentUser, isVip, isPro: isVip };
+            setCurrentUser(updated);
+            try {
+              localStorage.setItem(`couchtaterz_user_${updated.id}`, JSON.stringify(updated));
+              localStorage.setItem('couchtaterz_active_user', JSON.stringify(updated));
+              localStorage.setItem('coughtater_user', JSON.stringify(updated));
+              if (isVip) {
+                localStorage.setItem('couchtaterz_is_pro', 'true');
+              }
+            } catch (e) {}
+            setAllUsers(prev => prev.map(u => u.id === updated.id ? { ...u, isVip, isPro: isVip } : u));
+          }
+        }}
+      />
+
+      {/* Shared VIP Buddy Watchlists & Squad Voting Modal */}
+      <SharedVipWatchlistsModal
+        isOpen={isSharedWatchlistsOpen}
+        onClose={() => {
+          setIsSharedWatchlistsOpen(false);
+          setSharedWatchlistInitialShow(null);
+          setSharedWatchlistInitialBuddyId(null);
+        }}
+        currentUser={currentUser}
+        allUsers={allUsers}
+        initialShowToAdd={sharedWatchlistInitialShow}
+        initialBuddyId={sharedWatchlistInitialBuddyId}
+        onOpenUpgradeModal={() => setIsVipModalOpen(true)}
+        theme={theme}
+      />
+
+      {/* Bug & Feedback Submission Modal */}
+      <ReportBugModal
+        isOpen={isReportBugOpen}
+        onClose={() => setIsReportBugOpen(false)}
+        currentUser={currentUser}
+        theme={theme}
+      />
+
+      {/* Show Fandom Hub Modal */}
+      <FandomHubModal
+        isOpen={isFandomHubOpen}
+        onClose={() => setIsFandomHubOpen(false)}
+        fandom={fandomHubShow}
+        allFandoms={computedFandoms}
+        currentUser={currentUser}
+        theme={theme}
+        connectedBuddyIds={connectedBuddies.map(b => b.id)}
+        onSelectFandom={(selectedFandom) => setFandomHubShow(selectedFandom)}
+        onToggleJoinFandom={(title) => {
+          handleToggleFandom(title);
+          if (fandomHubShow) {
+            setFandomHubShow({
+              ...fandomHubShow,
+              isUserJoined: !fandomHubShow.isUserJoined,
+              memberCount: fandomHubShow.isUserJoined ? Math.max(0, fandomHubShow.memberCount - 1) : fandomHubShow.memberCount + 1
+            });
+          }
+        }}
+        onSelectMemberBoard={(userId) => {
+          const member = fandomHubShow?.members.find(m => m.userId === userId);
+          handleJoinBoard(userId);
+          if (fandomHubShow) {
+            setFandomViewContext({ showTitle: fandomHubShow.showTitle, memberName: member?.userName || 'Fandom Member' });
+          }
+          setIsFandomHubOpen(false);
+        }}
+        onAddToQueue={(title) => {
+          const found = showsToSearch.find(s => normalizeShowTitle(s.title) === normalizeShowTitle(title));
+          if (found) {
+            handleAddToMyQueue(found);
+          }
+        }}
+      />
+
+      {/* Fandom Action Toast */}
+      <AnimatePresence>
+        {fandomToast && (
+          <motion.div
+            key="fandom-toast"
+            initial={{ opacity: 0, y: 16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.95 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-2xl bg-neutral-900/95 border border-amber-500/50 text-white shadow-2xl text-xs font-black flex items-center gap-2.5 backdrop-blur-md"
+          >
+            <Flame className="w-4 h-4 text-amber-400 fill-current animate-pulse shrink-0" />
+            <span>{fandomToast}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

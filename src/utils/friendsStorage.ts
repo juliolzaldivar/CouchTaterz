@@ -4,6 +4,9 @@
  */
 
 import { User } from '../types';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { isQuotaExhausted } from './firestoreClientSync';
 
 export interface FriendRequestDetail {
   fromUserId: string;
@@ -25,18 +28,25 @@ const STORAGE_PREFIX = 'coughtater_friends_';
 export const JULIO_USER_ID = 'default';
 
 export const CORE_BUDDY_IDS = [
+  'user-jylian-summers',
+  'user-doug-5821',
   'user-kris-5139',
   'user-rafael-9639',
   'user-lily-9367',   // AnnaDee
   'user-lilyann-4290', // Lilyann
   'user-julian-7667',  // Julian
-  'user-ejc-2841'      // EJC
+  'user-ejc-2841',      // EJC
+  'user-stef-4912',
+  'user-greg-3842',
+  'user-hyunjin-6821'
 ];
 
 export const getFriendsData = (userId: string): FriendsData => {
   if (!userId) {
     return { friends: [], pendingSent: [], pendingReceived: [] };
   }
+
+  const isJulioUser = userId === JULIO_USER_ID || userId === 'default' || userId === 'user-julio';
 
   try {
     const raw = localStorage.getItem(`${STORAGE_PREFIX}${userId}`);
@@ -45,6 +55,28 @@ export const getFriendsData = (userId: string): FriendsData => {
       if (!Array.isArray(parsed.friends)) parsed.friends = [];
       if (!Array.isArray(parsed.pendingSent)) parsed.pendingSent = [];
       if (!Array.isArray(parsed.pendingReceived)) parsed.pendingReceived = [];
+      
+      // Auto-associate Julio/admin with every user account
+      if (!isJulioUser && !parsed.friends.includes(JULIO_USER_ID) && !parsed.friends.includes('default')) {
+        parsed.friends.unshift(JULIO_USER_ID);
+        try {
+          localStorage.setItem(`${STORAGE_PREFIX}${userId}`, JSON.stringify(parsed));
+        } catch {}
+      } else if (isJulioUser) {
+        // Automatically ensure Julio has all core buddies including Jylian
+        let added = false;
+        CORE_BUDDY_IDS.forEach(cId => {
+          if (!parsed.friends.includes(cId)) {
+            parsed.friends.push(cId);
+            added = true;
+          }
+        });
+        if (added) {
+          try {
+            localStorage.setItem(`${STORAGE_PREFIX}${userId}`, JSON.stringify(parsed));
+          } catch {}
+        }
+      }
       return parsed;
     }
   } catch (e) {
@@ -52,7 +84,7 @@ export const getFriendsData = (userId: string): FriendsData => {
   }
 
   const defaultData: FriendsData = {
-    friends: [],
+    friends: isJulioUser ? [...CORE_BUDDY_IDS] : [JULIO_USER_ID],
     pendingSent: [],
     pendingReceived: []
   };
@@ -64,6 +96,9 @@ export const getFriendsData = (userId: string): FriendsData => {
 export const fetchFriendsDataAsync = async (userId: string): Promise<FriendsData> => {
   if (!userId) return getFriendsData(userId);
 
+  const isJulioUser = userId === JULIO_USER_ID || userId === 'default' || userId === 'user-julio';
+
+  // 1. Try server API
   try {
     const res = await fetch(`/api/friends/${encodeURIComponent(userId)}`);
     if (res.ok) {
@@ -72,8 +107,20 @@ export const fetchFriendsDataAsync = async (userId: string): Promise<FriendsData
       if (!Array.isArray(serverData.pendingSent)) serverData.pendingSent = [];
       if (!Array.isArray(serverData.pendingReceived)) serverData.pendingReceived = [];
 
+      const rawFriends = serverData.friends.filter(id => id !== userId);
+      if (!isJulioUser && !rawFriends.includes(JULIO_USER_ID) && !rawFriends.includes('default')) {
+        rawFriends.unshift(JULIO_USER_ID);
+      }
+
+      const localCurrent = getFriendsData(userId);
+      const combinedFriends = Array.from(new Set([
+        ...rawFriends,
+        ...(localCurrent?.friends || []),
+        ...(isJulioUser ? CORE_BUDDY_IDS : [])
+      ])).filter(id => id !== userId);
+
       const mergedData: FriendsData = {
-        friends: serverData.friends.filter(id => id !== userId),
+        friends: combinedFriends,
         pendingSent: serverData.pendingSent,
         pendingReceived: serverData.pendingReceived
       };
@@ -82,8 +129,31 @@ export const fetchFriendsDataAsync = async (userId: string): Promise<FriendsData
       return mergedData;
     }
   } catch (e) {
-    console.error('Error fetching friends data from server:', e);
+    // API not reachable or static Vercel
   }
+
+  // 2. Direct Firestore fallback
+  try {
+    const docRef = doc(db, 'friends', userId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      const fsData = docSnap.data() as FriendsData;
+      if (fsData && Array.isArray(fsData.friends)) {
+        if (!isJulioUser && !fsData.friends.includes(JULIO_USER_ID) && !fsData.friends.includes('default')) {
+          fsData.friends.unshift(JULIO_USER_ID);
+        }
+        const localCurrent = getFriendsData(userId);
+        const combined = Array.from(new Set([...fsData.friends, ...(localCurrent?.friends || [])])).filter(id => id !== userId);
+        const mergedFs: FriendsData = {
+          friends: combined,
+          pendingSent: Array.isArray(fsData.pendingSent) ? fsData.pendingSent : [],
+          pendingReceived: Array.isArray(fsData.pendingReceived) ? fsData.pendingReceived : []
+        };
+        saveFriendsData(userId, mergedFs);
+        return mergedFs;
+      }
+    }
+  } catch (fsErr) {}
 
   return getFriendsData(userId);
 };
@@ -94,6 +164,15 @@ export const saveFriendsData = (userId: string, data: FriendsData): void => {
     localStorage.setItem(`${STORAGE_PREFIX}${userId}`, JSON.stringify(data));
   } catch (e) {
     console.error('Error saving friends data:', e);
+  }
+
+  // Save to Firestore (direct cloud persistence for Vercel) if quota available
+  if (!isQuotaExhausted()) {
+    try {
+      const docRef = doc(db, 'friends', userId);
+      const cleaned = JSON.parse(JSON.stringify(data));
+      setDoc(docRef, cleaned, { merge: true }).catch(() => {});
+    } catch {}
   }
 };
 
@@ -226,6 +305,10 @@ export const respondToFriendRequest = (
   saveFriendsData(userId, userData);
   saveFriendsData(targetUserId, targetData);
 
+  try {
+    window.dispatchEvent(new CustomEvent('couchtater_friends_updated', { detail: { userId, targetUserId, action } }));
+  } catch (e) {}
+
   // Sync with server
   fetch('/api/friends/respond', {
     method: 'POST',
@@ -265,6 +348,10 @@ export const autoConnectUsers = (user1Id: string, user2Id: string): void => {
 
   saveFriendsData(user1Id, u1Data);
   saveFriendsData(user2Id, u2Data);
+
+  try {
+    window.dispatchEvent(new CustomEvent('couchtater_friends_updated', { detail: { user1Id, user2Id } }));
+  } catch (e) {}
 
   // Sync with server
   fetch('/api/friends/connect', {

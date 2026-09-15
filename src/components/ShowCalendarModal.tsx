@@ -687,7 +687,9 @@ export const ShowCalendarModal: React.FC<ShowCalendarModalProps> = ({
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1 sm:gap-1.5 truncate">
-                <span className="text-[11px] sm:text-sm font-black text-blue-500 uppercase tracking-tight">COUCHTATERZ</span>
+                <span className="text-[11px] sm:text-sm font-black text-blue-500 uppercase tracking-tight inline-flex items-center">
+                  COUCHTATERZ<span className="text-[7px] sm:text-[8px] font-bold text-slate-400 ml-0.5 select-none relative -top-0.5 leading-none">™</span>
+                </span>
                 <span className={`text-[11px] sm:text-sm font-bold uppercase tracking-tight ${theme === 'dark' ? 'text-slate-400' : 'text-slate-600'}`}>
                   · Calendar
                 </span>
