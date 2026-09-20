@@ -8,6 +8,7 @@ import { TvShow, StreamingService, ShowStatus, User } from '../types';
 import { createCleanShowFromFriend } from '../utils/reviewSanitizer';
 import { getNormalizedGenres } from '../utils/genreUtils';
 import { normalizeShowTitle, getCanonicalShowTitle } from '../utils/titleUtils';
+import { getShowBannerImage, getShowFallbackBanner } from '../utils/showBanners';
 import { Search, Loader2, X, Film, AlertCircle, Plus, Star, Tv, ChevronDown, Sparkles, SlidersHorizontal, Check, Info, ArrowLeft, Users, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -371,6 +372,7 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
     const cleanBuddyShow = createCleanShowFromFriend(item.show, 'Watching');
     const fullShow: TvShow = {
       ...cleanBuddyShow,
+      bannerImage: getShowBannerImage(cleanBuddyShow),
       title: getCanonicalShowTitle(item.show.title, existingShows),
       id: `show-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`
     };
@@ -521,7 +523,7 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
       overview: previewShow.overview || 'No description available.',
       directors: previewShow.directors || [],
       actors: previewShow.actors || [],
-      bannerImage: bannerImage.trim() || previewShow.bannerImage || 'https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg',
+      bannerImage: bannerImage.trim() || getShowBannerImage(previewShow) || 'https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg',
       bannerPosition: bannerPosition,
       concluded: previewShow.concluded !== undefined ? previewShow.concluded : false,
       totalSeasons: previewShow.totalSeasons || 1,
@@ -718,13 +720,13 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                         >
                           <div className="relative h-20 rounded-xl overflow-hidden bg-slate-800">
                             <img
-                              src={show.bannerImage}
+                              src={getShowBannerImage(show)}
                               alt={show.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                               style={{ objectPosition: show.bannerPosition || 'center 25%' }}
                               referrerPolicy="no-referrer"
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&fit=crop&w=1200&q=80';
+                                (e.currentTarget as HTMLImageElement).src = getShowFallbackBanner(show);
                               }}
                             />
                             <span className="absolute top-1 right-1 bg-purple-950/85 text-purple-200 text-[9px] font-extrabold px-1.5 py-0.5 rounded-md backdrop-blur-sm border border-purple-500/30">
@@ -968,13 +970,13 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
                           {/* Prominent Banner Image Column */}
                           <div className="relative w-28 h-20 sm:w-36 sm:h-24 rounded-xl overflow-hidden bg-slate-800 shrink-0 border border-white/10 shadow-sm">
                             <img
-                              src={show.bannerImage}
+                              src={getShowBannerImage(show)}
                               alt={show.title}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                               style={{ objectPosition: show.bannerPosition || 'center 25%' }}
                               referrerPolicy="no-referrer"
                               onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&fit=crop&w=1200&q=80';
+                                (e.currentTarget as HTMLImageElement).src = getShowFallbackBanner(show);
                               }}
                             />
                             {/* Floating Buddy Badge overlay */}
@@ -1144,18 +1146,16 @@ export const AddShowModal: React.FC<AddShowModalProps> = ({
 
               {/* Show Metadata Summary Card */}
               <div className="relative rounded-2xl overflow-hidden bg-[#0F1115] border border-white/5 p-4 flex gap-4">
-                {bannerImage && (
-                  <img 
-                    src={bannerImage} 
-                    alt={previewShow.title} 
-                    className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl object-cover border border-white/5 bg-[#262A33] shrink-0"
-                    style={{ objectPosition: bannerPosition }}
-                    referrerPolicy="no-referrer"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1574375927938-d5a98e8ffe85?auto=format&fit=crop&w=1200&q=80';
-                    }}
-                  />
-                )}
+                <img 
+                  src={bannerImage.trim() || getShowBannerImage(previewShow)} 
+                  alt={previewShow.title} 
+                  className="w-16 h-24 sm:w-20 sm:h-28 rounded-xl object-cover border border-white/5 bg-[#262A33] shrink-0"
+                  style={{ objectPosition: bannerPosition }}
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = getShowFallbackBanner(previewShow);
+                  }}
+                />
                 <div className="flex-1 space-y-2 min-w-0">
                   <div>
                     <span className="px-2 py-0.5 text-[9px] font-bold tracking-wider rounded bg-[#262A33] text-slate-300 border border-white/5 uppercase">

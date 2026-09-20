@@ -61,12 +61,14 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 1,
     episodes: [
-      { season: 1, episode: 1, title: "First Rule", airDate: "2026-08-28", overview: "When a former military colleague from the 110th Special Investigations Unit dies under suspicious circumstances, Frances Neagley launches a relentless private investigation." },
-      { season: 1, episode: 2, title: "Bad Blood", airDate: "2026-09-04", overview: "Neagley uncovers a corporate conspiracy connecting defense contractors to corrupt government officials." },
-      { season: 1, episode: 3, title: "Shadow Protocol", airDate: "2026-09-11", overview: "Targeted by professional hitmen, Neagley goes off the grid to turn the hunters into the hunted." },
-      { season: 1, episode: 4, title: "The Setup", airDate: "2026-09-18", overview: "A break-in at a high-security tech facility reveals a global cyber-espionage conspiracy." },
-      { season: 1, episode: 5, title: "Payback", airDate: "2026-09-25", overview: "With help from unexpected allies, Neagley corners the mastermind behind the killings." },
-      { season: 1, episode: 6, title: "Retribution", airDate: "2026-10-02", overview: "Season 1 finale: Frances Neagley settles the score in a high-octane confrontation." }
+      { season: 1, episode: 1, title: "L Train", airDate: "2026-09-16", overview: "When Neagley's childhood friend, Tommy, dies after walking into an oncoming train, the police are ready to label this as an apparent accident. But after receiving a mysterious message from the deceased, Neagley knows something is amiss." },
+      { season: 1, episode: 2, title: "Team Building Exercises", airDate: "2026-09-16", overview: "With Neagley's investigation into the suspicious death of her childhood friend, Tommy Crane, hitting countless roadblocks, a long-buried secret from Neagley's past threatens to upend everything she once knew of her childhood." },
+      { season: 1, episode: 3, title: "Hammer Time", airDate: "2026-09-16", overview: "After an ambush turns up her best break in the case thus far, Neagley is blindsided by local law enforcement's attempts to sideline her." },
+      { season: 1, episode: 4, title: "Breaking & Entering", airDate: "2026-09-16", overview: "Neagley's investigation into Tommy's death has drawn the focus of powerful enemies - putting herself and her team in danger." },
+      { season: 1, episode: 5, title: "Trip", airDate: "2026-09-16", overview: "Hidden truths from Neagley's past come rushing to the forefront, forcing her to rely on her newfound team more than ever." },
+      { season: 1, episode: 6, title: "Rocked", airDate: "2026-09-16", overview: "With new evidence coming to light, Neagley realizes she is not only responsible for solving Tommy's murder, but countless others as well." },
+      { season: 1, episode: 7, title: "Lebron's No Jordan", airDate: "2026-09-16", overview: "As clues dry up, Hudson is forced to make a devil's bargain to keep the case from going cold." },
+      { season: 1, episode: 8, title: "Touched", airDate: "2026-09-16", overview: "With the legacy of her deceased childhood friend on the line, and the lives of her team under threat, Neagley mounts one last stand to bring Tommy's killers to justice." }
     ]
   },
   "silo": {
@@ -142,7 +144,10 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
       { season: 14, episode: 4, title: "Lords of the Ring", airDate: "2026-08-17", overview: "Fry accidentally wears a hyper-advanced quantum engagement ring with disastrous cosmic effects." },
       { season: 14, episode: 5, title: "Attack of the 50 Foot Amy", airDate: "2026-08-24", overview: "Amy undergoes an experimental growth particle test that causes colossal chaos across New New York." },
       { season: 14, episode: 6, title: "Planet Express Yourself", airDate: "2026-08-31", overview: "Hermes enters the crew into an intergalactic corporate efficiency competition." },
-      { season: 14, episode: 7, title: "Bender's Game 2.0", airDate: "2026-09-07", overview: "The crew gets trapped inside an ancient holographic fantasy role-playing simulator." }
+      { season: 14, episode: 7, title: "Bender's Game 2.0", airDate: "2026-09-07", overview: "The crew gets trapped inside an ancient holographic fantasy role-playing simulator." },
+      { season: 14, episode: 8, title: "Quantum Leap Year", airDate: "2026-09-21", overview: "Professor Farnsworth accidentally causes temporal turbulence when testing an overclocked dark-matter engine." },
+      { season: 14, episode: 9, title: "Calculon's Curse", airDate: "2026-09-28", overview: "Calculon returns to All My Circuits with an unpredictable new AI co-star." },
+      { season: 14, episode: 10, title: "The End of Time Again", airDate: "2026-10-05", overview: "Season 14 finale: The Planet Express crew embarks on a mind-bending voyage to the edges of reality." }
     ]
   },
   "it's always sunny in philadelphia": {
@@ -222,12 +227,20 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
   },
   "harley quinn": {
     title: "Harley Quinn",
-    streamingService: "HBO",
+    streamingService: "Max",
     concluded: false,
     totalSeasons: 5,
     episodes: [
       { season: 5, episode: 1, title: "Gotham City Sirens", airDate: "2026-09-04", overview: "Harley, Ivy, and Catwoman team up for an audacious heist across Gotham's most exclusive districts." },
-      { season: 5, episode: 2, title: "Poison Ivy League", airDate: "2026-09-11", overview: "Ivy attends a prestigious botanical summit that turns into a supervillain battle royale." }
+      { season: 5, episode: 2, title: "Poison Ivy League", airDate: "2026-09-11", overview: "Ivy attends a prestigious botanical summit that turns into a supervillain battle royale." },
+      { season: 5, episode: 3, title: "Legion of Doom Redux", airDate: "2026-09-18", overview: "Harley stages an unauthorized hostile takeover of the newly reformed Legion headquarters." },
+      { season: 5, episode: 4, title: "Harlivy Forever", airDate: "2026-09-25", overview: "Ivy and Harley navigate unexpected relationship hurdles while on a frantic road trip." },
+      { season: 5, episode: 5, title: "Bachelorette Part Two", airDate: "2026-10-02", overview: "A chaotic weekend getaway on Themyscira goes completely off the rails." },
+      { season: 5, episode: 6, title: "Assault on Arkham", airDate: "2026-10-09", overview: "A jailbreak puts all of Gotham on high alert as rogue factions scramble for supremacy." },
+      { season: 5, episode: 7, title: "Clown Princess of Crime", airDate: "2026-10-16", overview: "Harley confronts a copycat vigilante threatening to steal her signature aesthetic." },
+      { season: 5, episode: 8, title: "The Bat and the Cat", airDate: "2026-10-23", overview: "Unlikely alliances form in the subterranean shadows of Old Gotham." },
+      { season: 5, episode: 9, title: "Monsters of the Deep", airDate: "2026-10-30", overview: "King Shark calls in a massive personal favor that tests everyone's sanity." },
+      { season: 5, episode: 10, title: "Season Finale", airDate: "2026-11-06", overview: "Season 5 finale: The explosive culmination of Harley and Ivy's wildest caper yet." }
     ]
   },
   "primal": {
@@ -246,7 +259,36 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 29,
     episodes: [
-      { season: 29, episode: 1, title: "AI Takeover", airDate: "2026-09-16", overview: "The boys discover the entire school administration has been replaced by experimental AI chatbots." }
+      { season: 24, episode: 1, title: "The Pandemic Special", airDate: "2020-09-30", overview: "Randy comes to terms with his role in the COVID-19 outbreak as the kids head back to school." },
+      { season: 24, episode: 2, title: "South ParQ Vaccination Special", airDate: "2021-03-10", overview: "The citizens of South Park clamor for the COVID-19 vaccine while a new militant group tries to stop them." },
+      { season: 25, episode: 1, title: "Pajama Day", airDate: "2022-02-02", overview: "PC Principal revokes Pajama Day privileges for the fourth grade class." },
+      { season: 25, episode: 2, title: "The Big Fix", airDate: "2022-02-09", overview: "Randy invites the Black family to Tegridy Farms for dinner." },
+      { season: 25, episode: 3, title: "City People", airDate: "2022-02-16", overview: "Cartman is furious when his mom gets a job as a real estate agent." },
+      { season: 25, episode: 4, title: "Back to the Cold War", airDate: "2022-03-02", overview: "Mr. Garrison relives his Cold War trauma through an intense dressage competition." },
+      { season: 25, episode: 5, title: "Help, My Teenager Hates Me!", airDate: "2022-03-09", overview: "The boys take up airsofting and are forced to bond with actual teenagers." },
+      { season: 25, episode: 6, title: "Credigree Weed St. Patrick's Day Special", airDate: "2022-03-16", overview: "Butters gets arrested for not wearing green on St. Patrick's Day." },
+      { season: 26, episode: 1, title: "Cupid Ye", airDate: "2023-02-08", overview: "Cartman is jealous of Stan and Kyle's friendship." },
+      { season: 26, episode: 2, title: "The Worldwide Privacy Tour", airDate: "2023-02-15", overview: "The prince of Canada and his wife try to find privacy and seclusion in South Park." },
+      { season: 26, episode: 3, title: "Japanese Toilet", airDate: "2023-03-01", overview: "Randy purchases a high-tech Japanese toilet, igniting a town-wide toilet paper conspiracy." },
+      { season: 26, episode: 4, title: "Deep Learning", airDate: "2023-03-08", overview: "Stan relies on ChatGPT to write essays and text messages to his girlfriend." },
+      { season: 26, episode: 5, title: "DikinBaus Hot Dogs", airDate: "2023-03-22", overview: "Cartman dreams of opening his own hot dog restaurant inside an abandoned landmark." },
+      { season: 26, episode: 6, title: "Spring Break", airDate: "2023-03-29", overview: "Garrison goes back to his old ways while vacationing in Myrtle Beach." },
+      { season: 27, episode: 1, title: "Sermon on the 'Mount", airDate: "2025-07-23", overview: "The twenty-seventh season premiere of South Park." },
+      { season: 27, episode: 2, title: "Got a Nut", airDate: "2025-08-06", overview: "The town reacts to an unprecedented local shortage." },
+      { season: 27, episode: 3, title: "Sickofancy", airDate: "2025-08-20", overview: "The boys navigate social hierarchy and sycophantic behavior." },
+      { season: 27, episode: 4, title: "Wok is Dead", airDate: "2025-09-03", overview: "Culinary traditions clash with modern town fads." },
+      { season: 27, episode: 5, title: "Conflict of Interest", airDate: "2025-09-24", overview: "Town politics reach a boiling point." },
+      { season: 28, episode: 1, title: "Twisted Christian", airDate: "2025-10-15", overview: "Season 28 premiere following the continuing town drama." },
+      { season: 28, episode: 2, title: "The Woman in the Hat", airDate: "2025-10-29", overview: "A mysterious visitor causes a stir among the fourth graders." },
+      { season: 28, episode: 3, title: "Sora Not Sorry", airDate: "2025-11-12", overview: "AI video generation creates utter chaos at South Park Elementary." },
+      { season: 28, episode: 4, title: "Turkey Trot", airDate: "2025-11-26", overview: "Thanksgiving holiday brings fierce competition." },
+      { season: 28, episode: 5, title: "The Crap Out", airDate: "2025-12-10", overview: "The Season 28 finale." },
+      { season: 29, episode: 1, title: "South American Biker Gangs", airDate: "2026-09-16", overview: "The arrival of e-bikes in town ignites a fierce turf war between the boys and adult cyclists." },
+      { season: 29, episode: 2, title: "Episode 2", airDate: "2026-09-30", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 3, title: "Episode 3", airDate: "2026-10-14", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 4, title: "Episode 4", airDate: "2026-10-28", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 5, title: "Episode 5", airDate: "2026-11-11", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 6, title: "Episode 6", airDate: "2026-11-25", overview: "The twenty-ninth season of South Park continues." }
     ]
   },
   "slow horses": {
@@ -255,7 +297,12 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 6,
     episodes: [
-      { season: 6, episode: 1, title: "Dead Drop", airDate: "2026-09-16", overview: "Jackson Lamb and Slough House uncover a rogue MI5 sleeper cell operating on British soil." }
+      { season: 6, episode: 1, title: "Circle of Life", airDate: "2026-09-16", overview: "Jackson Lamb and Slough House uncover a rogue MI5 sleeper cell operating on British soil." },
+      { season: 6, episode: 2, title: "Daddy Issues", airDate: "2026-09-23", overview: "The team digs deeper into the conspiracy as old family tensions resurface." },
+      { season: 6, episode: 3, title: "Resurrection", airDate: "2026-09-30", overview: "An operative thought to be dead returns with explosive secrets." },
+      { season: 6, episode: 4, title: "Lost and Found", airDate: "2026-10-07", overview: "Crucial intelligence is recovered from an abandoned listening post." },
+      { season: 6, episode: 5, title: "Sayonara", airDate: "2026-10-14", overview: "The penultimate showdown pushes Slough House to the breaking point." },
+      { season: 6, episode: 6, title: "Judgment Day", airDate: "2026-10-21", overview: "Season 6 finale: Jackson Lamb executes a masterstroke to save his agents." }
     ]
   },
   "scrubs": {
@@ -282,43 +329,40 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 4,
     episodes: [
-      { season: 4, episode: 1, title: "Into the Woods", airDate: "2026-10-18", overview: "Boyd discovers a subterranean doorway beneath the town that changes everything." }
+      { season: 4, episode: 1, title: "Into the Woods", airDate: "2026-04-19", overview: "Boyd discovers a subterranean doorway beneath the town that changes everything." },
+      { season: 4, episode: 10, title: "The Tower Calls", airDate: "2026-06-21", overview: "Season 4 finale: The secrets of the lighthouse and the radio signal collide." }
     ]
   },
   "fallout": {
     title: "Fallout",
     streamingService: "Prime Video",
     concluded: false,
-    totalSeasons: 2,
+    totalSeasons: 3,
     episodes: [
-      { season: 2, episode: 1, title: "New Vegas Bound", airDate: "2026-11-12", overview: "Lucy, the Ghoul, and Maximus arrive at the glowing neon ruins of New Vegas." }
+      { season: 2, episode: 1, title: "The Strip", airDate: "2025-12-16", overview: "Lucy, the Ghoul, and Maximus arrive at the glowing neon ruins of New Vegas." },
+      { season: 2, episode: 8, title: "The House Always Wins", airDate: "2026-02-04", overview: "Season 2 finale: The power struggle for the Mojave Wasteland reaches a boiling point." },
+      { season: 3, episode: 1, title: "Season 3 Premiere", airDate: "2027-11-10", overview: "The wasteland journey ventures into uncharted territory." }
     ]
   },
   "stranger things": {
     title: "Stranger Things",
     streamingService: "Netflix",
-    concluded: false,
+    concluded: true,
     totalSeasons: 5,
     episodes: [
-      { season: 5, episode: 1, title: "The Crawl", airDate: "2026-11-20", overview: "Eleven and the Hawkins gang prepare for the ultimate confrontation against Vecna." }
+      { season: 5, episode: 1, title: "Chapter One: The Crawl", airDate: "2025-11-26", overview: "Eleven and the Hawkins gang prepare for the ultimate confrontation against the Upside Down." },
+      { season: 5, episode: 8, title: "Chapter Eight: The Rightside Up", airDate: "2025-12-31", overview: "Series finale: The definitive final battle for Hawkins." }
     ]
   },
   "severance": {
     title: "Severance",
     streamingService: "Apple TV",
     concluded: false,
-    totalSeasons: 2,
+    totalSeasons: 3,
     episodes: [
-      { season: 2, episode: 1, title: "Hello Ms. Cobel", airDate: "2026-12-05", overview: "Mark and the severed floor face strict security protocols in the aftermath of the overtime leak." },
-      { season: 2, episode: 2, title: "The Aftermath", airDate: "2026-12-12", overview: "Lumon tightens its grip on Macrodata Refinement while Dylan navigates new department restrictions." },
-      { season: 2, episode: 3, title: "Who Is Alive?", airDate: "2026-12-19", overview: "Mark seeks clandestine answers regarding Gemma's fate inside the testing floor." },
-      { season: 2, episode: 4, title: "Woe", airDate: "2026-12-26", overview: "Helly confronts the board as new severed department personnel are introduced." },
-      { season: 2, episode: 5, title: "The Overtime Protocol", airDate: "2027-01-02", overview: "Irving searches for old acquaintances on the outside." },
-      { season: 2, episode: 6, title: "Cold Harbor", airDate: "2027-01-09", overview: "A security breach threatens Lumon's key initiative." },
-      { season: 2, episode: 7, title: "The Board", airDate: "2027-01-16", overview: "The severed staff orchestrates an audacious synchronized gambit." },
-      { season: 2, episode: 8, title: "The Lexington Letter", airDate: "2027-01-23", overview: "Hidden messages in Lumon documentation reveal the company's ultimate goal." },
-      { season: 2, episode: 9, title: "The Grand Hall", airDate: "2027-01-30", overview: "Mark risks everything to access the sub-basement levels." },
-      { season: 2, episode: 10, title: "The Great Egress", airDate: "2027-02-06", overview: "Season 2 finale: The explosive showdown across Lumon Industries." }
+      { season: 2, episode: 1, title: "Hello Ms. Cobel", airDate: "2025-01-17", overview: "Mark and the severed floor face strict security protocols in the aftermath of the overtime leak." },
+      { season: 2, episode: 10, title: "Cold Harbor", airDate: "2025-03-21", overview: "Season 2 finale: The explosive showdown across Lumon Industries." },
+      { season: 3, episode: 1, title: "Season 3 Premiere", airDate: "2027-01-15", overview: "Mark and the severed department uncover deeper Lumon corporate secrets." }
     ]
   },
   "the last of us": {
@@ -327,16 +371,19 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 3,
     episodes: [
-      { season: 3, episode: 1, title: "Season 3 Premiere", airDate: "2027-04-18", overview: "Joel and Ellie face new challenges across the fractured frontier." }
+      { season: 2, episode: 1, title: "Jackson", airDate: "2025-04-13", overview: "Joel and Ellie find tentative peace in Jackson before past actions catch up with them." },
+      { season: 2, episode: 7, title: "Seattle Day 3", airDate: "2025-05-25", overview: "Season 2 finale: The emotional clash reaches its tragic turning point." },
+      { season: 3, episode: 1, title: "Season 3 Premiere", airDate: "2027-04-18", overview: "The next chapter in Ellie's journey begins across the fractured frontier." }
     ]
   },
   "the bear": {
     title: "The Bear",
     streamingService: "Hulu",
     concluded: false,
-    totalSeasons: 4,
+    totalSeasons: 5,
     episodes: [
-      { season: 4, episode: 1, title: "Season 4 Premiere", airDate: "2027-06-18", overview: "Carmy, Sydney, and Richie push for new culinary heights amidst industry turbulence." }
+      { season: 4, episode: 1, title: "Season 4 Premiere", airDate: "2025-06-25", overview: "Carmy, Sydney, and Richie push for new culinary heights amidst industry turbulence." },
+      { season: 5, episode: 1, title: "Season 5 Premiere", airDate: "2027-06-24", overview: "The crew navigates the next chapter of culinary ambition in Chicago." }
     ]
   },
   "house of the dragon": {
@@ -345,60 +392,91 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 4,
     episodes: [
-      { season: 4, episode: 1, title: "The Hour of the Wolf", airDate: "2027-05-10", overview: "The Targaryen civil war reaches its climactic final chapter." }
+      { season: 3, episode: 1, title: "The Battle of the Gullet", airDate: "2026-06-21", overview: "The dragons clash in the devastating naval blockade as war consumes the realm." },
+      { season: 3, episode: 8, title: "The Fall of King's Landing", airDate: "2026-08-09", overview: "Season 3 finale: The black faction launches their audacious strike." },
+      { season: 4, episode: 1, title: "The Hour of the Wolf", airDate: "2028-06-18", overview: "The climactic final season of the Targaryen civil war begins." }
     ]
   },
   "daredevil: born again": {
     title: "Daredevil: Born Again",
     streamingService: "Disney+",
     concluded: false,
-    totalSeasons: 1,
+    totalSeasons: 2,
     episodes: [
-      { season: 1, episode: 1, title: "Born Again Series Premiere", airDate: "2026-09-18", overview: "Matt Murdock and Wilson Fisk cross paths once again in Hell's Kitchen." }
+      { season: 1, episode: 1, title: "Heaven’s Half Hour", airDate: "2025-03-04", overview: "Matt Murdock and Wilson Fisk cross paths once again in Hell's Kitchen." },
+      { season: 1, episode: 2, title: "Optics", airDate: "2025-03-04", overview: "Wilson Fisk consolidates power while Matt assesses the shifting political landscape." },
+      { season: 1, episode: 3, title: "The Hollow of His Hand", airDate: "2025-03-11", overview: "Murdock defends a vulnerable client as criminal syndicates clash." },
+      { season: 1, episode: 4, title: "Sic Semper Systema", airDate: "2025-03-18", overview: "The justice system is tested as corruption deepens across the city." },
+      { season: 1, episode: 5, title: "With Interest", airDate: "2025-03-25", overview: "Old debts come due in Hell's Kitchen." },
+      { season: 1, episode: 6, title: "Excessive Force", airDate: "2025-04-01", overview: "Tensions between police and vigilantes boil over." },
+      { season: 1, episode: 7, title: "Art for Art’s Sake", airDate: "2025-04-08", overview: "Muse's artistic reign of terror demands Matt Murdock's intervention." },
+      { season: 1, episode: 8, title: "Isle of Joy", airDate: "2025-04-15", overview: "The penultimate showdown prepares the city for chaos." },
+      { season: 1, episode: 9, title: "Straight to Hell", airDate: "2025-04-22", overview: "Season 1 finale: Wilson Fisk and Daredevil clash in an unforgettable confrontation." },
+      { season: 2, episode: 1, title: "The Northern Star", airDate: "2026-03-24", overview: "Mayor Fisk's anti-vigilante crusade reaches a dangerous fever pitch." },
+      { season: 2, episode: 2, title: "Shoot the Moon", airDate: "2026-03-31", overview: "Matt operates in the shadows as city enforcement tightens." },
+      { season: 2, episode: 3, title: "The Scales & the Sword", airDate: "2026-04-07", overview: "Courtroom battles mirror violent conflicts on the streets." },
+      { season: 2, episode: 4, title: "Gloves Off", airDate: "2026-04-14", overview: "Fisk escalates the crackdown to unmask vigilantes." },
+      { season: 2, episode: 5, title: "The Grand Design", airDate: "2026-04-21", overview: "The mayor's true agenda for New York is laid bare." },
+      { season: 2, episode: 6, title: "Requiem", airDate: "2026-04-28", overview: "Allies suffer heavy losses in the ongoing crusade." },
+      { season: 2, episode: 7, title: "The Hateful Darkness", airDate: "2026-05-05", overview: "Desperate alliances form to counter Fisk's grip." },
+      { season: 2, episode: 8, title: "The Southern Cross", airDate: "2026-05-12", overview: "Season 2 finale: The explosive culmination of Devil's Reign." }
     ]
   },
   "yellowstone": {
     title: "Yellowstone",
     streamingService: "Peacock",
-    concluded: false,
+    concluded: true,
     totalSeasons: 5,
     episodes: [
-      { season: 5, episode: 15, title: "Season 5 Part 2 Finale", airDate: "2026-11-15", overview: "The Dutton family makes their final stand to protect the ranch." }
+      { season: 5, episode: 14, title: "Life is a Promise", airDate: "2024-12-15", overview: "Series finale: The Dutton family makes their final stand to protect the ranch." }
     ]
   },
   "the pitt": {
     title: "The Pitt",
-    streamingService: "HBO",
+    streamingService: "Max",
     concluded: false,
-    totalSeasons: 1,
+    totalSeasons: 3,
     episodes: [
-      { season: 1, episode: 1, title: "7:00 AM", airDate: "2026-09-03", overview: "Dr. Michael Harris begins a relentless 15-hour shift at a front-line Pittsburgh emergency department." },
-      { season: 1, episode: 2, title: "8:00 AM", airDate: "2026-09-10", overview: "A mass-casualty industrial accident pushes the emergency staff to their limits." },
-      { season: 1, episode: 3, title: "9:00 AM", airDate: "2026-09-17", overview: "Tensions flare among the senior attending physicians over hospital resource allocation." },
-      { season: 1, episode: 4, title: "10:00 AM", airDate: "2026-09-24", overview: "Dr. Harris mentors a struggling resident through a high-stakes trauma procedure." }
+      { season: 1, episode: 1, title: "7:00 A.M.", airDate: "2025-01-09", overview: "Dr. Michael 'Robby' Robinavitch begins a relentless 15-hour shift at a front-line Pittsburgh trauma center." },
+      { season: 1, episode: 2, title: "8:00 A.M.", airDate: "2025-01-09", overview: "A mass-casualty industrial accident pushes the emergency staff to their limits." },
+      { season: 1, episode: 3, title: "9:00 A.M.", airDate: "2025-01-16", overview: "Tensions flare among the senior attending physicians over hospital resource allocation." },
+      { season: 1, episode: 4, title: "10:00 A.M.", airDate: "2025-01-23", overview: "Dr. Robinavitch mentors a struggling resident through a high-stakes trauma procedure." },
+      { season: 1, episode: 5, title: "11:00 A.M.", airDate: "2025-01-30", overview: "A sudden influx of critical patients strains the ER supplies and staff." },
+      { season: 1, episode: 6, title: "12:00 P.M.", airDate: "2025-02-06", overview: "Midday rush brings complex clinical mysteries and personal drama." },
+      { season: 1, episode: 7, title: "1:00 P.M.", airDate: "2025-02-13", overview: "An emotional confrontation between family members tests the care team." },
+      { season: 1, episode: 8, title: "2:00 P.M.", airDate: "2025-02-20", overview: "A critical pediatric trauma demands immediate multi-specialty intervention." },
+      { season: 1, episode: 9, title: "3:00 P.M.", airDate: "2025-02-27", overview: "Staff fatigue begins setting in as unexpected emergencies mount." },
+      { season: 1, episode: 10, title: "4:00 P.M.", airDate: "2025-03-06", overview: "A citywide power outage forces the ER into backup battery protocols." },
+      { season: 1, episode: 11, title: "5:00 P.M.", airDate: "2025-03-13", overview: "Shift handover approaches amidst an influx of rush-hour accident victims." },
+      { season: 1, episode: 12, title: "6:00 P.M.", airDate: "2025-03-20", overview: "Difficult administrative decisions impact surgical theater priorities." },
+      { season: 1, episode: 13, title: "7:00 P.M.", airDate: "2025-03-27", overview: "An undercover detective arrives with a critically injured suspect." },
+      { season: 1, episode: 14, title: "8:00 P.M.", airDate: "2025-04-03", overview: "The penultimate hour of the grueling shift brings unprecedented emotional strain." },
+      { season: 1, episode: 15, title: "9:00 P.M.", airDate: "2025-04-10", overview: "Season 1 finale: The final hour of the 15-hour shift tests everyone to their absolute limits." },
+      { season: 2, episode: 1, title: "7:00 A.M.", airDate: "2026-01-08", overview: "Dr. Robby Robinavitch and the team return for another intense 15-hour shift." },
+      { season: 2, episode: 15, title: "9:00 P.M.", airDate: "2026-04-16", overview: "Season 2 finale: The conclusion of the second high-stakes trauma shift." },
+      { season: 3, episode: 1, title: "7:00 A.M.", airDate: "2027-01-07", overview: "Season 3 premiere: The third 15-hour emergency trauma shift begins in Pittsburgh." }
     ]
   },
   "only murders in the building": {
     title: "Only Murders in the Building",
     streamingService: "Hulu",
     concluded: false,
-    totalSeasons: 5,
+    totalSeasons: 6,
     episodes: [
-      { season: 5, episode: 1, title: "The Farewell Tour", airDate: "2026-08-26", overview: "Charles, Oliver, and Mabel investigate a shocking new crime that rocks the Arconia community." },
-      { season: 5, episode: 2, title: "Murder on the Set", airDate: "2026-09-02", overview: "The trio follows a trail of clues leading behind the scenes of an eccentric Broadway production." },
-      { season: 5, episode: 3, title: "Double Feature", airDate: "2026-09-09", overview: "Mabel discovers an encrypted voicemail connecting the victim to an old Arconia resident." },
-      { season: 5, episode: 4, title: "The Arconia Files", airDate: "2026-09-16", overview: "Oliver hosts a chaotic party to corner their prime suspect." }
+      { season: 5, episode: 1, title: "The Farewell Tour", airDate: "2025-09-09", overview: "Charles, Oliver, and Mabel investigate a shocking new crime that rocks the Arconia community." },
+      { season: 5, episode: 10, title: "Curtain Call", airDate: "2025-10-28", overview: "Season 5 finale: The podcast trio solves their most personal case yet." },
+      { season: 6, episode: 1, title: "Season 6 Premiere", airDate: "2026-09-29", overview: "A new mystery unfolds in the storied hallways of the Arconia." }
     ]
   },
   "the white lotus": {
     title: "The White Lotus",
     streamingService: "HBO",
     concluded: false,
-    totalSeasons: 3,
+    totalSeasons: 4,
     episodes: [
-      { season: 3, episode: 1, title: "Sawatdee", airDate: "2026-09-27", overview: "A new cohort of wealthy guests arrives at the lavish White Lotus luxury resort in Thailand." },
-      { season: 3, episode: 2, title: "The Lotus Blooms", airDate: "2026-10-04", overview: "Spiritual wellness excursions lead to unexpected interpersonal friction and dark rivalries." },
-      { season: 3, episode: 3, title: "Sanctuary", airDate: "2026-10-11", overview: "A secluded meditation retreat uncovers explosive family secrets." }
+      { season: 3, episode: 1, title: "Sawatdee", airDate: "2025-02-16", overview: "A new cohort of wealthy guests arrives at the lavish White Lotus luxury resort in Thailand." },
+      { season: 3, episode: 8, title: "Karma", airDate: "2025-04-06", overview: "Season 3 finale: The tensions culminate in shocking revelations." },
+      { season: 4, episode: 1, title: "Season 4 Premiere", airDate: "2027-02-14", overview: "A new resort destination welcomes an eccentric group of vacationers." }
     ]
   },
   "industry": {
@@ -536,11 +614,13 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
   "fear factor": {
     title: "Fear Factor",
     streamingService: "Peacock",
-    concluded: false,
+    concluded: true,
     totalSeasons: 2,
     episodes: [
-      { season: 2, episode: 1, title: "Ice Is Thicker Than Water", airDate: "2026-08-15", overview: "Competitors face freezing underwater obstacles and high-altitude stunts." },
-      { season: 2, episode: 2, title: "High Wire Terror", airDate: "2026-08-22", overview: "Teams must balance across a swaying cable between two soaring skyscrapers." }
+      { season: 1, episode: 1, title: "Ice Is Thicker Than Water", airDate: "2017-05-30", overview: "Competitors face freezing underwater obstacles and high-altitude stunts." },
+      { season: 1, episode: 2, title: "Party Games", airDate: "2017-06-06", overview: "Contestants take part in extreme party game challenges." },
+      { season: 2, episode: 1, title: "Get the Hell Out", airDate: "2018-02-25", overview: "Contestants face their deepest fears in a battle to escape high-stress environments." },
+      { season: 2, episode: 2, title: "Tech-Hell", airDate: "2018-03-04", overview: "Contestants face tech-related challenges and extreme digital stunts." }
     ]
   },
   "vanderpump rules": {
@@ -585,12 +665,20 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
   },
   "my adventures with superman": {
     title: "My Adventures with Superman",
-    streamingService: "HBO",
+    streamingService: "Max",
     concluded: false,
     totalSeasons: 3,
     episodes: [
       { season: 3, episode: 1, title: "Metropolis Reborn", airDate: "2026-09-05", overview: "Clark, Lois, and Jimmy investigate advanced alien technology surfacing across Metropolis." },
-      { season: 3, episode: 2, title: "Brainiac's Return", airDate: "2026-09-12", overview: "Superman must defend the Daily Planet from a cybernetic assault." }
+      { season: 3, episode: 2, title: "Brainiac's Return", airDate: "2026-09-12", overview: "Superman must defend the Daily Planet from a cybernetic assault." },
+      { season: 3, episode: 3, title: "The House of El", airDate: "2026-09-19", overview: "Clark discovers ancient Kryptonian archives while Hank Henshaw makes a bold power play." },
+      { season: 3, episode: 4, title: "Kandor's Light", airDate: "2026-09-26", overview: "An enigmatic alien visitor challenges the team's trust as Metropolis faces a blackout." },
+      { season: 3, episode: 5, title: "Truth and Justice", airDate: "2026-10-03", overview: "Hank throws a fit. Clark engages in fisticuffs. John wraps up his visit. The future belongs to everyone." },
+      { season: 3, episode: 6, title: "Steel and Shadows", airDate: "2026-10-10", overview: "A mechanized threat targets S.T.A.R. Labs forcing Jimmy and Lois into dangerous investigative journalism." },
+      { season: 3, episode: 7, title: "Phantom Zone", airDate: "2026-10-17", overview: "Clark is pulled into a dimensional anomaly and must confront apparitions of Krypton's fall." },
+      { season: 3, episode: 8, title: "The Last Son", airDate: "2026-10-24", overview: "An army of cybernetic duplicates threatens Earth." },
+      { season: 3, episode: 9, title: "Alliance", airDate: "2026-10-31", overview: "Unlikely allies join forces as the true architect of the Metropolis invasion emerges." },
+      { season: 3, episode: 10, title: "Man of Tomorrow", airDate: "2026-11-07", overview: "Season 3 finale: Superman, Lois, and Jimmy rally the entire city for a historic battle." }
     ]
   },
   "one piece": {
@@ -727,10 +815,10 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
   "peaky blinders": {
     title: "Peaky Blinders",
     streamingService: "Netflix",
-    concluded: false,
+    concluded: true,
     totalSeasons: 6,
     episodes: [
-      { season: 6, episode: 6, title: "Lock and Key", airDate: "2026-08-25", overview: "Tommy Shelby resolves family loyalties and prepares his legacy as the saga reaches its boiling point." }
+      { season: 6, episode: 6, title: "Lock and Key", airDate: "2022-04-03", overview: "Tommy Shelby resolves family loyalties and prepares his legacy as the television saga reaches its conclusion." }
     ]
   },
   "foundation": {
@@ -793,9 +881,11 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     title: "Alien: Earth",
     streamingService: "Hulu",
     concluded: false,
-    totalSeasons: 1,
+    totalSeasons: 2,
     episodes: [
-      { season: 1, episode: 1, title: "First Contact", airDate: "2026-09-18", overview: "A mysterious deep-space vessel crash-lands on Earth, forcing a tactical recovery squad into a horrific survival struggle." }
+      { season: 1, episode: 1, title: "First Contact", airDate: "2025-08-12", overview: "A mysterious deep-space vessel crash-lands on Earth, forcing a tactical recovery squad into a horrific survival struggle." },
+      { season: 1, episode: 8, title: "Earthfall", airDate: "2025-09-23", overview: "Season 1 finale: The Xenomorph threat breaches containment." },
+      { season: 2, episode: 1, title: "Season 2 Premiere", airDate: "2027-08-17", overview: "The battle for planetary survival intensifies as the infestation spreads." }
     ]
   },
   "paradise": {
@@ -829,20 +919,22 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     title: "Knight of the Seven Kingdoms",
     streamingService: "HBO",
     concluded: false,
-    totalSeasons: 1,
+    totalSeasons: 2,
     episodes: [
-      { season: 1, episode: 1, title: "The Hedge Knight", airDate: "2026-09-20", overview: "Ser Duncan the Tall and his diminutive squire Egg travel Westeros a century before Game of Thrones." },
-      { season: 1, episode: 2, title: "Ashford Meadow", airDate: "2026-09-27", overview: "A prestigious tourney at Ashford turns treacherous when royal temperaments clash." }
+      { season: 1, episode: 1, title: "The Hedge Knight", airDate: "2026-01-18", overview: "Ser Duncan the Tall and his diminutive squire Egg travel Westeros a century before Game of Thrones." },
+      { season: 1, episode: 6, title: "The Trial of Seven", airDate: "2026-02-22", overview: "Season 1 finale: Dunk defends his honor in a legendary trial of arms." },
+      { season: 2, episode: 1, title: "The Sworn Sword", airDate: "2027-01-17", overview: "Season 2 premiere: Dunk and Egg enter the service of Ser Eustace Osgrey." }
     ]
   },
   "a knight of the seven kingdoms": {
     title: "A Knight of the Seven Kingdoms",
     streamingService: "HBO",
     concluded: false,
-    totalSeasons: 1,
+    totalSeasons: 2,
     episodes: [
-      { season: 1, episode: 1, title: "The Hedge Knight", airDate: "2026-09-20", overview: "Ser Duncan the Tall and his diminutive squire Egg travel Westeros a century before Game of Thrones." },
-      { season: 1, episode: 2, title: "Ashford Meadow", airDate: "2026-09-27", overview: "A prestigious tourney at Ashford turns treacherous when royal temperaments clash." }
+      { season: 1, episode: 1, title: "The Hedge Knight", airDate: "2026-01-18", overview: "Ser Duncan the Tall and his diminutive squire Egg travel Westeros a century before Game of Thrones." },
+      { season: 1, episode: 6, title: "The Trial of Seven", airDate: "2026-02-22", overview: "Season 1 finale: Dunk defends his honor in a legendary trial of arms." },
+      { season: 2, episode: 1, title: "The Sworn Sword", airDate: "2027-01-17", overview: "Season 2 premiere: Dunk and Egg enter the service of Ser Eustace Osgrey." }
     ]
   },
   "batman: caped crusader": {

@@ -1,0 +1,311 @@
+{
+  "id": "user-alt-j-9890",
+  "name": "Alt J's Collection",
+  "owner": {
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Alt%20J",
+    "createdAt": "2026-08-23T21:42:01.455Z",
+    "id": "user-alt-j-9890",
+    "name": "Alt J",
+    "email": "julio.zaldivar@westtechalliance.com"
+  },
+  "preferences": {
+    "genres": [
+      "Comedy",
+      "Horror",
+      "Western",
+      "Animation"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu",
+      "Apple TV",
+      "Paramount+",
+      "Peacock",
+      "AMC+",
+      "Starz"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1787521348684",
+      "title": "The Madison",
+      "actors": [
+        "Michelle Pfeiffer",
+        "Kurt Russell",
+        "Beau Garrett",
+        "Patrick J. Adams",
+        "Elle Chapman"
+      ],
+      "genres": [
+        "Drama",
+        "Western"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "River's Edge",
+        "S1E2": "Under the Pines",
+        "S1E3": "Watch Her Fall",
+        "S1E4": "Tomorrow Is Goodbye",
+        "S1E5": "No Name and a New Dream",
+        "S1E6": "I Give Me Permission"
+      },
+      "overview": "The Clyburns uproot their comfortable New York City lives to the wild, untamed beauty of Montana's Madison River Valley on a search for connection.",
+      "concluded": false,
+      "createdAt": "2026-08-23T21:42:28.685Z",
+      "directors": [
+        "Taylor Sheridan",
+        "Christina Alexandra Voros"
+      ],
+      "updatedAt": "2026-08-27T03:01:03.426Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/lhQQE9vlNCKOYWamaHW8CBiI09B.jpg",
+      "nextEpisode": {
+        "season": 1,
+        "episode": 2,
+        "title": "Under the Pines",
+        "airDate": "2026-09-20",
+        "overview": "The family struggles to adapt to rural life while confronting unresolved grief."
+      },
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-27T03:01:03.426Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-27T03:01:03.426Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        6
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.471Z",
+      "progressUpdatedAt": "2026-08-27T03:01:03.426Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "show-1787521321456-352493-0",
+      "title": "The Bear",
+      "actors": [
+        "Jeremy Allen White",
+        "Ebon Moss-Bachrach",
+        "Ayo Edebiri"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "System",
+        "S1E2": "Hands",
+        "S1E3": "Brigade",
+        "S1E4": "Dogs",
+        "S1E5": "Sheridan",
+        "S1E6": "Ceres",
+        "S1E7": "Review",
+        "S1E8": "Braciole",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family sandwich shop after a heartbreaking death.",
+      "concluded": true,
+      "createdAt": "2026-08-23T21:42:01.456Z",
+      "directors": [
+        "Christopher Storer"
+      ],
+      "isStarter": true,
+      "ownerName": "Alt J",
+      "updatedAt": "2026-08-27T03:01:03.427Z",
+      "userScore": 9.4,
+      "isFavorite": false,
+      "ownerNames": [
+        "Alt J"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "System",
+        "progressUpdatedAt": "2026-08-27T03:01:03.427Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-27T03:01:03.427Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.471Z",
+      "progressUpdatedAt": "2026-08-27T03:01:03.427Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1787521321456-458230-1",
+      "title": "The Last of Us",
+      "actors": [
+        "Pedro Pascal",
+        "Bella Ramsey",
+        "Gabriel Luna"
+      ],
+      "genres": [
+        "Horror",
+        "Drama",
+        "Sci-Fi",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "When You're Lost in the Darkness",
+        "S1E2": "Infected",
+        "S1E3": "Long, Long Time",
+        "S1E4": "Please Hold to My Hand",
+        "S1E5": "Endure and Survive",
+        "S1E6": "Kin",
+        "S1E7": "Left Behind",
+        "S1E8": "When We Are in Need",
+        "S1E9": "Look for the Light"
+      },
+      "overview": "Twenty years after modern civilization has been destroyed, Joel, a hardened survivor, is hired to smuggle Ellie, a 14-year-old girl, out of an oppressive quarantine zone.",
+      "concluded": false,
+      "createdAt": "2026-08-23T21:42:01.456Z",
+      "directors": [
+        "Craig Mazin",
+        "Neil Druckmann"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-27T03:01:03.427Z",
+      "userScore": 9.5,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/acevLdSl5I2MK5RYAm7gwAndt1w.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-04-18",
+        "overview": "The next chapter in Ellie's journey begins across the fractured frontier."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-27T03:01:03.427Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-27T03:01:03.427Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        9,
+        7,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:04.597Z",
+      "progressUpdatedAt": "2026-08-27T03:01:03.427Z",
+      "metadataAuditStatus": "updated",
+      "rottenTomatoesScore": 96
+    },
+    {
+      "id": "show-1787521321456-643133-2",
+      "title": "Ted Lasso",
+      "actors": [
+        "Jason Sudeikis",
+        "Hannah Waddingham",
+        "Brett Goldstein"
+      ],
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Biscuits",
+        "S1E3": "Trent Crimm: The Independent",
+        "S1E4": "For the Children",
+        "S1E5": "Tan Lines",
+        "S1E6": "Two Aces",
+        "S1E7": "Make Rebecca Great Again",
+        "S1E8": "The Diamond Dogs",
+        "S1E9": "All Apologies",
+        "S4E1": "Believe Again",
+        "S4E2": "Curiouser and Curiouser!",
+        "S4E3": "Richmond's Got Talent",
+        "S4E4": "Greyhounds' Day Off",
+        "S4E5": "Riches of Embarrassment",
+        "S4E6": "Don't Jump Around Much Anymore",
+        "S4E7": "Yes & Baby",
+        "S4E8": "Follow the Anger",
+        "S1E10": "The Hope That Kills You"
+      },
+      "overview": "An American football coach is hired to manage a British soccer team. What he lacks in knowledge, he makes up for with optimism and determination.",
+      "concluded": false,
+      "createdAt": "2026-08-23T21:42:01.456Z",
+      "directors": [
+        "Declan Lowney"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-27T03:01:03.427Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/gEQkOMmnJcoh9Hh1vk7fpVYnksR.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "Believe Again",
+        "airDate": "2026-11-25",
+        "overview": "Ted returns to Richmond as the club embarks on a brand new European championship campaign."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-27T03:01:03.427Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-27T03:01:03.427Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        12,
+        12,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-16T19:02:58.072Z",
+      "progressUpdatedAt": "2026-08-27T03:01:03.427Z",
+      "metadataAuditStatus": "updated",
+      "rottenTomatoesScore": 90
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:24.320Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

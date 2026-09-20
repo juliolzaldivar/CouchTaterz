@@ -1,0 +1,714 @@
+{
+  "name": "Jeremy's Collection",
+  "deletedShowId": "show-1788494800181-520956-0",
+  "owner": {
+    "email": "jeremy.kahn@gmail.com",
+    "name": "Jeremy",
+    "createdAt": "2026-09-04T04:06:40.181Z",
+    "id": "user-jeremy-5492",
+    "avatarUrl": "https://api.dicebear.com/9.x/pixel-art/svg?seed=Jeremy&backgroundColor=b6e3f4&hairProbability=100&hair%5B%5D=short10&hairColor%5B%5D=603a14&glassesProbability=0&mouth%5B%5D=happy09&eyes%5B%5D=variant03&eyesColor%5B%5D=455f4e&clothing%5B%5D=variant03&clothingColor%5B%5D=1c1f21&hatProbability=0&beardProbability=0&accessoriesProbability=0"
+  },
+  "dismissedNotificationIds": [],
+  "shows": [
+    {
+      "id": "show-1788903368084-9xad",
+      "title": "Silo",
+      "actors": [
+        "Rebecca Ferguson",
+        "Common",
+        "Tim Robbins"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Mystery"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Who Are You?",
+        "S3E2": "It's All Good",
+        "S3E3": "A Dark Web",
+        "S3E4": "Whatever You Do, Don't Go Home",
+        "S3E5": "Memory",
+        "S3E6": "The Drive",
+        "S3E7": "Radio",
+        "S3E8": "Gray Goo",
+        "S3E9": "The Surface",
+        "S3E10": "Legacy"
+      },
+      "overview": "In a ruined and toxic future, thousands live in a giant silo deep underground. After its sheriff breaks a cardinal rule and residents die mysteriously, engineer Juliette starts uncovering shocking secrets.",
+      "concluded": false,
+      "createdAt": "2026-09-08T21:36:08.084Z",
+      "directors": [
+        "Morten Tyldum"
+      ],
+      "ownerName": "Jeremy",
+      "updatedAt": "2026-09-07T06:27:35.537Z",
+      "userScore": 9.2,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jeremy"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 10,
+        "title": "Legacy",
+        "airDate": "2026-09-04",
+        "overview": "Season 3 finale: The ultimate struggle for the future of the remaining silos."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 3,
+        "episode": 9,
+        "title": "The Surface",
+        "progressUpdatedAt": "2026-09-07T06:27:35.537Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-09-07T06:27:35.537Z",
+      "statusUpdatedAt": "2026-08-30T05:09:46.325Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:15.791Z",
+      "progressUpdatedAt": "2026-09-07T06:27:35.537Z",
+      "hasAirDateReminder": true,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-08T20:46:02.073Z",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "show-1788903366851-k9sf",
+      "title": "Sh\u014dgun",
+      "actors": [
+        "Hiroyuki Sanada",
+        "Cosmo Jarvis",
+        "Anna Sawai"
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun",
+        "S1E10": "A Dream of a Dream"
+      },
+      "overview": "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him.",
+      "concluded": false,
+      "createdAt": "2026-09-08T21:36:06.851Z",
+      "directors": [
+        "Jonathan van Tulleken",
+        "Charlotte Br\u00e4ndstr\u00f6m"
+      ],
+      "ownerName": "Jeremy",
+      "updatedAt": "2026-08-28T18:35:14.173Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jeremy"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Anjin",
+        "progressUpdatedAt": "2026-08-28T18:35:14.173Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-28T18:35:14.173Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:16.257Z",
+      "progressUpdatedAt": "2026-08-28T18:35:14.173Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-08T20:46:02.073Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1788903365667-txv7",
+      "title": "Stranger Things",
+      "actors": [
+        "Winona Ryder",
+        "David Harbour",
+        "Millie Bobby Brown",
+        "Finn Wolfhard"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Horror",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S5E1": "Chapter One: The Crawl",
+        "S4E1": "Chapter One: The Hellfire Club",
+        "S4E2": "Chapter Two: Vecna's Curse",
+        "S4E3": "Chapter Three: The Monster and the Superhero",
+        "S4E4": "Chapter Four: Dear Billy",
+        "S4E5": "Chapter Five: The Nina Project",
+        "S4E6": "Chapter Six: The Dive",
+        "S4E7": "Chapter Seven: The Massacre at Hawkins Lab",
+        "S4E8": "Chapter Eight: Papa",
+        "S4E9": "Chapter Nine: The Piggyback",
+        "S5E2": "Chapter Two: The Vanishing of Holly Wheeler",
+        "S5E3": "Chapter Three: The Turnbow Trap",
+        "S5E4": "Chapter Four: Sorcerer",
+        "S5E5": "Chapter Five: Shock Jock",
+        "S5E6": "Chapter Six: Escape from Camazotz",
+        "S5E7": "Chapter Seven: The Bridge",
+        "S5E8": "Chapter Eight: The Rightside Up"
+      },
+      "overview": "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl.",
+      "concluded": true,
+      "createdAt": "2026-09-08T21:36:05.667Z",
+      "directors": [
+        "The Duffer Brothers"
+      ],
+      "updatedAt": "2026-08-28T18:35:14.172Z",
+      "userScore": 8,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 4,
+        "episode": 4,
+        "title": "Chapter Four: Dear Billy",
+        "progressUpdatedAt": "2026-08-28T18:35:14.172Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-28T18:35:14.172Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        8,
+        9,
+        8,
+        9,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:16.724Z",
+      "progressUpdatedAt": "2026-08-28T18:35:14.172Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-08T20:46:02.073Z",
+      "rottenTomatoesScore": 91
+    },
+    {
+      "id": "show-1788903364450-526y",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Thriller",
+        "Mystery"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Good News About Hell",
+        "S1E2": "Half Loop",
+        "S1E3": "In Perpetuity",
+        "S1E4": "The You You Are",
+        "S1E5": "The Grim Barbarity of Optics and Design",
+        "S1E6": "Hide and Seek",
+        "S1E7": "Defiant Jazz",
+        "S1E8": "What's for Dinner?",
+        "S1E9": "The We We Are"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-09-08T21:36:04.450Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "ownerName": "Jeremy",
+      "updatedAt": "2026-08-28T18:35:14.172Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jeremy"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 5,
+        "title": "The Grim Barbarity of Optics and Design",
+        "progressUpdatedAt": "2026-08-28T18:35:14.172Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-28T18:35:14.172Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:17.191Z",
+      "progressUpdatedAt": "2026-08-28T18:35:14.172Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-08T20:46:02.073Z",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "show-1788903363250-fook",
+      "title": "House of the Dragon",
+      "actors": [
+        "Emma D'Arcy",
+        "Matt Smith",
+        "Olivia Cooke"
+      ],
+      "genres": [
+        "Fantasy",
+        "Drama",
+        "Action"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S2E1": "A Son for a Son",
+        "S2E2": "Rhaenyra the Cruel",
+        "S2E3": "The Burning Mill",
+        "S2E4": "The Red Dragon and the Gold",
+        "S2E5": "Regent",
+        "S2E6": "Smallfolk",
+        "S2E7": "The Red Sowing",
+        "S2E8": "The Queen Who Ever Was",
+        "S4E1": "The Hour of the Wolf"
+      },
+      "overview": "The story of the Targaryen civil war that took place about 200 years before events depicted in Game of Thrones.",
+      "concluded": false,
+      "createdAt": "2026-09-08T21:36:03.250Z",
+      "directors": [
+        "Ryan J. Condal",
+        "Miguel Sapochnik"
+      ],
+      "ownerName": "Jeremy",
+      "updatedAt": "2026-08-29T21:21:58.988Z",
+      "userScore": 9.1,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jeremy"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/577eXC8wFQT0eUrJcgznSiFPRmk.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "The Hour of the Wolf",
+        "airDate": "2028-06-18",
+        "overview": "The climactic final season of the Targaryen civil war begins."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 2,
+        "episode": 4,
+        "title": "The Red Dragon and the Gold",
+        "progressUpdatedAt": "2026-08-29T21:21:58.988Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-28T18:35:14.172Z",
+      "statusUpdatedAt": "2026-08-29T21:21:58.988Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        8,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:17.657Z",
+      "progressUpdatedAt": "2026-08-29T21:21:58.988Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-08T20:46:02.073Z",
+      "rottenTomatoesScore": 89
+    },
+    {
+      "id": "show-1788903360369-b2vg",
+      "title": "The Bear",
+      "actors": [
+        "Jeremy Allen White",
+        "Ebon Moss-Bachrach",
+        "Ayo Edebiri"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Tomorrow",
+        "S3E2": "Next",
+        "S3E3": "Doors",
+        "S3E4": "Violet",
+        "S3E5": "Children",
+        "S3E6": "Napkins",
+        "S3E7": "Legacy",
+        "S3E8": "Ice Chips",
+        "S3E9": "Apologies",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S3E10": "Forever",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family sandwich shop after a heartbreaking death.",
+      "concluded": true,
+      "createdAt": "2026-09-08T21:36:00.369Z",
+      "directors": [
+        "Christopher Storer"
+      ],
+      "ownerName": "Jeremy",
+      "updatedAt": "2026-08-29T21:21:43.422Z",
+      "userScore": 9.4,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jeremy"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 5,
+        "title": "Children",
+        "progressUpdatedAt": "2026-08-29T21:21:43.422Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-28T18:35:14.172Z",
+      "statusUpdatedAt": "2026-08-29T21:21:43.422Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-08-29T21:21:43.422Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-09-08T20:46:02.073Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1788903290224-234395",
+      "title": "Three's Company",
+      "actors": [
+        "John Ritter",
+        "Joyce DeWitt",
+        "Priscilla Barnes",
+        "Don Knotts",
+        "Richard Kline"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "A Man About the House",
+        "S1E2": "And Mother Makes Four",
+        "S1E3": "Roper's Niece",
+        "S1E4": "No Children, No Pets",
+        "S1E5": "Jack the Giant Killer",
+        "S1E6": "It's Only Money",
+        "S8E1": "Jack Be Quick",
+        "S8E2": "She Loves Me, She Loves Me Not",
+        "S8E3": "The Money Machine",
+        "S8E4": "Out on a Limb",
+        "S8E5": "Alias Jack Tripper",
+        "S8E6": "Hearing Is Believing",
+        "S8E7": "Grandma Jack",
+        "S8E8": "Like Father, Like Son",
+        "S8E9": "The Odd Couples",
+        "S8E10": "Now You See It, Now You Don't",
+        "S8E11": "The Charming Stranger",
+        "S8E12": "Janet Shapes Up",
+        "S8E13": "Itching for Trouble",
+        "S8E14": "Baby, It's Cold Inside",
+        "S8E15": "Look What I Found",
+        "S8E16": "Jack's Tattoo",
+        "S8E17": "Jack Takes Off",
+        "S8E18": "Forget Me Not",
+        "S8E19": "The Heiress",
+        "S8E20": "Cupid Works Overtime",
+        "S8E21": "Friends and Lovers (1)",
+        "S8E22": "Friends and Lovers (2)"
+      },
+      "overview": "When two single girls, Janet and Chrissy, need a roommate to share their Santa Monica apartment, they decide to offer a room to Jack, a man they find passed out in the bathtub after the going-away party for their last roommate. However, hijinks ensure when Jack must pretend to be gay in order to throw off the scent of the trio's conservative landlady.",
+      "concluded": true,
+      "createdAt": "2026-09-08T21:34:50.224Z",
+      "directors": [
+        "Johnnie Mortimer",
+        "Brian Cooke",
+        "Michael Ross"
+      ],
+      "ownerName": "Jeremy",
+      "updatedAt": "2026-08-25T02:19:33.562Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jeremy"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/4ubxzr6wNZElImE3EOUsjxvVjYw.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 8,
+      "familyDetails": [
+        {
+          "userNotes": "",
+          "latestWatched": {
+            "episode": 1,
+            "season": 1,
+            "title": "A Man About the House"
+          },
+          "ownerName": "Julio",
+          "userScore": null,
+          "status": "Completed"
+        }
+      ],
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-25T02:19:33.562Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-25T02:19:33.562Z",
+      "streamingService": "Other",
+      "episodesPerSeason": [
+        6,
+        25,
+        22,
+        25,
+        22,
+        26,
+        22,
+        22
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-08-25T02:19:33.562Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-09-08T20:46:02.088Z",
+      "rottenTomatoesScore": 76
+    },
+    {
+      "id": "show-1788494800181-151332-1",
+      "title": "Fallout",
+      "actors": [
+        "Ella Purnell",
+        "Aaron Moten",
+        "Walton Goggins"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Action",
+        "Dystopian"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "The End",
+        "S1E2": "The Target",
+        "S1E3": "The Head",
+        "S1E4": "The Ghouls",
+        "S1E5": "The Past",
+        "S1E6": "The Trap",
+        "S1E7": "The Radio",
+        "S1E8": "The Beginning"
+      },
+      "overview": "In a future, post-apocalyptic Los Angeles, citizens must live in underground bunkers to protect themselves from radiation, mutants, and bandits.",
+      "concluded": false,
+      "createdAt": "2026-09-04T04:06:40.181Z",
+      "directors": [
+        "Jonathan Nolan"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-09-04T04:07:25.443Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/coaPCIqQBPUZsOnJcWZxhaORcDT.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-11-10",
+        "overview": "The wasteland journey ventures into uncharted territory."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-09-04T04:07:25.443Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-09-04T04:07:25.443Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8,
+        8,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:19.162Z",
+      "progressUpdatedAt": "2026-09-04T04:07:25.443Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-08T21:28:53.618Z",
+      "rottenTomatoesScore": 93
+    },
+    {
+      "id": "show-1788494800181-553208-2",
+      "title": "Arcane",
+      "actors": [
+        "Hailee Steinfeld",
+        "Ella Purnell"
+      ],
+      "genres": [
+        "Animation",
+        "Action",
+        "Sci-Fi",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Welcome to the Playground",
+        "S1E2": "Some Mysteries Are Better Left Unsolved",
+        "S1E3": "The Base Violence Necessary for Change",
+        "S1E4": "Happy Progress Day!",
+        "S1E5": "Everybody Wants to Be My Enemy",
+        "S1E6": "When These Walls Come Tumbling Down",
+        "S1E7": "The Boy Savior",
+        "S1E8": "Oil and Water",
+        "S1E9": "The Monster You Created",
+        "S2E1": "Heavy Is the Crown",
+        "S2E2": "Watch It All Burn",
+        "S2E3": "Finally Got the Name Right",
+        "S2E4": "Paint the Town Blue",
+        "S2E5": "Blisters and Bedrock",
+        "S2E6": "The Message Hidden Within the Pattern",
+        "S2E7": "Pretend Like It's the First Time",
+        "S2E8": "Killing Is a Cycle",
+        "S2E9": "The Dirt Under Your Nails"
+      },
+      "overview": "Set in the utopian region of Piltover and the oppressed underground of Zaun, the story follows the origins of two iconic champions.",
+      "concluded": true,
+      "createdAt": "2026-09-04T04:06:40.181Z",
+      "directors": [
+        "Christian Linke",
+        "Alex Yee"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-09-04T04:07:25.444Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/q8eejQcg1bAqImEV8jh8RtBD4uH.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-09-04T04:07:25.444Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-09-04T04:07:25.444Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        9,
+        9
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-09-04T04:07:25.444Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-09-08T21:28:53.619Z",
+      "rottenTomatoesScore": 100
+    }
+  ],
+  "dismissedAlertKeys": [],
+  "notifications": [],
+  "preferences": {
+    "genres": [
+      "Sci-Fi",
+      "Spy Thriller",
+      "Dystopian",
+      "Thriller",
+      "Comedy"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Prime Video"
+    ],
+    "gender": "Prefer not to say",
+    "ageRange": "25\u201334",
+    "geography": "Los Angeles, California, United States",
+    "country": "United States",
+    "stateRegion": "California",
+    "city": "Los Angeles",
+    "timezone": "America/Los_Angeles",
+    "eras": [
+      "Current & Modern (2020s)",
+      "2010s Prestige TV"
+    ],
+    "vibes": [],
+    "favoriteShows": [],
+    "alertPreference": "email",
+    "alertDestination": "jeremy.kahn@gmail.com",
+    "notificationLeadDays": 30
+  },
+  "updatedAt": "2026-09-19T19:38:46.258Z",
+  "id": "user-jeremy-5492"
+}

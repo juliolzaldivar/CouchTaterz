@@ -1,0 +1,503 @@
+{
+  "id": "user-jerry-4768",
+  "name": "Jerry's Collection",
+  "owner": {
+    "name": "Jerry",
+    "email": "user-jerry-4768@couchtaterz.com",
+    "id": "user-jerry-4768",
+    "createdAt": "2026-08-07T23:40:35.759Z",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Jerry"
+  },
+  "preferences": {
+    "genres": [
+      "Action",
+      "Comedy",
+      "Drama",
+      "Sci-Fi",
+      "Horror",
+      "Thriller",
+      "Mystery",
+      "Dystopian",
+      "Western",
+      "Animation",
+      "Spy Thriller"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu",
+      "Apple TV",
+      "Paramount+",
+      "Peacock",
+      "AMC+"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1786249385823-459264",
+      "title": "It's Always Sunny in Philadelphia",
+      "actors": [
+        "Charlie Day",
+        "Glenn Howerton",
+        "Rob Mac",
+        "Kaitlin Olson"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "The Gang Gets Racist",
+        "S1E2": "Charlie Wants an Abortion",
+        "S1E3": "Underage Drinking: A National Concern",
+        "S1E4": "Charlie Has Cancer",
+        "S1E5": "Gun Fever",
+        "S1E6": "The Gang Finds a Dead Guy",
+        "S1E7": "Charlie Got Molested",
+        "S18E1": "Frank Marries a Corpse",
+        "S18E2": "Dennis and Dee Don't Get Rich",
+        "S18E3": "The Gang Gets Tested",
+        "S18E4": "2026: A Virtual Insanity",
+        "S18E5": "The Gang Goes to the Ren Faire",
+        "S18E6": "The War on Alcohol",
+        "S18E7": "Gilligan's Island: A Conspiracy Theorist's Paradise",
+        "S18E8": "TBA",
+        "S18E9": "TBA",
+        "S18E10": "Season Finale"
+      },
+      "overview": "Four egocentric friends run a neighborhood Irish pub in Philadelphia and try to find their way through the adult world of work and relationships. Unfortunately, their warped views and precarious judgments often lead them to trouble, creating a myriad of uncomfortable situations that usually only get worse before they get better.",
+      "concluded": false,
+      "createdAt": "2026-08-09T04:23:05.823Z",
+      "directors": [
+        "Rob Mac"
+      ],
+      "ownerName": "Jerry",
+      "updatedAt": "2026-08-09T04:23:05.823Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jerry"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/uqTCaYBoSLT9MAdyQ9tU6QyCZ3A.jpg",
+      "nextEpisode": {
+        "season": 18,
+        "episode": 7,
+        "title": "Gilligan's Island: A Conspiracy Theorist's Paradise",
+        "airDate": "2026-09-21",
+        "overview": "The Gang unravels wild television conspiracy theories about Gilligan's Island."
+      },
+      "totalSeasons": 18,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-09T04:23:05.823Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-24T20:00:05.618Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        7,
+        10,
+        15,
+        13,
+        12,
+        14,
+        13,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        10,
+        8,
+        8,
+        8,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-19T19:41:08.528Z",
+      "progressUpdatedAt": "2026-08-09T04:23:05.823Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-09T17:49:05.449Z",
+      "rottenTomatoesScore": 83
+    },
+    {
+      "id": "show-1786249376126-162415",
+      "title": "Reacher",
+      "actors": [
+        "Alan Ritchson",
+        "Malcolm Goodwin",
+        "Willa Fitzgerald"
+      ],
+      "genres": [
+        "Action",
+        "Crime",
+        "Drama",
+        "Thriller"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Welcome to Margrave",
+        "S1E2": "First Dance",
+        "S1E3": "Spoonful",
+        "S1E4": "In a Tree",
+        "S1E5": "No Apologies",
+        "S1E6": "Papier",
+        "S1E7": "Reacher Said Nothing",
+        "S1E8": "Pie",
+        "S4E1": "City of Brotherly Love",
+        "S4E2": "Cage Fight",
+        "S4E3": "One Small Step",
+        "S4E4": "Ambush",
+        "S4E5": "Bridge",
+        "S4E6": "Crossfire",
+        "S4E7": "No Safe Harbor",
+        "S4E8": "Justice Served"
+      },
+      "overview": "Veteran military police investigator Jack Reacher is falsely accused of murder and finds himself in the middle of a deadly conspiracy full of dirty cops, shady businessmen and scheming politicians.",
+      "concluded": false,
+      "createdAt": "2026-08-09T04:22:56.127Z",
+      "directors": [
+        "Thomas Vincent",
+        "Nick Santora"
+      ],
+      "ownerName": "Jerry",
+      "updatedAt": "2026-08-09T04:22:56.127Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jerry"
+      ],
+      "bannerImage": "https://media.press.amazonmgmstudios.com/userfiles/images/Unknown(12).jpeg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 8,
+        "title": "Justice Served",
+        "airDate": "2026-09-16",
+        "overview": "Season 4 finale: Jack Reacher delivers his unmistakable brand of justice."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-09T04:22:56.127Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-24T20:00:05.618Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:49.708Z",
+      "progressUpdatedAt": "2026-08-09T04:22:56.127Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-09-09T17:49:05.458Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "show-1786146035976-531212-0",
+      "title": "Halo",
+      "actors": [
+        "Pablo Schreiber",
+        "Natascha McElhone",
+        "Joseph Morgan",
+        "Shabana Azmi",
+        "Christina Bennington"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Fantasy",
+        "Action",
+        "Adventure"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Contact",
+        "S1E2": "Unbound",
+        "S1E3": "Emergence",
+        "S1E4": "Homecoming",
+        "S1E5": "Reckoning",
+        "S1E6": "Solace",
+        "S1E7": "Inheritance",
+        "S1E8": "Allegiance",
+        "S1E9": "Transcendence",
+        "S2E1": "Sanctuary",
+        "S2E2": "Sword",
+        "S2E3": "Visegrad",
+        "S2E4": "Reach",
+        "S2E5": "Aleria",
+        "S2E6": "Onyx",
+        "S2E7": "Thermopylae",
+        "S2E8": "Halo"
+      },
+      "overview": "Depicting an epic 26th-century conflict between humanity and an alien threat known as the Covenant, the series weaves deeply drawn personal stories with action, adventure and a richly imagined vision of the future.",
+      "concluded": true,
+      "createdAt": "2026-08-07T23:40:35.976Z",
+      "directors": [
+        "Kyle Killen",
+        "Steven Kane",
+        "Nick Iannelli"
+      ],
+      "isStarter": true,
+      "ownerName": "Jerry",
+      "updatedAt": "2026-08-07T23:40:35.976Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jerry"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/zW0v2YT74C6tRafzqqBkfSqLAN0.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Contact",
+        "progressUpdatedAt": "2026-08-07T23:40:35.976Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:05.618Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        9,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-07T23:40:35.976Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-09-09T17:49:05.545Z",
+      "rottenTomatoesScore": 82
+    },
+    {
+      "id": "show-1786146035976-832788-1",
+      "title": "Poker Face",
+      "actors": [
+        "Natasha Lyonne"
+      ],
+      "genres": [
+        "Crime",
+        "Mystery"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Dead Man's Hand",
+        "S1E2": "The Night Shift",
+        "S1E3": "The Stall",
+        "S1E4": "Rest in Metal",
+        "S1E5": "Time of the Monkey",
+        "S1E6": "Exit Stage Death",
+        "S1E7": "The Future of the Sport",
+        "S1E8": "The Orpheus Syndrome",
+        "S1E9": "Escape from Shit Mountain",
+        "S2E1": "The Game Is a Foot",
+        "S2E2": "Last Looks",
+        "S2E3": "Whack-A-Mole",
+        "S2E4": "The Taste of Human Blood",
+        "S2E5": "Hometown Hero",
+        "S2E6": "Sloppy Joseph",
+        "S2E7": "One Last Job",
+        "S2E8": "The Sleazy Georgian",
+        "S2E9": "A New Lease On Death",
+        "S1E10": "The Hook",
+        "S2E10": "The Big Pump",
+        "S2E11": "Day of the Iguana",
+        "S2E12": "The End of the Road"
+      },
+      "overview": "Follow Charlie Cale, a woman with an extraordinary ability to tell when someone is lying, as she hits the road and, at every stop, encounters a new cast of characters and crimes she can't help but solve.",
+      "concluded": true,
+      "createdAt": "2026-08-07T23:40:35.976Z",
+      "directors": [
+        "Rian Johnson",
+        "Ram Bergman",
+        "Nena Rodrigue"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-07T23:40:35.976Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ccOzCmrglAjRGtqv5ClTaBEsWt8.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-07T23:40:35.976Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:05.618Z",
+      "streamingService": "Peacock",
+      "episodesPerSeason": [
+        10,
+        12
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-07T23:40:35.976Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-09-09T17:49:05.440Z",
+      "rottenTomatoesScore": 74
+    },
+    {
+      "id": "show-1786146035976-503066-2",
+      "title": "Brave New World",
+      "actors": [
+        "Alden Ehrenreich",
+        "Jessica Brown Findlay",
+        "Harry Lloyd",
+        "Kylie Bunbury",
+        "Hannah John-Kamen"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Fantasy",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Want and Consequence",
+        "S1E3": "Everybody Happy Now!",
+        "S1E4": "Swallow",
+        "S1E5": "Firefall",
+        "S1E6": "In the Dirt",
+        "S1E7": "Monogamy and Futility: Part 1",
+        "S1E8": "Monogamy and Futility: Part 2",
+        "S1E9": "Soma Red"
+      },
+      "overview": "In a utopia whose perfection hinges upon control of monogamy and privacy, members of the collective begin to question the rules, putting their regimented society on a collision course with forbidden love and revolution.",
+      "concluded": true,
+      "createdAt": "2026-08-07T23:40:35.976Z",
+      "directors": [
+        "David Wiener",
+        "Grant Morrison",
+        "Brian Taylor"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-07T23:40:35.976Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/5DNuJ7lTzwHTpmDywiSjzH6E3SK.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-07T23:40:35.976Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:05.618Z",
+      "streamingService": "Peacock",
+      "episodesPerSeason": [
+        9
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-07T23:40:35.976Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-09-09T17:49:05.496Z",
+      "rottenTomatoesScore": 66
+    },
+    {
+      "id": "show-1786146035976-553078-3",
+      "title": "Caprica",
+      "actors": [
+        "Eric Stoltz",
+        "Esai Morales",
+        "Paula Malcomson",
+        "Alessandra Torresani",
+        "Magda Apanowicz"
+      ],
+      "genres": [
+        "Drama",
+        "Sci-Fi",
+        "Fantasy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Rebirth",
+        "S1E3": "The Reins of a Waterfall",
+        "S1E4": "Gravedancing",
+        "S1E5": "There Is Another Sky",
+        "S1E6": "Know Thy Enemy",
+        "S1E7": "The Imperfections of Memory",
+        "S1E8": "Ghosts in the Machine",
+        "S1E9": "End of Line",
+        "S1E10": "Unvanquished",
+        "S1E11": "Retribution",
+        "S1E12": "Things We Lock Away",
+        "S1E13": "False Labor",
+        "S1E14": "Blowback",
+        "S1E15": "The Dirteaters",
+        "S1E16": "The Heavens Will Rise",
+        "S1E17": "Here Be Dragons",
+        "S1E18": "Apotheosis"
+      },
+      "overview": "Set 58 years before Battlestar Galactica, Caprica follows two rival families - the Graystones and the Adamas - as they grow, compete, and thrive in the vibrant world of the peaceful 12 Colonies, living in a society close to our own. Entangled in the burgeoning technology of artificial intelligence and robotics that will eventually lead to the creation of the Cylons, the two houses go toe-to-toe, blending action with corporate conspiracy and sexual politics.",
+      "concluded": true,
+      "createdAt": "2026-08-07T23:40:35.976Z",
+      "directors": [
+        "Remi Aubuchon",
+        "Ronald D. Moore",
+        "David Eick"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-07T23:40:35.976Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/1KUT5MsvWCKapd1TLVzf3xnpCev.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-07T23:40:35.976Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:05.618Z",
+      "streamingService": "Other",
+      "episodesPerSeason": [
+        18
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-07T23:40:35.976Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-09-09T17:49:05.521Z",
+      "rottenTomatoesScore": 69
+    }
+  ],
+  "updatedAt": "2026-09-19T19:44:57.010Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

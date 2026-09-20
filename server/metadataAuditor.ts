@@ -6,6 +6,7 @@
 import { TvShow, Board, StreamingService } from "../src/types";
 import { SHOW_SCHEDULES, normalizeTitle, resolveNextUpcomingEpisode, ShowScheduleData } from "./showSchedules";
 import { KNOWN_DEAD_BANNERS, KNOWN_SHOW_BANNERS } from "../src/utils/showBanners";
+import { boundShowEpisodes } from "./storageOptimizer";
 
 export interface MetadataChangeRecord {
   showTitle: string;
@@ -193,6 +194,7 @@ export function auditShow(show: TvShow, auditLog: AuditResult, tvmazeRecord?: an
   const rawTitle = show.title.trim();
   const scheduleKey = normalizeTitle(rawTitle);
   const normalizedKey = normalizeKey(rawTitle);
+  const normTitle = scheduleKey;
   const scheduleData: ShowScheduleData | undefined = SHOW_SCHEDULES[scheduleKey] || SHOW_SCHEDULES[rawTitle.toLowerCase()];
 
   // ---------------------------------------------------------------------------
@@ -292,16 +294,103 @@ export function auditShow(show: TvShow, auditLog: AuditResult, tvmazeRecord?: an
   // ---------------------------------------------------------------------------
   if (!show.episodes) show.episodes = {};
 
+  // Known catalog discrepancies / registry typos that must be corrected to canonical creative titles
+  const KNOWN_TITLE_CORRECTIONS: Record<string, Record<string, string>> = {
+    "southpark": {
+      "S24E1": "The Pandemic Special",
+      "S24E2": "South ParQ Vaccination Special",
+      "S26E5": "DikinBaus Hot Dogs",
+      "S29E1": "South American Biker Gangs"
+    },
+    "south park": {
+      "S24E1": "The Pandemic Special",
+      "S24E2": "South ParQ Vaccination Special",
+      "S26E5": "DikinBaus Hot Dogs",
+      "S29E1": "South American Biker Gangs"
+    },
+    "fearfactor": {
+      "S2E1": "Get the Hell Out",
+      "S2E2": "Tech-Hell"
+    },
+    "fear factor": {
+      "S2E1": "Get the Hell Out",
+      "S2E2": "Tech-Hell"
+    },
+    "daredevil": {
+      "S1E1": "Heaven’s Half Hour",
+      "S2E1": "The Northern Star"
+    },
+    "daredevil: born again": {
+      "S1E1": "Heaven’s Half Hour",
+      "S2E1": "The Northern Star"
+    },
+    "lioness": {
+      "S3E1": "The Spider and the Fly",
+      "S3E2": "Beware the Second Strike",
+      "S3E3": "In the Shadows",
+      "S3E4": "The Reckoning",
+      "S3E5": "The Trap",
+      "S3E6": "Extraction",
+      "S3E7": "Zero Hour",
+      "S3E8": "The Lion's Den"
+    },
+    "special ops: lioness": {
+      "S3E1": "The Spider and the Fly",
+      "S3E2": "Beware the Second Strike",
+      "S3E3": "In the Shadows",
+      "S3E4": "The Reckoning",
+      "S3E5": "The Trap",
+      "S3E6": "Extraction",
+      "S3E7": "Zero Hour",
+      "S3E8": "The Lion's Den"
+    },
+    "slow horses": {
+      "S6E1": "Circle of Life",
+      "S6E2": "Daddy Issues",
+      "S6E3": "Resurrection",
+      "S6E4": "Lost and Found",
+      "S6E5": "Sayonara",
+      "S6E6": "Judgment Day"
+    }
+  };
+
+  const showSpecificCorrections = KNOWN_TITLE_CORRECTIONS[normTitle] || KNOWN_TITLE_CORRECTIONS[rawTitle.toLowerCase()];
+  if (showSpecificCorrections) {
+    for (const [key, correctTitle] of Object.entries(showSpecificCorrections)) {
+      if (show.episodes[key] !== correctTitle) {
+        const oldVal = show.episodes[key];
+        show.episodes[key] = correctTitle;
+        auditLog.titlesUpdated.push({
+          showTitle: show.title,
+          episodeKey: key,
+          oldTitle: oldVal || "(empty)",
+          newTitle: correctTitle
+        });
+        auditLog.changes.push({
+          showTitle: show.title,
+          field: 'episode_title',
+          oldValue: oldVal || null,
+          newValue: correctTitle,
+          detail: `Corrected canonical episode title for ${key}`,
+          timestamp: new Date().toISOString()
+        });
+        modified = true;
+      }
+    }
+  }
+
   // Check against canonical schedule
   if (scheduleData && Array.isArray(scheduleData.episodes)) {
     for (const canonEp of scheduleData.episodes) {
       const epKey = `S${canonEp.season}E${canonEp.episode}`;
+      const numKey = `${canonEp.season}-${canonEp.episode}`;
       const existingTitle = show.episodes[epKey];
       const canonTitle = (canonEp.title || "").trim();
 
       if (canonTitle && !isTemporaryEpisodeTitle(canonTitle)) {
-        if (!existingTitle || isTemporaryEpisodeTitle(existingTitle)) {
+        if (!existingTitle || isTemporaryEpisodeTitle(existingTitle) || existingTitle !== canonTitle) {
           show.episodes[epKey] = canonTitle;
+          if (show.episodes[numKey]) delete show.episodes[numKey];
           auditLog.titlesUpdated.push({
             showTitle: show.title,
             episodeKey: epKey,
@@ -313,7 +402,7 @@ export function auditShow(show: TvShow, auditLog: AuditResult, tvmazeRecord?: an
             field: 'episode_title',
             oldValue: existingTitle || null,
             newValue: canonTitle,
-            detail: `Finalized episode title for ${epKey}`,
+            detail: `Finalized canonical episode title for ${epKey}`,
             timestamp: new Date().toISOString()
           });
           modified = true;
@@ -327,12 +416,19 @@ export function auditShow(show: TvShow, auditLog: AuditResult, tvmazeRecord?: an
     for (const ep of tvmazeRecord._embedded.episodes) {
       if (ep.season > 0 && ep.number > 0 && ep.name) {
         const epKey = `S${ep.season}E${ep.number}`;
+        const numKey = `${ep.season}-${ep.number}`;
         const existingTitle = show.episodes[epKey];
-        const tvmazeTitle = String(ep.name).trim();
+        let tvmazeTitle = String(ep.name).trim();
+
+        // Apply known correction if TVMaze has a registry typo (e.g., DiKimble's -> DikinBaus)
+        if (showSpecificCorrections && showSpecificCorrections[epKey]) {
+          tvmazeTitle = showSpecificCorrections[epKey];
+        }
 
         if (tvmazeTitle && !isTemporaryEpisodeTitle(tvmazeTitle)) {
           if (!existingTitle || isTemporaryEpisodeTitle(existingTitle)) {
             show.episodes[epKey] = tvmazeTitle;
+            if (show.episodes[numKey]) delete show.episodes[numKey];
             auditLog.titlesUpdated.push({
               showTitle: show.title,
               episodeKey: epKey,
@@ -354,11 +450,22 @@ export function auditShow(show: TvShow, auditLog: AuditResult, tvmazeRecord?: an
     }
   }
 
-  // Upgrade latestWatched.title if it was temporary and we now have the creative title
+  // Special catalog adjustments for known season distribution (e.g. South Park Season 24 = 2 specials)
+  if (normTitle === "southpark" || rawTitle.toLowerCase().includes("south park")) {
+    const canonicalSouthParkEps = [13, 18, 17, 17, 14, 17, 15, 14, 14, 14, 14, 14, 14, 14, 14, 14, 10, 10, 10, 10, 10, 10, 10, 2, 6, 6, 5, 5, 6];
+    if (!Array.isArray(show.episodesPerSeason) || show.episodesPerSeason.length !== canonicalSouthParkEps.length || show.episodesPerSeason[23] !== 2) {
+      show.episodesPerSeason = canonicalSouthParkEps;
+      show.totalSeasons = 29;
+      modified = true;
+    }
+  }
+
+  // Upgrade latestWatched.title if we now have the finalized creative title
   if (show.latestWatched && show.latestWatched.season && show.latestWatched.episode) {
     const k1 = `S${show.latestWatched.season}E${show.latestWatched.episode}`;
-    const finalizedTitle = show.episodes[k1];
-    if (finalizedTitle && !isTemporaryEpisodeTitle(finalizedTitle) && isTemporaryEpisodeTitle(show.latestWatched.title)) {
+    const k2 = `${show.latestWatched.season}-${show.latestWatched.episode}`;
+    const finalizedTitle = show.episodes[k1] || show.episodes[k2];
+    if (finalizedTitle && !isTemporaryEpisodeTitle(finalizedTitle) && show.latestWatched.title !== finalizedTitle) {
       show.latestWatched.title = finalizedTitle;
       modified = true;
     }
@@ -402,11 +509,12 @@ export function auditShow(show: TvShow, auditLog: AuditResult, tvmazeRecord?: an
 
     if (candidateNext) {
       const currentNext = show.nextEpisode;
+      const episodeChanged = !currentNext || currentNext.season !== candidateNext.season || currentNext.episode !== candidateNext.episode;
       const airDateChanged = !currentNext || currentNext.airDate !== candidateNext.airDate;
-      const titleChanged = !currentNext || (isTemporaryEpisodeTitle(currentNext.title) && !isTemporaryEpisodeTitle(candidateNext.title));
+      const titleChanged = !currentNext || currentNext.title !== candidateNext.title;
       const airTimeChanged = Boolean(candidateNext.airTime && (!currentNext || currentNext.airTime !== candidateNext.airTime));
 
-      if (airDateChanged || titleChanged || airTimeChanged) {
+      if (episodeChanged || airDateChanged || titleChanged || airTimeChanged) {
         auditLog.airDatesUpdated.push({
           showTitle: show.title,
           oldAirDate: currentNext?.airDate || null,
@@ -436,6 +544,9 @@ export function auditShow(show: TvShow, auditLog: AuditResult, tvmazeRecord?: an
       modified = true;
     }
   }
+
+  // Enforce episode dictionary bounding to prevent catalog ballooning
+  boundShowEpisodes(show);
 
   // Update audit tracking metadata on show
   (show as any).metadataAuditedAt = new Date().toISOString();

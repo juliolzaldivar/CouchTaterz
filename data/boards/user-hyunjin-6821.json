@@ -1,0 +1,48 @@
+{
+  "id": "user-hyunjin-6821",
+  "name": "Hyunjin's Anime Vault",
+  "owner": {
+    "email": "hyunjin@taterz.com",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Hyunjin",
+    "createdAt": "2026-08-15T12:00:00.000Z",
+    "id": "user-hyunjin-6821",
+    "name": "Hyunjin"
+  },
+  "preferences": {
+    "genres": [
+      "Animation",
+      "Anime",
+      "Action & Adventure",
+      "Sci-Fi & Fantasy",
+      "Drama",
+      "Sci-Fi",
+      "Mystery",
+      "Thriller"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu",
+      "Apple TV",
+      "Paramount+",
+      "Peacock",
+      "AMC+",
+      "Starz",
+      "Crunchyroll",
+      "Other"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [],
+  "updatedAt": "2026-09-19T19:38:34.558Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

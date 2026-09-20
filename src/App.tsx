@@ -32,6 +32,7 @@ import { FandomHubModal } from './components/FandomHubModal';
 import { 
   computeShowFandoms, 
   getFandomForShow, 
+  createSingleShowFandom,
   toggleFandomMembership, 
   getJoinedFandomsFromStorage, 
   saveJoinedFandomsToStorage 
@@ -55,7 +56,8 @@ import {
   FriendRequestDetail 
 } from './utils/friendsStorage';
 import { normalizeShowTitle, isSameShowTitle, getCanonicalShowTitle } from './utils/titleUtils';
-import { createCleanShowFromFriend, sanitizeBoardForUser, sanitizeShowForNonOwner } from './utils/reviewSanitizer';
+import { createCleanShowFromFriend, sanitizeBoardForUser, sanitizeShowForNonOwner, isLeakedJulioText, isJulioAccount } from './utils/reviewSanitizer';
+import { reconcileShowLists, reconcileTwoShows } from './utils/progressReconciler';
 import { JULIO_OFFICIAL_AVATAR } from './utils/taterAvatarUtils';
 import { isUserInFriendList, formatDisplayNameFromId } from './utils/userUtils';
 
@@ -597,7 +599,7 @@ export default function App() {
   // 9:16 Social Story Card Generator State
   const [isStoryModalOpen, setIsStoryModalOpen] = useState(false);
   const [storyModalShow, setStoryModalShow] = useState<TvShow | null>(null);
-  const [storyTriggerReason, setStoryTriggerReason] = useState<'completed' | 'high_rating' | 'manual'>('manual');
+  const [storyTriggerReason, setStoryTriggerReason] = useState<'completed' | 'high_rating' | 'manual' | 'episode_review'>('manual');
 
   // Soft-gate Auth Modal State
   const [isSoftGateOpen, setIsSoftGateOpen] = useState(false);
@@ -677,7 +679,7 @@ export default function App() {
     }
   };
 
-  const handleOpenStoryCard = (show: TvShow, reason: 'completed' | 'high_rating' | 'manual' = 'manual') => {
+  const handleOpenStoryCard = (show: TvShow, reason: 'completed' | 'high_rating' | 'manual' | 'episode_review' = 'manual') => {
     setStoryModalShow(show);
     setStoryTriggerReason(reason);
     setIsStoryModalOpen(true);
@@ -1070,11 +1072,17 @@ export default function App() {
         })
         .then((data: Record<string, Board> | null) => {
           if (isMounted && data && typeof data === 'object') {
-            setFamilyBoards(data);
+            const sanitizedFamily: Record<string, Board> = {};
+            Object.entries(data).forEach(([key, fBoard]) => {
+              if (fBoard) {
+                sanitizedFamily[key] = sanitizeBoardForUser(fBoard, currentUser).board;
+              }
+            });
+            setFamilyBoards(sanitizedFamily);
             setIsLoadingFamilyBoards(false);
-            if (boardId && data[boardId]) {
+            if (boardId && sanitizedFamily[boardId]) {
               setBoard(prev => {
-                if (!prev || prev.id === boardId) return data[boardId];
+                if (!prev || prev.id === boardId) return sanitizedFamily[boardId];
                 return prev;
               });
             }
@@ -1087,10 +1095,16 @@ export default function App() {
           try {
             const firestoreBoards = await getAllBoardsFromFirestore();
             if (isMounted && Object.keys(firestoreBoards).length > 0) {
-              setFamilyBoards(firestoreBoards);
+              const sanitizedFamily: Record<string, Board> = {};
+              Object.entries(firestoreBoards).forEach(([key, fBoard]) => {
+                if (fBoard) {
+                  sanitizedFamily[key] = sanitizeBoardForUser(fBoard, currentUser).board;
+                }
+              });
+              setFamilyBoards(sanitizedFamily);
               setIsLoadingFamilyBoards(false);
-              if (boardId && firestoreBoards[boardId]) {
-                setBoard(firestoreBoards[boardId]);
+              if (boardId && sanitizedFamily[boardId]) {
+                setBoard(sanitizedFamily[boardId]);
               }
               return;
             }
@@ -1194,13 +1208,14 @@ export default function App() {
           if (localSaved) {
             try {
               const localParsed = JSON.parse(localSaved);
-              const localTime = new Date(localParsed.updatedAt || 0).getTime();
-              const serverTime = new Date(data.updatedAt || 0).getTime();
-              const localCount = Array.isArray(localParsed.shows) ? localParsed.shows.length : 0;
-              const serverCount = Array.isArray(data.shows) ? data.shows.length : 0;
-              // Never let a truncated local cache (e.g. 15 shows) overwrite a larger server board (e.g. 230+ shows)
-              if (localCount >= serverCount && localTime > serverTime && localParsed.shows) {
-                finalBoard = localParsed;
+              if (localParsed && Array.isArray(localParsed.shows) && localParsed.shows.length > 0) {
+                // Losslessly reconcile shows so that forward show progress on this client is never lost
+                const reconciledShows = reconcileShowLists(localParsed.shows, data.shows || []);
+                finalBoard = {
+                  ...data,
+                  shows: reconciledShows,
+                  updatedAt: new Date().toISOString()
+                };
               }
             } catch (e) {}
           }
@@ -1265,11 +1280,17 @@ export default function App() {
             const localTime = new Date(prevBoard.updatedAt || 0).getTime();
             const hasNotifChanges = JSON.stringify(prevBoard.notifications || []) !== JSON.stringify(data.notifications || []);
 
-            // Strictly accept server state only if it is NEWER than local optimistic state
+            // Reconcile server shows with local optimistic shows to guarantee progress never regresses
             if (serverTime > localTime) {
+              const reconciledShows = reconcileShowLists(prevBoard.shows || [], data.shows || []);
+              const updated = {
+                ...data,
+                shows: reconciledShows,
+                updatedAt: data.updatedAt
+              };
               const localKey = `couchtater_board_${boardId}`;
-              localStorage.setItem(localKey, JSON.stringify(data));
-              return data;
+              localStorage.setItem(localKey, JSON.stringify(updated));
+              return updated;
             } else if (hasNotifChanges) {
               // Update notifications without overwriting local show state/progress
               const updated = { ...prevBoard, notifications: data.notifications || [] };
@@ -1355,16 +1376,16 @@ export default function App() {
       }).then(async res => {
         if (res.ok) {
           const savedData = await res.json();
-          if (savedData && savedData.updatedAt) {
+          if (savedData && savedData.updatedAt && Array.isArray(savedData.shows)) {
             setBoard(prevBoard => {
               if (!prevBoard) return savedData;
-              const serverTime = new Date(savedData.updatedAt).getTime();
-              const localTime = new Date(prevBoard.updatedAt).getTime();
-              if (serverTime >= localTime) {
-                localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(savedData));
-                return savedData;
-              }
-              return prevBoard;
+              const reconciledShows = reconcileShowLists(prevBoard.shows || [], savedData.shows);
+              const updated = {
+                ...savedData,
+                shows: reconciledShows,
+              };
+              localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(updated));
+              return updated;
             });
           }
         }
@@ -1574,9 +1595,20 @@ export default function App() {
 
     const nowIso = new Date().toISOString();
     const isStatusChanged = prevShow && prevShow.status !== updatedShow.status;
+    const isProgressChanged = prevShow && (
+      (prevShow.latestWatched?.season !== updatedShow.latestWatched?.season) ||
+      (prevShow.latestWatched?.episode !== updatedShow.latestWatched?.episode)
+    );
     const showWithTimestamp: TvShow = {
       ...updatedShow,
       updatedAt: nowIso,
+      latestWatched: updatedShow.latestWatched ? {
+        ...updatedShow.latestWatched,
+        progressUpdatedAt: (isProgressChanged || !updatedShow.latestWatched.progressUpdatedAt)
+          ? nowIso
+          : updatedShow.latestWatched.progressUpdatedAt
+      } : updatedShow.latestWatched,
+      ...(isProgressChanged ? { progressUpdatedAt: nowIso } : (updatedShow.progressUpdatedAt ? { progressUpdatedAt: updatedShow.progressUpdatedAt } : {})),
       ...(isStatusChanged ? { statusUpdatedAt: nowIso } : (updatedShow.statusUpdatedAt ? { statusUpdatedAt: updatedShow.statusUpdatedAt } : {}))
     };
 
@@ -2396,7 +2428,8 @@ export default function App() {
           const key = `${bId}-${s.id}`;
           if (!seenShowBoardKeys.has(key)) {
             seenShowBoardKeys.add(key);
-            allShows.push({ ...s, ownerName });
+            const cleanShow = !isJulioBoard ? sanitizeShowForNonOwner(s, false, ownerName) : s;
+            allShows.push({ ...cleanShow, ownerName });
           }
         });
       }
@@ -2416,16 +2449,28 @@ export default function App() {
     groupedMap.forEach((instances) => {
       const first = instances[0];
       const ownerNames = Array.from(new Set(instances.map(i => i.ownerName)));
-      const familyDetails = instances.map(i => ({
-        ownerName: i.ownerName,
-        status: i.status,
-        userScore: i.userScore,
-        userNotes: i.userNotes,
-        latestWatched: i.latestWatched
-      }));
+      const familyDetails = instances.map(i => {
+        const isMemberJulio = isJulioAccount(i.ownerName) || (typeof i.ownerName === 'string' && i.ownerName.toLowerCase().includes('julio'));
+        let safeNotes = i.userNotes || '';
+        if (!isMemberJulio && safeNotes && isLeakedJulioText(safeNotes)) {
+          safeNotes = '';
+        }
+        return {
+          ownerName: i.ownerName,
+          status: i.status,
+          userScore: i.userScore,
+          userNotes: safeNotes,
+          latestWatched: i.latestWatched
+        };
+      });
+
+      const cleanFirst = sanitizeShowForNonOwner(first, false, ownerNames[0]);
+      if (cleanFirst.userNotes && isLeakedJulioText(cleanFirst.userNotes)) {
+        cleanFirst.userNotes = '';
+      }
 
       consolidatedShows.push({
-        ...first,
+        ...cleanFirst,
         ownerName: ownerNames.join(', '),
         ownerNames,
         familyDetails
@@ -2482,12 +2527,59 @@ export default function App() {
 
   const handleOpenFandomHub = useCallback((showOrTitle: TvShow | string) => {
     const title = typeof showOrTitle === 'string' ? showOrTitle : showOrTitle.title;
-    const fandom = getFandomForShow(title, computedFandoms);
+    const norm = normalizeTitleForComparison(title);
+    const isNowJoined = (typeof showOrTitle === 'object' && Boolean(showOrTitle.isFandomActive)) ||
+      joinedFandoms.some(t => normalizeTitleForComparison(t) === norm);
+
+    let fandom = getFandomForShow(title, computedFandoms);
+    if (!fandom) {
+      if (typeof showOrTitle === 'object' && showOrTitle) {
+        fandom = createSingleShowFandom(
+          { ...showOrTitle, isFandomActive: isNowJoined }, 
+          currentUser, 
+          board, 
+          isNowJoined ? [...joinedFandoms, title] : joinedFandoms
+        );
+      } else if (board && Array.isArray(board.shows)) {
+        const found = board.shows.find(s => normalizeTitleForComparison(s.title) === norm);
+        if (found) {
+          fandom = createSingleShowFandom(
+            { ...found, isFandomActive: isNowJoined }, 
+            currentUser, 
+            board, 
+            isNowJoined ? [...joinedFandoms, title] : joinedFandoms
+          );
+        }
+      }
+    }
     if (fandom) {
-      setFandomHubShow(fandom);
+      let activeFandom = { ...fandom };
+      if (isNowJoined && !activeFandom.isUserJoined) {
+        activeFandom.isUserJoined = true;
+        if (currentUser && !activeFandom.members.some(m => m.userId === currentUser.id)) {
+          const selfShow = typeof showOrTitle === 'object' ? showOrTitle : board?.shows?.find(s => normalizeTitleForComparison(s.title) === norm);
+          const selfMember = {
+            userId: currentUser.id || 'default',
+            userName: currentUser.name || 'Julio',
+            userAvatarUrl: currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name || 'Julio'}`,
+            status: selfShow?.status || 'Watching',
+            latestWatched: selfShow?.latestWatched,
+            userScore: selfShow?.userScore || null,
+            userNotes: selfShow?.userNotes,
+            episodeReviewsCount: Object.keys(selfShow?.episodeReviews || {}).length,
+            isOnline: true,
+            activityScore: selfShow ? (selfShow.userScore ? selfShow.userScore * 10 : 30) : 30,
+            totalShowsTracked: Array.isArray(board?.shows) ? board.shows.length : 1
+          };
+          activeFandom.members = [selfMember, ...activeFandom.members];
+          activeFandom.topTenMembers = activeFandom.members.slice(0, 10);
+          activeFandom.memberCount = Math.max(1, activeFandom.memberCount + 1);
+        }
+      }
+      setFandomHubShow(activeFandom);
       setIsFandomHubOpen(true);
     }
-  }, [computedFandoms]);
+  }, [computedFandoms, currentUser, board, joinedFandoms]);
 
   useEffect(() => {
     if (fandomToast) {
@@ -3298,11 +3390,6 @@ export default function App() {
                                           <span className="font-black text-xs truncate">
                                             {fandom.showTitle}
                                           </span>
-                                          {isJoined && (
-                                            <span className="text-[9px] font-black px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                              PINNED
-                                            </span>
-                                          )}
                                         </div>
                                         <div className="flex items-center gap-2 text-[10px] text-slate-400">
                                           <span>{fandom.memberCount} {fandom.memberCount === 1 ? 'Fan' : 'Fans'}</span>
@@ -4157,10 +4244,10 @@ export default function App() {
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 sm:gap-3">
                 {/* Search query input */}
-                <div className="relative flex-1">
-                  <Search className="absolute left-3.5 top-3.5 w-4 h-4 text-slate-500" />
+                <div className="relative flex-1 group">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500 group-focus-within:text-blue-500 transition-colors" />
                   <input
                     ref={searchInputRef}
                     type="text"
@@ -4173,22 +4260,22 @@ export default function App() {
                           ? (boardId === JULIO_USER_ID ? "Julio's Shows" : `${allUsers.find(u => u.id === boardId)?.name || 'Buddy'}'s Shows`)
                           : 'My Shows'
                     }...`}
-                    className={`w-full pl-10 pr-10 py-3 rounded-2xl text-xs border focus:outline-none transition-all duration-300 ${
+                    className={`w-full pl-10 pr-10 h-11 rounded-2xl text-xs border focus:outline-none transition-all duration-200 ${
                       theme === 'dark' 
-                        ? `bg-[#262A33] border-white/10 placeholder-slate-500 ${
+                        ? `bg-[#222630] hover:bg-[#262B37] border-white/10 hover:border-white/15 placeholder-slate-500 text-slate-100 ${
                             activeTab === 'all'
-                              ? 'focus:border-purple-500'
+                              ? 'focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
                               : activeTab === 'active' 
-                              ? 'focus:border-blue-500' 
+                              ? 'focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20' 
                               : activeTab === 'library' 
-                              ? 'focus:border-emerald-500' 
-                              : 'focus:border-amber-500'
+                              ? 'focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20' 
+                              : 'focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20'
                           }` 
-                        : 'bg-neutral-100 border-neutral-200 focus:ring-1 focus:ring-neutral-300 placeholder-neutral-400'
+                        : 'bg-neutral-100 hover:bg-neutral-200/60 border-neutral-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 placeholder-neutral-400 text-neutral-900'
                     }`}
                   />
                   {!searchQuery && (
-                    <kbd className="hidden md:inline-block absolute right-3.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] text-slate-500 bg-white/5 rounded border border-white/10 font-mono pointer-events-none">
+                    <kbd className="hidden md:inline-block absolute right-3.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] text-slate-400 dark:text-slate-500 bg-white/5 dark:bg-white/5 rounded border border-neutral-200 dark:border-white/10 font-mono pointer-events-none">
                       ⌘K
                     </kbd>
                   )}
@@ -4197,49 +4284,60 @@ export default function App() {
                       id="clear-search-query-button"
                       type="button"
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors duration-150"
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors duration-150 p-1 cursor-pointer"
                       aria-label="Clear search"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
 
                 {/* Compact Dropdown selectors */}
-                <div className="flex gap-2 min-w-[140px] sm:min-w-0">
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
                   {/* Sort By Dropdown Selector */}
-                  <div className="relative flex-1 sm:w-auto sm:min-w-[140px]">
+                  <div className="relative flex-1 sm:w-56 md:w-64 group">
+                    <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center gap-1.5 text-slate-400 dark:text-slate-500">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-blue-500 dark:text-blue-400 shrink-0" />
+                      <span className="hidden md:inline text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Sort:
+                      </span>
+                    </div>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value as any)}
-                      className={`w-full border text-xs font-semibold rounded-2xl px-3.5 py-3 appearance-none cursor-pointer pr-8 ${
+                      aria-label="Sort shows"
+                      className={`w-full border text-xs font-bold rounded-2xl pl-9 md:pl-16 pr-8 h-11 appearance-none cursor-pointer transition-all duration-200 shadow-xs ${
                         theme === 'dark' 
-                          ? 'bg-[#262A33] border-white/10 text-slate-200 hover:border-white/20' 
-                          : 'bg-neutral-100 border-neutral-200 text-neutral-700'
+                          ? 'bg-[#222630] hover:bg-[#282D3A] border-white/10 hover:border-white/20 text-slate-200 focus:border-blue-500/60 focus:ring-2 focus:ring-blue-500/20' 
+                          : 'bg-neutral-100 hover:bg-neutral-200/80 border-neutral-200 text-neutral-800 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
                       }`}
                     >
                       <option value="airingNext">Airing Next</option>
                       <option value="recent">Added Date</option>
-                      <option value="rtScore">RT Score</option>
+                      <option value="rtScore">Rotten Tomatoes</option>
                       <option value="userScore">Your Score</option>
                       <option value="title">Title (A-Z)</option>
                       <option value="category">Category (A-Z)</option>
                     </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-500">
-                      <SlidersHorizontal className="w-3.5 h-3.5" />
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-slate-400 dark:text-slate-500 group-hover:text-slate-200 transition-colors">
+                      <ChevronDown className="w-3.5 h-3.5" />
                     </div>
                   </div>
 
                   {/* Mobile-Only Category Filter Dropdown (shown on small screens for easy tap navigation) */}
-                  <div className="relative flex-1 sm:hidden">
+                  <div className="relative flex-1 sm:hidden group">
+                    <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-400">
+                      <Filter className={`w-3.5 h-3.5 ${selectedGenre !== 'All' ? 'text-blue-400' : 'text-slate-500'}`} />
+                    </div>
                     <select
                       value={selectedGenre}
                       onChange={(e) => setSelectedGenre(e.target.value)}
-                      className={`w-full border text-xs font-semibold rounded-2xl px-3.5 py-3 appearance-none cursor-pointer pr-8 transition-all ${
+                      aria-label="Filter category"
+                      className={`w-full border text-xs font-bold rounded-2xl pl-8 pr-7 h-11 appearance-none cursor-pointer transition-all ${
                         selectedGenre !== 'All'
                           ? 'bg-blue-600/25 border-blue-500 text-blue-200 font-bold ring-1 ring-blue-500/40'
                           : theme === 'dark' 
-                            ? 'bg-[#262A33] border-white/10 text-slate-200 hover:border-white/20' 
+                            ? 'bg-[#222630] border-white/10 text-slate-200 hover:border-white/20' 
                             : 'bg-neutral-100 border-neutral-200 text-neutral-700'
                       }`}
                     >
@@ -4250,10 +4348,10 @@ export default function App() {
                         <option key={`genre-opt-${g}-${gOptIdx}`} value={g} className={theme === 'dark' ? 'bg-[#1A1D23] text-slate-100' : 'bg-white text-neutral-800'}>{g}</option>
                       ))}
                     </select>
-                    <div className={`pointer-events-none absolute inset-y-0 right-3 flex items-center ${
-                      selectedGenre !== 'All' ? 'text-blue-400 font-bold' : 'text-slate-500'
+                    <div className={`pointer-events-none absolute inset-y-0 right-2.5 flex items-center ${
+                      selectedGenre !== 'All' ? 'text-blue-400 font-bold' : 'text-slate-400'
                     }`}>
-                      <Filter className="w-3.5 h-3.5" />
+                      <ChevronDown className="w-3 h-3" />
                     </div>
                   </div>
                 </div>
@@ -5135,7 +5233,10 @@ export default function App() {
                   return (
                     <ShowCard
                       key={searchFamily ? `consolidated-${show.id || normalizeShowTitle(show.title)}` : `show-${show.id || normalizeShowTitle(show.title)}`}
-                      show={show}
+                      show={{
+                        ...show,
+                        isFandomActive: joinedFandoms.some(t => normalizeTitleForComparison(t) === normalizeTitleForComparison(show.title)) || Boolean(show.isFandomActive)
+                      }}
                       onUpdateShow={handleUpdateShow}
                       onDeleteShow={handleDeleteShow}
                       isFriendView={isFriendView || searchFamily || belongsToOther}

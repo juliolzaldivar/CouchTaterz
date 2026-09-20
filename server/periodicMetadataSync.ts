@@ -22,7 +22,7 @@ import fs from "fs";
 import path from "path";
 import { Board, TvShow } from "../src/types";
 import { auditShow, createEmptyAuditResult, AuditResult, MetadataChangeRecord, isTemporaryEpisodeTitle } from "./metadataAuditor";
-import { recordShowsToLedger, applyReviewsLedgerToShows } from "./reviewsLedger";
+import { recordShowsToLedger, applyReviewsLedgerToShows, isJulioAccountLedger } from "./reviewsLedger";
 
 // File paths
 const DB_FILE = path.join(process.cwd(), "data.json");
@@ -32,7 +32,7 @@ const AUDIT_LOGS_FILE = path.join(process.cwd(), "data", "metadata-audit-logs.js
 export const METADATA_SYNC_CONFIG = {
   FULL_AUDIT_INTERVAL_MS: 6 * 60 * 60 * 1000,    // 6 Hours (Production Full Library Audit)
   ACTIVE_SHOWS_INTERVAL_MS: 2 * 60 * 60 * 1000, // 2 Hours (Near-term upcoming / Watching shows)
-  INITIAL_BOOT_DELAY_MS: 45 * 1000,             // 45 Seconds (Staggered boot delay)
+  INITIAL_BOOT_DELAY_MS: 20 * 1000,             // 20 Seconds (Fast, local-only boot verification)
   INTER_REQUEST_DELAY_MS: 350,                  // 350ms (Polite API rate limit pacing)
   SHOW_CACHE_TTL_MS: 6 * 60 * 60 * 1000,        // 6 Hours (Show freshness threshold)
   REQUEST_TIMEOUT_MS: 3000,                     // 3 Seconds (Strict fetch timeout)
@@ -87,11 +87,10 @@ export function registerDatabaseWriter(callback: (db: Record<string, Board>) => 
 function loadAuditLogs(): AuditResult[] {
   try {
     if (fs.existsSync(AUDIT_LOGS_FILE)) {
-      const raw = fs.readFileSync(AUDIT_LOGS_FILE, "utf8");
-      if (raw && raw.trim().length > 0) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) return parsed.slice(-METADATA_SYNC_CONFIG.MAX_AUDIT_LOGS_RETAINED);
-      }
+      const raw = fs.readFileSync(AUDIT_LOGS_FILE, "utf8").trim();
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed.slice(-METADATA_SYNC_CONFIG.MAX_AUDIT_LOGS_RETAINED);
     }
   } catch (e) {
     console.error("[MetadataSync] Failed to read audit logs:", e);
@@ -240,6 +239,9 @@ export async function runPeriodicMetadataAudit(options: {
 
     let modifiedShowsCount = 0;
     const modifiedShowKeys = new Set<string>();
+    let remoteQueriesCount = 0;
+    const isBootRun = triggerSource === 'boot';
+    const MAX_REMOTE_QUERIES_PER_RUN = isBootRun ? 0 : (triggerSource === 'active_queue' ? 15 : (triggerSource === 'cron' ? 30 : 100));
 
     // 3. Process Shows with Polite Rate Limiting
     for (let i = 0; i < showsToAudit.length; i++) {
@@ -249,11 +251,14 @@ export async function runPeriodicMetadataAudit(options: {
       // Check TTL cache to prevent wasteful queries unless forced
       const lastAuditMs = show.metadataAuditedAt ? new Date(show.metadataAuditedAt).getTime() : 0;
       const isStale = (Date.now() - lastAuditMs) > METADATA_SYNC_CONFIG.SHOW_CACHE_TTL_MS;
-      const shouldAuditRemote = options.force || isStale || !show.bannerImage || isTemporaryEpisodeTitle(show.nextEpisode?.title);
+      
+      // On boot runs, never perform remote network requests. Audit against local canonical schedules and verified assets.
+      const shouldAuditRemote = !isBootRun && (options.force || isStale || !show.bannerImage || isTemporaryEpisodeTitle(show.nextEpisode?.title));
 
       let tvmazeRecord = null;
-      if (shouldAuditRemote && Date.now() >= circuitBreakerUntilMs) {
+      if (shouldAuditRemote && remoteQueriesCount < MAX_REMOTE_QUERIES_PER_RUN && Date.now() >= circuitBreakerUntilMs) {
         tvmazeRecord = await fetchTvmazeMetadata(show.title);
+        remoteQueriesCount++;
         if (tvmazeRecord) {
           await sleep(METADATA_SYNC_CONFIG.INTER_REQUEST_DELAY_MS);
         }
@@ -297,6 +302,12 @@ export async function runPeriodicMetadataAudit(options: {
                 concluded: updated.concluded !== undefined ? updated.concluded : s.concluded,
                 totalSeasons: updated.totalSeasons || s.totalSeasons,
                 episodesPerSeason: updated.episodesPerSeason || s.episodesPerSeason,
+                latestWatched: (s.latestWatched && (updated.episodes || (s.episodes))) ? {
+                  ...s.latestWatched,
+                  title: (updated.episodes && (updated.episodes[`S${s.latestWatched.season}E${s.latestWatched.episode}`] || updated.episodes[`${s.latestWatched.season}-${s.latestWatched.episode}`])) ||
+                         (s.episodes && (s.episodes[`S${s.latestWatched.season}E${s.latestWatched.episode}`] || s.episodes[`${s.latestWatched.season}-${s.latestWatched.episode}`])) ||
+                         s.latestWatched.title
+                } : s.latestWatched,
                 metadataAuditedAt: updated.metadataAuditedAt || new Date().toISOString(),
                 metadataAuditStatus: updated.metadataAuditStatus || 'verified'
               };
@@ -310,10 +321,25 @@ export async function runPeriodicMetadataAudit(options: {
         }
       }
 
-      // Re-apply ledger to protect user reviews
-      for (const board of Object.values(db)) {
+      // Re-apply ledger to protect user reviews for Julio's master collection
+      for (const [boardId, board] of Object.entries(db)) {
         if (board && Array.isArray(board.shows)) {
-          board.shows = applyReviewsLedgerToShows(board.shows);
+          board.shows = applyReviewsLedgerToShows(board.shows, boardId);
+          if (!isJulioAccountLedger(boardId) && !isJulioAccountLedger(board.owner)) {
+            board.shows = board.shows.map((s: TvShow) => {
+              const anyShow = s as any;
+              if (anyShow.ownerName && typeof anyShow.ownerName === "string" && anyShow.ownerName.toLowerCase().includes("julio")) {
+                anyShow.ownerName = board.owner?.name || "Buddy";
+              }
+              if (Array.isArray(anyShow.ownerNames)) {
+                anyShow.ownerNames = anyShow.ownerNames.filter((n: string) => typeof n === "string" && !n.toLowerCase().includes("julio"));
+                if (anyShow.ownerNames.length === 0) {
+                  anyShow.ownerNames = [board.owner?.name || "Buddy"];
+                }
+              }
+              return s;
+            });
+          }
         }
       }
 

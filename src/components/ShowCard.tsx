@@ -74,7 +74,7 @@ interface ShowCardProps {
   onboardingHighlight?: boolean;
   theme?: 'dark' | 'light';
   friendsList?: string[];
-  onOpenStoryCard?: (show: TvShow, reason?: 'completed' | 'high_rating' | 'manual') => void;
+  onOpenStoryCard?: (show: TvShow, reason?: 'completed' | 'high_rating' | 'manual' | 'episode_review') => void;
   onRequireAuth?: (actionTitle: string, pendingAction: () => void) => void;
   onOpenTaterzAiRecap?: (show: TvShow) => void;
   notificationLeadDays?: number;
@@ -768,9 +768,16 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       show.concluded && 
       !nextCalculated
     );
+    const nowIso = new Date().toISOString();
+    const clampedWithTimestamp = {
+      ...clampedWatched,
+      progressUpdatedAt: nowIso
+    };
     const updated = {
       ...show,
-      latestWatched: clampedWatched,
+      latestWatched: clampedWithTimestamp,
+      progressUpdatedAt: nowIso,
+      updatedAt: nowIso,
       nextEpisode: nextCalculated || (show.nextEpisode && show.nextEpisode.airDate ? show.nextEpisode : null),
       status: isCompletedNow ? ('Completed' as ShowStatus) : show.status
     };
@@ -797,9 +804,16 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       !show.nextEpisode
     );
     
+    const nowIso = new Date().toISOString();
+    const clampedWithTimestamp = {
+      ...clampedWatched,
+      progressUpdatedAt: nowIso
+    };
     const updated = {
       ...show,
-      latestWatched: clampedWatched,
+      latestWatched: clampedWithTimestamp,
+      progressUpdatedAt: nowIso,
+      updatedAt: nowIso,
       status: isCompletedNow ? ('Completed' as ShowStatus) : show.status
     };
     onUpdateShow(updated);
@@ -815,9 +829,16 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     const nextEp = currentWatched.episode - 1;
     const s = currentWatched.season || 1;
     const clampedWatched = clampProgressToAired(show, s, nextEp);
+    const nowIso = new Date().toISOString();
+    const clampedWithTimestamp = {
+      ...clampedWatched,
+      progressUpdatedAt: nowIso
+    };
     const updated = {
       ...show,
-      latestWatched: clampedWatched
+      latestWatched: clampedWithTimestamp,
+      progressUpdatedAt: nowIso,
+      updatedAt: nowIso
     };
     onUpdateShow(updated);
   };
@@ -832,9 +853,16 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     if (s >= maxSeasons) return;
     const nextSeason = s + 1;
     const clampedWatched = clampProgressToAired(show, nextSeason, 1);
+    const nowIso = new Date().toISOString();
+    const clampedWithTimestamp = {
+      ...clampedWatched,
+      progressUpdatedAt: nowIso
+    };
     const updated = {
       ...show,
-      latestWatched: clampedWatched
+      latestWatched: clampedWithTimestamp,
+      progressUpdatedAt: nowIso,
+      updatedAt: nowIso
     };
     onUpdateShow(updated);
   };
@@ -849,9 +877,16 @@ export const ShowCard: React.FC<ShowCardProps> = ({
     if (s <= 1) return;
     const prevSeason = s - 1;
     const clampedWatched = clampProgressToAired(show, prevSeason, 1);
+    const nowIso = new Date().toISOString();
+    const clampedWithTimestamp = {
+      ...clampedWatched,
+      progressUpdatedAt: nowIso
+    };
     const updated = {
       ...show,
-      latestWatched: clampedWatched
+      latestWatched: clampedWithTimestamp,
+      progressUpdatedAt: nowIso,
+      updatedAt: nowIso
     };
     onUpdateShow(updated);
   };
@@ -879,16 +914,23 @@ export const ShowCard: React.FC<ShowCardProps> = ({
       }
       return;
     }
+    const nowIso = new Date().toISOString();
     let updatedWatched = show.latestWatched;
     if (status === 'Completed') {
       const finalS = getMaxAiredSeason(show);
       const finalE = getMaxAiredEpisodeForSeason(show, finalS);
-      updatedWatched = clampProgressToAired(show, finalS, finalE);
+      updatedWatched = {
+        ...clampProgressToAired(show, finalS, finalE),
+        progressUpdatedAt: nowIso
+      };
     }
     const updated = {
       ...show,
       status,
-      latestWatched: updatedWatched
+      statusUpdatedAt: nowIso,
+      latestWatched: updatedWatched,
+      ...(status === 'Completed' ? { progressUpdatedAt: nowIso } : {}),
+      updatedAt: nowIso
     };
     onUpdateShow(updated);
 
@@ -1158,29 +1200,41 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                 <Play className="w-3.5 h-3.5 md:w-3 md:h-3 fill-current" />
               </a>
 
-              {/* Fandom Connection / Superfans Button */}
-              {onOpenFandom && (
+              {/* Fandom Connection / Join Fandom & Launch Hub Button */}
+              {(onToggleFandom || onOpenFandom) && (
                 <button
                   type="button"
+                  id={`show-card-fandom-icon-btn-${show.id}`}
+                  aria-label={
+                    show.isFandomActive
+                      ? `Joined ${show.title} Fandom • Click to open Fandom Hub`
+                      : `Join ${show.title} Fandom • Click to join & open Hub`
+                  }
                   onClick={(e) => {
+                    e.preventDefault();
                     e.stopPropagation();
                     handleInteractionClick();
-                    onOpenFandom(show);
+                    if (!show.isFandomActive && onToggleFandom) {
+                      onToggleFandom(show);
+                    }
+                    if (onOpenFandom) {
+                      onOpenFandom({ ...show, isFandomActive: true });
+                    }
                   }}
                   className={`p-1.5 md:p-1 rounded-lg border transition-all duration-200 cursor-pointer flex items-center justify-center min-w-[28px] min-h-[28px] md:min-w-0 md:min-h-0 relative group/fandom ${
                     show.isFandomActive
-                      ? 'border-amber-500/60 bg-amber-500/25 text-amber-300 shadow-sm shadow-amber-500/30'
+                      ? 'border-amber-500/60 bg-amber-500/25 text-amber-300 shadow-sm shadow-amber-500/30 ring-1 ring-amber-500/30'
                       : theme === 'dark'
-                        ? 'border-white/5 bg-[#0F1115] text-slate-400 hover:text-amber-400 hover:border-amber-500/30'
-                        : 'border-slate-200 bg-white/90 text-slate-700 hover:text-amber-600 hover:border-amber-300 shadow-sm backdrop-blur-sm'
+                        ? 'border-white/5 bg-[#0F1115] text-slate-400 hover:text-amber-400 hover:border-amber-500/40 hover:bg-amber-500/10'
+                        : 'border-slate-200 bg-white/90 text-slate-700 hover:text-amber-600 hover:border-amber-400 hover:bg-amber-50 shadow-sm backdrop-blur-sm'
                   }`}
                   title={
                     show.isFandomActive
-                      ? `Joined ${show.title} Fandom — Click to open Fandom Hub`
-                      : `Explore ${show.title} Fandom Hub & Superfans`
+                      ? `Joined ${show.title} Fandom • Click to open Fandom Hub`
+                      : `Join ${show.title} Fandom • Click to join & open Hub`
                   }
                 >
-                  <Flame className={`w-3.5 h-3.5 md:w-3 md:h-3 transition-transform ${show.isFandomActive ? 'fill-current scale-110 text-amber-400' : 'group-hover/fandom:scale-110'}`} />
+                  <Flame className={`w-3.5 h-3.5 md:w-3 md:h-3 transition-transform ${show.isFandomActive ? 'fill-current scale-110 text-amber-400' : 'group-hover/fandom:scale-110 group-hover/fandom:text-amber-400'}`} />
                   {show.isFandomActive && (
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400 ring-1 ring-black absolute -top-0.5 -right-0.5 shadow-[0_0_6px_rgba(251,191,36,0.9)]" />
                   )}
@@ -1261,46 +1315,20 @@ export const ShowCard: React.FC<ShowCardProps> = ({
               </span>
             ) : null}
           </h3>
-          <div className="flex flex-nowrap gap-1.5 overflow-x-auto scrollbar-none pb-0.5 items-center">
-            {/* Lead with Fandom First so it is never pushed off-screen by multiple genre tags */}
-            {onOpenFandom && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onOpenFandom(show);
-                }}
-                className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-black rounded-md border shrink-0 flex items-center gap-1 transition cursor-pointer backdrop-blur-md shadow-xs select-none ${
-                  show.isFandomActive
-                    ? 'border-amber-500/70 bg-amber-500/30 text-amber-300 ring-1 ring-amber-500/30'
-                    : 'border-amber-500/40 bg-black/60 text-amber-400/90 hover:text-amber-300 hover:border-amber-400 hover:bg-amber-500/15'
-                }`}
-                title={show.isFandomActive ? `Joined ${show.title} Fandom — Open Fandom Hub` : `Explore ${show.title} Fandom Hub`}
-              >
-                <Flame className={`w-3 h-3 ${show.isFandomActive ? 'text-amber-400 fill-current animate-pulse' : 'text-amber-400 fill-current'}`} />
-                <span>Fandom</span>
-                {show.isFandomActive && (
-                  <span className="w-1 h-1 rounded-full bg-amber-400 ml-0.5" />
-                )}
-              </button>
-            )}
-
-            {/* Subtle separator if Fandom button is present */}
-            {onOpenFandom && getNormalizedGenres(show).length > 0 && (
-              <span className="text-white/20 text-[10px] select-none shrink-0">|</span>
-            )}
-
-            {/* Show Genre Tags */}
-            {getNormalizedGenres(show).map((g, gIdx) => (
-              <span key={`${g}-${gIdx}`} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded border shrink-0 ${
-                theme === 'dark'
-                  ? 'text-slate-300 bg-[#0F1115]/85 border-white/5'
-                  : 'text-white bg-slate-900/80 border-slate-700/50 shadow-sm backdrop-blur-sm'
-              }`}>
-                {g}
-              </span>
-            ))}
-          </div>
+          {getNormalizedGenres(show).length > 0 && (
+            <div className="flex flex-wrap gap-1.5 items-center pt-0.5">
+              {/* Show Genre Tags */}
+              {getNormalizedGenres(show).map((g, gIdx) => (
+                <span key={`${g}-${gIdx}`} className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-bold rounded border shrink-0 ${
+                  theme === 'dark'
+                    ? 'text-slate-300 bg-[#0F1115]/85 border-white/5'
+                    : 'text-white bg-slate-900/80 border-slate-700/50 shadow-sm backdrop-blur-sm'
+                }`}>
+                  {g}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1932,7 +1960,7 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                         type="button"
                         onClick={() => {
                           if (!isEpReviewOpen) setIsEpReviewOpen(true);
-                          onOpenStoryCard(show, 'manual');
+                          onOpenStoryCard(show, 'episode_review');
                         }}
                         className="flex items-center justify-center p-1.5 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-extrabold transition-all cursor-pointer shadow-2xs shrink-0"
                         title="Share this episode review on 9:16 Social Story Card"
@@ -2046,6 +2074,27 @@ export const ShowCard: React.FC<ShowCardProps> = ({
                                         <Star className="w-2.5 h-2.5 fill-amber-400" />
                                         <span>{rev.score}/10</span>
                                       </span>
+                                    )}
+
+                                    {!isFriendView && onOpenStoryCard && (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onOpenStoryCard({
+                                            ...show,
+                                            latestWatched: {
+                                              season: rev.season,
+                                              episode: rev.episode,
+                                              title: getTitleForEpisode(rev.season, rev.episode) || ''
+                                            }
+                                          }, 'episode_review');
+                                        }}
+                                        className="p-1 rounded-md text-slate-400 hover:text-purple-300 hover:bg-purple-500/10 transition-colors ml-auto cursor-pointer"
+                                        title={`Share S${rev.season}E${rev.episode} review on Social Card`}
+                                      >
+                                        <Share2 className="w-3 h-3 text-purple-300" />
+                                      </button>
                                     )}
                                   </div>
 

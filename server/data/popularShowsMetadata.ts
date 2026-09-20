@@ -24,7 +24,7 @@ export const POPULAR_SHOWS_METADATA: Record<string, {
   "silo": { totalSeasons: 3, episodesPerSeason: [10, 10, 10], streamingService: "Apple TV", genres: ["Sci-Fi", "Dystopian", "Drama", "Mystery"], rottenTomatoesScore: 88 },
   "lioness": { totalSeasons: 3, episodesPerSeason: [8, 8, 8], streamingService: "Paramount+", genres: ["Action", "Thriller", "Drama"], concluded: false, rottenTomatoesScore: 88 },
   "special ops: lioness": { totalSeasons: 3, episodesPerSeason: [8, 8, 8], streamingService: "Paramount+", genres: ["Action", "Thriller", "Drama"], concluded: false, rottenTomatoesScore: 88 },
-  "neagley": { totalSeasons: 1, episodesPerSeason: [6], streamingService: "Prime Video", genres: ["Action", "Crime", "Drama", "Thriller"], concluded: false, rottenTomatoesScore: 92 },
+  "neagley": { totalSeasons: 1, episodesPerSeason: [8], streamingService: "Prime Video", genres: ["Action", "Crime", "Drama", "Thriller"], concluded: false, rottenTomatoesScore: 92 },
   "reacher": { totalSeasons: 4, episodesPerSeason: [8, 8, 8, 8], streamingService: "Prime Video", genres: ["Action", "Crime", "Drama", "Thriller"], concluded: false, rottenTomatoesScore: 95 },
   "lanterns": { totalSeasons: 1, episodesPerSeason: [8], streamingService: "HBO", genres: ["Sci-Fi", "Action", "Mystery", "Drama"], concluded: false, rottenTomatoesScore: 91 },
   "the shards": { totalSeasons: 1, episodesPerSeason: [8], streamingService: "Hulu", genres: ["Drama", "Thriller", "Horror", "Mystery"], concluded: false, rottenTomatoesScore: 89 },

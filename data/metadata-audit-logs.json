@@ -1,1 +1,1351 @@
-[]
+[
+  {
+    "id": "audit-1789846748087-0dolw",
+    "timestamp": "2026-09-19T19:39:08.087Z",
+    "durationMs": 277712,
+    "totalShowsAudited": 490,
+    "titlesUpdated": [
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E8",
+        "oldTitle": "TBA",
+        "newTitle": "Mac and Dennis Tear Their ACLs"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E9",
+        "oldTitle": "TBA",
+        "newTitle": "Frank's Team: A Dark Day for Baseball"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E10",
+        "oldTitle": "Season Finale",
+        "newTitle": "The Guys Have a Sleepover"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E8",
+        "oldTitle": "TBA",
+        "newTitle": "Mac and Dennis Tear Their ACLs"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E9",
+        "oldTitle": "TBA",
+        "newTitle": "Frank's Team: A Dark Day for Baseball"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E10",
+        "oldTitle": "Season Finale",
+        "newTitle": "The Guys Have a Sleepover"
+      }
+    ],
+    "airDatesUpdated": [],
+    "bannersUpdated": [],
+    "channelsUpdated": [],
+    "changes": [
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Mac and Dennis Tear Their ACLs",
+        "detail": "Finalized episode title for S18E8 from live TV registry",
+        "timestamp": "2026-09-19T19:40:48.732Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Frank's Team: A Dark Day for Baseball",
+        "detail": "Finalized episode title for S18E9 from live TV registry",
+        "timestamp": "2026-09-19T19:40:48.732Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "Season Finale",
+        "newValue": "The Guys Have a Sleepover",
+        "detail": "Finalized episode title for S18E10 from live TV registry",
+        "timestamp": "2026-09-19T19:40:48.732Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Mac and Dennis Tear Their ACLs",
+        "detail": "Finalized episode title for S18E8 from live TV registry",
+        "timestamp": "2026-09-19T19:41:08.528Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Frank's Team: A Dark Day for Baseball",
+        "detail": "Finalized episode title for S18E9 from live TV registry",
+        "timestamp": "2026-09-19T19:41:08.528Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "Season Finale",
+        "newValue": "The Guys Have a Sleepover",
+        "detail": "Finalized episode title for S18E10 from live TV registry",
+        "timestamp": "2026-09-19T19:41:08.528Z"
+      }
+    ],
+    "summary": {
+      "titlesCount": 6,
+      "airDatesCount": 0,
+      "bannersCount": 0,
+      "channelsCount": 0,
+      "showsModified": 3
+    }
+  },
+  {
+    "id": "audit-1789846843518-3xiq9",
+    "timestamp": "2026-09-19T19:40:43.518Z",
+    "durationMs": 253736,
+    "totalShowsAudited": 490,
+    "titlesUpdated": [
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E8",
+        "oldTitle": "TBA",
+        "newTitle": "Mac and Dennis Tear Their ACLs"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E9",
+        "oldTitle": "TBA",
+        "newTitle": "Frank's Team: A Dark Day for Baseball"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E10",
+        "oldTitle": "Season Finale",
+        "newTitle": "The Guys Have a Sleepover"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E8",
+        "oldTitle": "TBA",
+        "newTitle": "Mac and Dennis Tear Their ACLs"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E9",
+        "oldTitle": "TBA",
+        "newTitle": "Frank's Team: A Dark Day for Baseball"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E10",
+        "oldTitle": "Season Finale",
+        "newTitle": "The Guys Have a Sleepover"
+      },
+      {
+        "showTitle": "Severance",
+        "episodeKey": "S2E1",
+        "oldTitle": "Hello, Ms. Cobel",
+        "newTitle": "Hello Ms. Cobel"
+      },
+      {
+        "showTitle": "The Shards",
+        "episodeKey": "S1E5",
+        "oldTitle": "Murder on the Dance Floor",
+        "newTitle": "The Invitation"
+      },
+      {
+        "showTitle": "Primal",
+        "episodeKey": "S3E1",
+        "oldTitle": "Vengeance of Death",
+        "newTitle": "The Ash Land"
+      },
+      {
+        "showTitle": "Primal",
+        "episodeKey": "S3E2",
+        "oldTitle": "Kingdom of Sorrow",
+        "newTitle": "Echoes of the Past"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "episodeKey": "S3E1",
+        "oldTitle": "The Life of Celeborn",
+        "newTitle": "The Shadows of Mordor"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "episodeKey": "S3E2",
+        "oldTitle": "Istar",
+        "newTitle": "The Siege"
+      },
+      {
+        "showTitle": "One Piece",
+        "episodeKey": "S2E1",
+        "oldTitle": "The Beginning and the End",
+        "newTitle": "Loguetown & The Grand Line"
+      },
+      {
+        "showTitle": "One Piece",
+        "episodeKey": "S2E2",
+        "oldTitle": "Good Whale Hunting",
+        "newTitle": "Whiskey Peak"
+      },
+      {
+        "showTitle": "One Piece",
+        "episodeKey": "S2E3",
+        "oldTitle": "Whisky Business",
+        "newTitle": "Little Garden"
+      },
+      {
+        "showTitle": "One Piece",
+        "episodeKey": "S2E4",
+        "oldTitle": "Big Trouble in Little Garden",
+        "newTitle": "Drum Island"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "episodeKey": "S3E1",
+        "oldTitle": "Execution",
+        "newTitle": "The Culling Game Begins"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "episodeKey": "S3E2",
+        "oldTitle": "One More Time",
+        "newTitle": "Tokyo Colony No. 1"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E8",
+        "oldTitle": "TBA",
+        "newTitle": "Mac and Dennis Tear Their ACLs"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E9",
+        "oldTitle": "TBA",
+        "newTitle": "Frank's Team: A Dark Day for Baseball"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "episodeKey": "S18E10",
+        "oldTitle": "Season Finale",
+        "newTitle": "The Guys Have a Sleepover"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "episodeKey": "S1E1",
+        "oldTitle": "Heaven’s Half Hour",
+        "newTitle": "Born Again"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "episodeKey": "S2E1",
+        "oldTitle": "The Northern Star",
+        "newTitle": "Devil's Reign"
+      }
+    ],
+    "airDatesUpdated": [],
+    "bannersUpdated": [],
+    "channelsUpdated": [],
+    "changes": [
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Mac and Dennis Tear Their ACLs",
+        "detail": "Finalized episode title for S18E8 from live TV registry",
+        "timestamp": "2026-09-19T19:42:16.341Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Frank's Team: A Dark Day for Baseball",
+        "detail": "Finalized episode title for S18E9 from live TV registry",
+        "timestamp": "2026-09-19T19:42:16.341Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "Season Finale",
+        "newValue": "The Guys Have a Sleepover",
+        "detail": "Finalized episode title for S18E10 from live TV registry",
+        "timestamp": "2026-09-19T19:42:16.341Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Mac and Dennis Tear Their ACLs",
+        "detail": "Finalized episode title for S18E8 from live TV registry",
+        "timestamp": "2026-09-19T19:42:34.516Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Frank's Team: A Dark Day for Baseball",
+        "detail": "Finalized episode title for S18E9 from live TV registry",
+        "timestamp": "2026-09-19T19:42:34.516Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "Season Finale",
+        "newValue": "The Guys Have a Sleepover",
+        "detail": "Finalized episode title for S18E10 from live TV registry",
+        "timestamp": "2026-09-19T19:42:34.516Z"
+      },
+      {
+        "showTitle": "Severance",
+        "field": "episode_title",
+        "oldValue": "Hello, Ms. Cobel",
+        "newValue": "Hello Ms. Cobel",
+        "detail": "Finalized canonical episode title for S2E1",
+        "timestamp": "2026-09-19T19:42:41.274Z"
+      },
+      {
+        "showTitle": "The Shards",
+        "field": "episode_title",
+        "oldValue": "Murder on the Dance Floor",
+        "newValue": "The Invitation",
+        "detail": "Finalized canonical episode title for S1E5",
+        "timestamp": "2026-09-19T19:42:42.221Z"
+      },
+      {
+        "showTitle": "Primal",
+        "field": "episode_title",
+        "oldValue": "Vengeance of Death",
+        "newValue": "The Ash Land",
+        "detail": "Finalized canonical episode title for S3E1",
+        "timestamp": "2026-09-19T19:42:43.169Z"
+      },
+      {
+        "showTitle": "Primal",
+        "field": "episode_title",
+        "oldValue": "Kingdom of Sorrow",
+        "newValue": "Echoes of the Past",
+        "detail": "Finalized canonical episode title for S3E2",
+        "timestamp": "2026-09-19T19:42:43.169Z"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "field": "episode_title",
+        "oldValue": "The Life of Celeborn",
+        "newValue": "The Shadows of Mordor",
+        "detail": "Finalized canonical episode title for S3E1",
+        "timestamp": "2026-09-19T19:42:44.592Z"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "field": "episode_title",
+        "oldValue": "Istar",
+        "newValue": "The Siege",
+        "detail": "Finalized canonical episode title for S3E2",
+        "timestamp": "2026-09-19T19:42:44.592Z"
+      },
+      {
+        "showTitle": "One Piece",
+        "field": "episode_title",
+        "oldValue": "The Beginning and the End",
+        "newValue": "Loguetown & The Grand Line",
+        "detail": "Finalized canonical episode title for S2E1",
+        "timestamp": "2026-09-19T19:42:52.092Z"
+      },
+      {
+        "showTitle": "One Piece",
+        "field": "episode_title",
+        "oldValue": "Good Whale Hunting",
+        "newValue": "Whiskey Peak",
+        "detail": "Finalized canonical episode title for S2E2",
+        "timestamp": "2026-09-19T19:42:52.092Z"
+      },
+      {
+        "showTitle": "One Piece",
+        "field": "episode_title",
+        "oldValue": "Whisky Business",
+        "newValue": "Little Garden",
+        "detail": "Finalized canonical episode title for S2E3",
+        "timestamp": "2026-09-19T19:42:52.092Z"
+      },
+      {
+        "showTitle": "One Piece",
+        "field": "episode_title",
+        "oldValue": "Big Trouble in Little Garden",
+        "newValue": "Drum Island",
+        "detail": "Finalized canonical episode title for S2E4",
+        "timestamp": "2026-09-19T19:42:52.092Z"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "field": "episode_title",
+        "oldValue": "Execution",
+        "newValue": "The Culling Game Begins",
+        "detail": "Finalized canonical episode title for S3E1",
+        "timestamp": "2026-09-19T19:42:53.043Z"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "field": "episode_title",
+        "oldValue": "One More Time",
+        "newValue": "Tokyo Colony No. 1",
+        "detail": "Finalized canonical episode title for S3E2",
+        "timestamp": "2026-09-19T19:42:53.043Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Mac and Dennis Tear Their ACLs",
+        "detail": "Finalized episode title for S18E8 from live TV registry",
+        "timestamp": "2026-09-19T19:43:49.263Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Frank's Team: A Dark Day for Baseball",
+        "detail": "Finalized episode title for S18E9 from live TV registry",
+        "timestamp": "2026-09-19T19:43:49.263Z"
+      },
+      {
+        "showTitle": "It's Always Sunny in Philadelphia",
+        "field": "episode_title",
+        "oldValue": "Season Finale",
+        "newValue": "The Guys Have a Sleepover",
+        "detail": "Finalized episode title for S18E10 from live TV registry",
+        "timestamp": "2026-09-19T19:43:49.263Z"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "field": "episode_title",
+        "oldValue": "Heaven’s Half Hour",
+        "newValue": "Born Again",
+        "detail": "Finalized canonical episode title for S1E1",
+        "timestamp": "2026-09-19T19:44:16.084Z"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "field": "episode_title",
+        "oldValue": "The Northern Star",
+        "newValue": "Devil's Reign",
+        "detail": "Finalized canonical episode title for S2E1",
+        "timestamp": "2026-09-19T19:44:16.084Z"
+      }
+    ],
+    "summary": {
+      "titlesCount": 23,
+      "airDatesCount": 0,
+      "bannersCount": 0,
+      "channelsCount": 0,
+      "showsModified": 11
+    }
+  },
+  {
+    "id": "audit-1789847143379-1s8ct",
+    "timestamp": "2026-09-19T19:45:43.379Z",
+    "durationMs": 373,
+    "totalShowsAudited": 490,
+    "titlesUpdated": [
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "S6E1",
+        "oldTitle": "Dead Drop",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-1",
+        "oldTitle": "TBA",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-2",
+        "oldTitle": "TBA",
+        "newTitle": "Daddy Issues"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-3",
+        "oldTitle": "TBA",
+        "newTitle": "Resurrection"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-4",
+        "oldTitle": "TBA",
+        "newTitle": "Lost and Found"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-5",
+        "oldTitle": "TBA",
+        "newTitle": "Sayonara"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-6",
+        "oldTitle": "TBA",
+        "newTitle": "Judgment Day"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "S6E1",
+        "oldTitle": "Dead Drop",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-1",
+        "oldTitle": "TBA",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-2",
+        "oldTitle": "TBA",
+        "newTitle": "Daddy Issues"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-3",
+        "oldTitle": "TBA",
+        "newTitle": "Resurrection"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-4",
+        "oldTitle": "TBA",
+        "newTitle": "Lost and Found"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-5",
+        "oldTitle": "TBA",
+        "newTitle": "Sayonara"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-6",
+        "oldTitle": "TBA",
+        "newTitle": "Judgment Day"
+      },
+      {
+        "showTitle": "Lioness",
+        "episodeKey": "3-6",
+        "oldTitle": "TBA",
+        "newTitle": "Extraction"
+      },
+      {
+        "showTitle": "Lioness",
+        "episodeKey": "3-7",
+        "oldTitle": "TBA",
+        "newTitle": "Zero Hour"
+      },
+      {
+        "showTitle": "Lioness",
+        "episodeKey": "3-8",
+        "oldTitle": "TBA",
+        "newTitle": "The Lion's Den"
+      },
+      {
+        "showTitle": "Lioness",
+        "episodeKey": "3-7",
+        "oldTitle": "TBA",
+        "newTitle": "Zero Hour"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "S6E1",
+        "oldTitle": "Dead Drop",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-1",
+        "oldTitle": "TBA",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-2",
+        "oldTitle": "TBA",
+        "newTitle": "Daddy Issues"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-3",
+        "oldTitle": "TBA",
+        "newTitle": "Resurrection"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-4",
+        "oldTitle": "TBA",
+        "newTitle": "Lost and Found"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-5",
+        "oldTitle": "TBA",
+        "newTitle": "Sayonara"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-6",
+        "oldTitle": "TBA",
+        "newTitle": "Judgment Day"
+      },
+      {
+        "showTitle": "Lioness",
+        "episodeKey": "3-7",
+        "oldTitle": "TBA",
+        "newTitle": "Zero Hour"
+      },
+      {
+        "showTitle": "Severance",
+        "episodeKey": "S2E1",
+        "oldTitle": "Hello, Ms. Cobel",
+        "newTitle": "Hello Ms. Cobel"
+      },
+      {
+        "showTitle": "The Shards",
+        "episodeKey": "S1E5",
+        "oldTitle": "Murder on the Dance Floor",
+        "newTitle": "The Invitation"
+      },
+      {
+        "showTitle": "Primal",
+        "episodeKey": "S3E1",
+        "oldTitle": "Vengeance of Death",
+        "newTitle": "The Ash Land"
+      },
+      {
+        "showTitle": "Primal",
+        "episodeKey": "S3E2",
+        "oldTitle": "Kingdom of Sorrow",
+        "newTitle": "Echoes of the Past"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "episodeKey": "S3E1",
+        "oldTitle": "The Life of Celeborn",
+        "newTitle": "The Shadows of Mordor"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "episodeKey": "S3E2",
+        "oldTitle": "Istar",
+        "newTitle": "The Siege"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "episodeKey": "S3E1",
+        "oldTitle": "Execution",
+        "newTitle": "The Culling Game Begins"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "episodeKey": "S3E2",
+        "oldTitle": "One More Time",
+        "newTitle": "Tokyo Colony No. 1"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "S6E1",
+        "oldTitle": "Dead Drop",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-1",
+        "oldTitle": "TBA",
+        "newTitle": "Circle of Life"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-2",
+        "oldTitle": "TBA",
+        "newTitle": "Daddy Issues"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-3",
+        "oldTitle": "TBA",
+        "newTitle": "Resurrection"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-4",
+        "oldTitle": "TBA",
+        "newTitle": "Lost and Found"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-5",
+        "oldTitle": "TBA",
+        "newTitle": "Sayonara"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "episodeKey": "6-6",
+        "oldTitle": "TBA",
+        "newTitle": "Judgment Day"
+      },
+      {
+        "showTitle": "Lioness",
+        "episodeKey": "3-7",
+        "oldTitle": "TBA",
+        "newTitle": "Zero Hour"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "episodeKey": "S1E1",
+        "oldTitle": "Born Again",
+        "newTitle": "Heaven’s Half Hour"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "episodeKey": "1-1",
+        "oldTitle": "Born Again",
+        "newTitle": "Heaven’s Half Hour"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "episodeKey": "S2E1",
+        "oldTitle": "Devil's Reign",
+        "newTitle": "The Northern Star"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "episodeKey": "2-1",
+        "oldTitle": "Devil's Reign",
+        "newTitle": "The Northern Star"
+      }
+    ],
+    "airDatesUpdated": [
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      }
+    ],
+    "bannersUpdated": [],
+    "channelsUpdated": [],
+    "changes": [
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "Dead Drop",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for S6E1",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for 6-1",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Daddy Issues",
+        "detail": "Corrected canonical episode title for 6-2",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Resurrection",
+        "detail": "Corrected canonical episode title for 6-3",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Lost and Found",
+        "detail": "Corrected canonical episode title for 6-4",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Sayonara",
+        "detail": "Corrected canonical episode title for 6-5",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Judgment Day",
+        "detail": "Corrected canonical episode title for 6-6",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:43.499Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "Dead Drop",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for S6E1",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for 6-1",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Daddy Issues",
+        "detail": "Corrected canonical episode title for 6-2",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Resurrection",
+        "detail": "Corrected canonical episode title for 6-3",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Lost and Found",
+        "detail": "Corrected canonical episode title for 6-4",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Sayonara",
+        "detail": "Corrected canonical episode title for 6-5",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Judgment Day",
+        "detail": "Corrected canonical episode title for 6-6",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Lioness",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Extraction",
+        "detail": "Corrected canonical episode title for 3-6",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Lioness",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Zero Hour",
+        "detail": "Corrected canonical episode title for 3-7",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Lioness",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "The Lion's Den",
+        "detail": "Corrected canonical episode title for 3-8",
+        "timestamp": "2026-09-19T19:45:43.503Z"
+      },
+      {
+        "showTitle": "Lioness",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Zero Hour",
+        "detail": "Corrected canonical episode title for 3-7",
+        "timestamp": "2026-09-19T19:45:43.505Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "Dead Drop",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for S6E1",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for 6-1",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Daddy Issues",
+        "detail": "Corrected canonical episode title for 6-2",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Resurrection",
+        "detail": "Corrected canonical episode title for 6-3",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Lost and Found",
+        "detail": "Corrected canonical episode title for 6-4",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Sayonara",
+        "detail": "Corrected canonical episode title for 6-5",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Judgment Day",
+        "detail": "Corrected canonical episode title for 6-6",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:43.506Z"
+      },
+      {
+        "showTitle": "Lioness",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Zero Hour",
+        "detail": "Corrected canonical episode title for 3-7",
+        "timestamp": "2026-09-19T19:45:43.507Z"
+      },
+      {
+        "showTitle": "Severance",
+        "field": "episode_title",
+        "oldValue": "Hello, Ms. Cobel",
+        "newValue": "Hello Ms. Cobel",
+        "detail": "Finalized canonical episode title for S2E1",
+        "timestamp": "2026-09-19T19:45:43.507Z"
+      },
+      {
+        "showTitle": "The Shards",
+        "field": "episode_title",
+        "oldValue": "Murder on the Dance Floor",
+        "newValue": "The Invitation",
+        "detail": "Finalized canonical episode title for S1E5",
+        "timestamp": "2026-09-19T19:45:43.508Z"
+      },
+      {
+        "showTitle": "Primal",
+        "field": "episode_title",
+        "oldValue": "Vengeance of Death",
+        "newValue": "The Ash Land",
+        "detail": "Finalized canonical episode title for S3E1",
+        "timestamp": "2026-09-19T19:45:43.508Z"
+      },
+      {
+        "showTitle": "Primal",
+        "field": "episode_title",
+        "oldValue": "Kingdom of Sorrow",
+        "newValue": "Echoes of the Past",
+        "detail": "Finalized canonical episode title for S3E2",
+        "timestamp": "2026-09-19T19:45:43.508Z"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "field": "episode_title",
+        "oldValue": "The Life of Celeborn",
+        "newValue": "The Shadows of Mordor",
+        "detail": "Finalized canonical episode title for S3E1",
+        "timestamp": "2026-09-19T19:45:43.508Z"
+      },
+      {
+        "showTitle": "The Lord of the Rings: The Rings of Power",
+        "field": "episode_title",
+        "oldValue": "Istar",
+        "newValue": "The Siege",
+        "detail": "Finalized canonical episode title for S3E2",
+        "timestamp": "2026-09-19T19:45:43.508Z"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "field": "episode_title",
+        "oldValue": "Execution",
+        "newValue": "The Culling Game Begins",
+        "detail": "Finalized canonical episode title for S3E1",
+        "timestamp": "2026-09-19T19:45:43.508Z"
+      },
+      {
+        "showTitle": "Jujutsu Kaisen",
+        "field": "episode_title",
+        "oldValue": "One More Time",
+        "newValue": "Tokyo Colony No. 1",
+        "detail": "Finalized canonical episode title for S3E2",
+        "timestamp": "2026-09-19T19:45:43.508Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "Dead Drop",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for S6E1",
+        "timestamp": "2026-09-19T19:45:43.512Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Circle of Life",
+        "detail": "Corrected canonical episode title for 6-1",
+        "timestamp": "2026-09-19T19:45:43.512Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Daddy Issues",
+        "detail": "Corrected canonical episode title for 6-2",
+        "timestamp": "2026-09-19T19:45:43.512Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Resurrection",
+        "detail": "Corrected canonical episode title for 6-3",
+        "timestamp": "2026-09-19T19:45:43.512Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Lost and Found",
+        "detail": "Corrected canonical episode title for 6-4",
+        "timestamp": "2026-09-19T19:45:43.512Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Sayonara",
+        "detail": "Corrected canonical episode title for 6-5",
+        "timestamp": "2026-09-19T19:45:43.512Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Judgment Day",
+        "detail": "Corrected canonical episode title for 6-6",
+        "timestamp": "2026-09-19T19:45:43.512Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:43.513Z"
+      },
+      {
+        "showTitle": "Lioness",
+        "field": "episode_title",
+        "oldValue": "TBA",
+        "newValue": "Zero Hour",
+        "detail": "Corrected canonical episode title for 3-7",
+        "timestamp": "2026-09-19T19:45:43.513Z"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "field": "episode_title",
+        "oldValue": "Born Again",
+        "newValue": "Heaven’s Half Hour",
+        "detail": "Corrected canonical episode title for S1E1",
+        "timestamp": "2026-09-19T19:45:43.513Z"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "field": "episode_title",
+        "oldValue": "Born Again",
+        "newValue": "Heaven’s Half Hour",
+        "detail": "Corrected canonical episode title for 1-1",
+        "timestamp": "2026-09-19T19:45:43.513Z"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "field": "episode_title",
+        "oldValue": "Devil's Reign",
+        "newValue": "The Northern Star",
+        "detail": "Corrected canonical episode title for S2E1",
+        "timestamp": "2026-09-19T19:45:43.513Z"
+      },
+      {
+        "showTitle": "Daredevil: Born Again",
+        "field": "episode_title",
+        "oldValue": "Devil's Reign",
+        "newValue": "The Northern Star",
+        "detail": "Corrected canonical episode title for 2-1",
+        "timestamp": "2026-09-19T19:45:43.513Z"
+      }
+    ],
+    "summary": {
+      "titlesCount": 46,
+      "airDatesCount": 4,
+      "bannersCount": 0,
+      "channelsCount": 0,
+      "showsModified": 14
+    }
+  },
+  {
+    "id": "audit-1789847148804-b9flz",
+    "timestamp": "2026-09-19T19:45:48.804Z",
+    "durationMs": 373,
+    "totalShowsAudited": 490,
+    "titlesUpdated": [],
+    "airDatesUpdated": [
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      }
+    ],
+    "bannersUpdated": [],
+    "channelsUpdated": [],
+    "changes": [
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:48.919Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:48.930Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:48.933Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:45:48.946Z"
+      }
+    ],
+    "summary": {
+      "titlesCount": 0,
+      "airDatesCount": 4,
+      "bannersCount": 0,
+      "channelsCount": 0,
+      "showsModified": 4
+    }
+  },
+  {
+    "id": "audit-1789847187249-7cos1",
+    "timestamp": "2026-09-19T19:46:27.249Z",
+    "durationMs": 415,
+    "totalShowsAudited": 490,
+    "titlesUpdated": [],
+    "airDatesUpdated": [
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "oldAirDate": "2026-09-16",
+        "newAirDate": "2026-09-23",
+        "oldAirTime": null,
+        "episode": "S6E2 (\"Daddy Issues\")"
+      }
+    ],
+    "bannersUpdated": [],
+    "channelsUpdated": [],
+    "changes": [
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:46:27.375Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:46:27.386Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:46:27.389Z"
+      },
+      {
+        "showTitle": "Slow Horses",
+        "field": "air_date",
+        "oldValue": "2026-09-16",
+        "newValue": "2026-09-23",
+        "detail": "Synchronized air schedule for S6E2",
+        "timestamp": "2026-09-19T19:46:27.397Z"
+      }
+    ],
+    "summary": {
+      "titlesCount": 0,
+      "airDatesCount": 4,
+      "bannersCount": 0,
+      "channelsCount": 0,
+      "showsModified": 5
+    }
+  },
+  {
+    "id": "audit-1789847191234-ujvgw",
+    "timestamp": "2026-09-19T19:46:31.234Z",
+    "durationMs": 133,
+    "totalShowsAudited": 490,
+    "titlesUpdated": [],
+    "airDatesUpdated": [],
+    "bannersUpdated": [],
+    "channelsUpdated": [],
+    "changes": [],
+    "summary": {
+      "titlesCount": 0,
+      "airDatesCount": 0,
+      "bannersCount": 0,
+      "channelsCount": 0,
+      "showsModified": 0
+    }
+  }
+]

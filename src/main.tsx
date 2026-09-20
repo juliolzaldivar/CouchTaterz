@@ -4,8 +4,6 @@ import App from './App.tsx';
 import {RootErrorBoundary} from './components/RootErrorBoundary.tsx';
 import './index.css';
 
-// CouchTater workspace verified and optimized for Google Studio AI snapshots
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <RootErrorBoundary>
@@ -13,4 +11,7 @@ createRoot(document.getElementById('root')!).render(
     </RootErrorBoundary>
   </StrictMode>,
 );
+
+// Workspace snapshot verification: optimized payload & streamlined storage
+
 

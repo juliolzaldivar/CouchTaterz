@@ -1,0 +1,1336 @@
+{
+  "id": "user-ejc-2841",
+  "name": "EJC's Collection",
+  "owner": {
+    "id": "user-ejc-2841",
+    "name": "EJC",
+    "email": "ejc@taterz.com",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=EJC",
+    "createdAt": "2026-07-20T11:00:00.000Z"
+  },
+  "preferences": {
+    "genres": [
+      "Drama",
+      "Sci-Fi",
+      "Mystery",
+      "Comedy",
+      "Thriller"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Apple TV",
+      "Hulu",
+      "Prime Video",
+      "Disney+"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "ejc-1",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Drama",
+        "Sci-Fi",
+        "Mystery"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S2E1": "Hello Ms. Cobel",
+        "S2E2": "Goodbye, Mrs. Selvig",
+        "S2E3": "Who Is Alive?",
+        "S2E4": "Woe's Hollow",
+        "S2E5": "Trojan's Horse",
+        "S2E6": "Attila",
+        "S2E7": "Chikhai Bardo",
+        "S2E8": "Sweet Vitriol",
+        "S2E9": "The After Hours",
+        "S2E10": "Cold Harbor"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:05:00.000Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T11:05:00.000Z",
+      "userScore": 9.7,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "familyDetails": [
+        {
+          "userScore": 10,
+          "ownerName": "Julio",
+          "status": "Backlog",
+          "userNotes": "Ben Wyatt needs a haircut but is incredibly compelling in this workplace mind bender. Hope he finds Leslie soon. ",
+          "latestWatched": {
+            "season": 1,
+            "title": "The We We Are",
+            "episode": 9
+          }
+        }
+      ],
+      "latestWatched": {
+        "season": 2,
+        "episode": 3,
+        "title": "Who Is Alive?",
+        "progressUpdatedAt": "2026-07-20T11:05:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-07-20T11:05:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:05.537Z",
+      "progressUpdatedAt": "2026-07-20T11:05:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:49:29.486Z",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "ejc-2",
+      "title": "The Last of Us",
+      "actors": [],
+      "genres": [
+        "Horror",
+        "Drama",
+        "Sci-Fi",
+        "Action"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S2E1": "Jackson",
+        "S2E2": "Through the Valley",
+        "S2E3": "The Path",
+        "S2E4": "Day One",
+        "S2E5": "Feel Her Love",
+        "S2E6": "The Price",
+        "S2E7": "Seattle Day 3"
+      },
+      "overview": "Twenty years after modern civilization has been destroyed, Joel, a hardened survivor, is hired to smuggle Ellie, a 14-year-old girl, out of an oppressive quarantine zone.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:10:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T11:10:00.000Z",
+      "userScore": 9.5,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/acevLdSl5I2MK5RYAm7gwAndt1w.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-04-18",
+        "overview": "The next chapter in Ellie's journey begins across the fractured frontier."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 2,
+        "episode": 4,
+        "title": "Day One",
+        "progressUpdatedAt": "2026-07-20T11:10:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:10:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        9,
+        7,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:06.004Z",
+      "progressUpdatedAt": "2026-07-20T11:10:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:50.013Z",
+      "rottenTomatoesScore": 96
+    },
+    {
+      "id": "ejc-3",
+      "title": "Silo",
+      "actors": [],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Mystery"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S2E1": "The Engineer",
+        "S2E2": "Order",
+        "S2E3": "Solo",
+        "S2E4": "The Harmonium",
+        "S2E5": "Descent",
+        "S2E6": "Barricades",
+        "S2E7": "The Dive",
+        "S2E8": "The Book of Quinn",
+        "S2E9": "The Safeguard",
+        "S3E1": "Who Are You?",
+        "S3E2": "It's All Good",
+        "S3E3": "A Dark Web",
+        "S3E4": "Whatever You Do, Don't Go Home",
+        "S3E5": "Memory",
+        "S3E6": "The Drive",
+        "S3E7": "Radio",
+        "S3E8": "Gray Goo",
+        "S3E9": "The Surface",
+        "S2E10": "Into the Fire",
+        "S3E10": "Legacy"
+      },
+      "overview": "In a ruined and toxic future, thousands live in a giant silo deep underground. After its sheriff breaks a cardinal rule and residents die mysteriously, engineer Juliette starts to uncover shocking secrets.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:15:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T11:15:00.000Z",
+      "userScore": 9.2,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 10,
+        "title": "Legacy",
+        "airDate": "2026-09-04",
+        "overview": "Season 3 finale: The ultimate struggle for the future of the remaining silos."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 2,
+        "episode": 10,
+        "title": "Into the Fire",
+        "progressUpdatedAt": "2026-07-20T11:15:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:15:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:06.486Z",
+      "progressUpdatedAt": "2026-07-20T11:15:00.000Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-20T20:48:03.598Z",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "ejc-4",
+      "title": "Sh\u014dgun",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S1E10": "A Dream of a Dream",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun"
+      },
+      "overview": "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him, when a mysterious European ship is found marooned in a nearby fishing village.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:20:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-07-20T11:20:00.000Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 10,
+        "title": "A Dream of a Dream",
+        "progressUpdatedAt": "2026-07-20T11:20:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:20:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.471Z",
+      "progressUpdatedAt": "2026-07-20T11:20:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.812Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "ejc-5",
+      "title": "The Bear",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Tomorrow",
+        "S3E2": "Next",
+        "S3E3": "Doors",
+        "S3E4": "Violet",
+        "S3E5": "Children",
+        "S3E6": "Napkins",
+        "S3E7": "Legacy",
+        "S3E8": "Ice Chips",
+        "S3E9": "Apologies",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S3E10": "Forever",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family\u2019s sandwich shop after a tragic death in his family.",
+      "concluded": true,
+      "createdAt": "2026-07-20T11:25:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-07-20T11:25:00.000Z",
+      "userScore": 9.4,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 6,
+        "title": "Napkins",
+        "progressUpdatedAt": "2026-07-20T11:25:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:25:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.471Z",
+      "progressUpdatedAt": "2026-07-20T11:25:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.916Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "ejc-6",
+      "title": "House of the Dragon",
+      "actors": [],
+      "genres": [
+        "Fantasy",
+        "Drama",
+        "Action"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S2E1": "A Son for a Son",
+        "S2E2": "Rhaenyra the Cruel",
+        "S2E3": "The Burning Mill",
+        "S2E4": "The Red Dragon and the Gold",
+        "S2E5": "Regent",
+        "S2E6": "Smallfolk",
+        "S2E7": "The Red Sowing",
+        "S2E8": "The Queen Who Ever Was",
+        "S4E1": "The Hour of the Wolf"
+      },
+      "overview": "An internal succession war within House Targaryen at the height of its power, 172 years before the birth of Daenerys Targaryen.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:30:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T11:30:00.000Z",
+      "userScore": 9.1,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/577eXC8wFQT0eUrJcgznSiFPRmk.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "The Hour of the Wolf",
+        "airDate": "2028-06-18",
+        "overview": "The climactic final season of the Targaryen civil war begins."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 2,
+        "episode": 8,
+        "title": "The Queen Who Ever Was",
+        "progressUpdatedAt": "2026-07-20T11:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:30:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        8,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:07.892Z",
+      "progressUpdatedAt": "2026-07-20T11:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.952Z",
+      "rottenTomatoesScore": 90
+    },
+    {
+      "id": "ejc-7",
+      "title": "Succession",
+      "actors": [],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S4E1": "The Munsters",
+        "S4E2": "Rehearsal",
+        "S4E3": "Connor's Wedding",
+        "S4E4": "Honeymoon States",
+        "S4E5": "Kill List",
+        "S4E6": "Living+",
+        "S4E7": "Tailgate Party",
+        "S4E8": "America Decides",
+        "S4E9": "Church and State",
+        "S4E10": "With Open Eyes"
+      },
+      "overview": "The Roy family is known for controlling the biggest media and entertainment company in the world. However, their world changes when their father steps down from the company.",
+      "concluded": true,
+      "createdAt": "2026-07-20T11:35:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-07-20T11:35:00.000Z",
+      "userScore": 9.9,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/bcdUYUFk8GdpZJPiSAas9UeocLH.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 4,
+        "episode": 10,
+        "title": "With Open Eyes",
+        "progressUpdatedAt": "2026-07-20T11:35:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:35:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.471Z",
+      "progressUpdatedAt": "2026-07-20T11:35:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.951Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "ejc-8",
+      "title": "Fallout",
+      "actors": [],
+      "genres": [
+        "Sci-Fi",
+        "Action",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "The End",
+        "S1E2": "The Target",
+        "S1E3": "The Head",
+        "S1E4": "The Ghouls",
+        "S1E5": "The Past",
+        "S1E6": "The Trap",
+        "S1E7": "The Radio",
+        "S1E8": "The Beginning"
+      },
+      "overview": "In a future, post-apocalyptic Los Angeles brought about by nuclear decimation, citizens must live in underground bunkers to protect themselves from radiation, mutants and bandits.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:40:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-07-20T11:40:00.000Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/coaPCIqQBPUZsOnJcWZxhaORcDT.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-11-10",
+        "overview": "The wasteland journey ventures into uncharted territory."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 6,
+        "title": "The Trap",
+        "progressUpdatedAt": "2026-07-20T11:40:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:40:00.000Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8,
+        8,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:08.831Z",
+      "progressUpdatedAt": "2026-07-20T11:40:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.860Z",
+      "rottenTomatoesScore": 94
+    },
+    {
+      "id": "ejc-9",
+      "title": "Ted Lasso",
+      "actors": [],
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S3E1": "Smells Like Mean Spirit",
+        "S3E2": "(I Don't Want to Go to) Chelsea",
+        "S3E3": "4-5-1",
+        "S3E4": "Big Week",
+        "S3E5": "Signs",
+        "S3E6": "Sunflowers",
+        "S3E7": "The Strings That Bind Us",
+        "S3E8": "We'll Never Have Paris",
+        "S3E9": "La Locker Room Aux Folles",
+        "S4E1": "Believe Again",
+        "S4E2": "Curiouser and Curiouser!",
+        "S4E3": "Richmond's Got Talent",
+        "S4E4": "Greyhounds' Day Off",
+        "S4E5": "Riches of Embarrassment",
+        "S4E6": "Don't Jump Around Much Anymore",
+        "S4E7": "Yes & Baby",
+        "S4E8": "Follow the Anger",
+        "S4E9": "Episode 9",
+        "S3E10": "International Break",
+        "S3E11": "Mom City",
+        "S3E12": "So Long, Farewell",
+        "S4E10": "Episode 10"
+      },
+      "overview": "An American football coach is hired to manage a British soccer team. What he lacks in knowledge, he makes up for with optimism, determination... and biscuits.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:45:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-07-20T11:45:00.000Z",
+      "userScore": 9.6,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/gEQkOMmnJcoh9Hh1vk7fpVYnksR.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "Believe Again",
+        "airDate": "2026-11-25",
+        "overview": "Ted returns to Richmond as the club embarks on a brand new European championship campaign."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 12,
+        "title": "So Long, Farewell",
+        "progressUpdatedAt": "2026-07-20T11:45:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:45:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        12,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-16T19:03:02.346Z",
+      "progressUpdatedAt": "2026-07-20T11:45:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:50.135Z",
+      "rottenTomatoesScore": 90
+    },
+    {
+      "id": "ejc-10",
+      "title": "Slow Horses",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "Mystery",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S4E1": "Identity Theft",
+        "S4E2": "A Stranger Comes to Town",
+        "S4E3": "Penny for Your Thoughts",
+        "S4E4": "Returns",
+        "S4E5": "Grave Danger",
+        "S4E6": "Hello Goodbye",
+        "S6E1": "Circle of Life",
+        "S6E2": "Daddy Issues",
+        "S6E3": "Resurrection",
+        "S6E4": "Lost and Found",
+        "S6E5": "Sayonara",
+        "S6E6": "Judgment Day"
+      },
+      "overview": "Follows a dysfunctional team of MI5 agents\u2014and their obnoxious boss, the notorious Jackson Lamb\u2014as they navigate the espionage world to defend England.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:50:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T11:50:00.000Z",
+      "userScore": 9.3,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6pzwPlJXnQcGY8BkO_z2ph4-asGzeaLDUAmNU8UM3AQ&s=10",
+      "nextEpisode": {
+        "season": 6,
+        "episode": 2,
+        "title": "Daddy Issues",
+        "airDate": "2026-09-23",
+        "overview": "The team digs deeper into the conspiracy as old family tensions resurface."
+      },
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 4,
+        "episode": 2,
+        "title": "A Stranger Comes to Town",
+        "progressUpdatedAt": "2026-07-20T11:50:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:50:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-16T19:03:02.821Z",
+      "progressUpdatedAt": "2026-07-20T11:50:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.999Z",
+      "rottenTomatoesScore": 98
+    },
+    {
+      "id": "ejc-11",
+      "title": "True Detective",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "Mystery"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S4E1": "Night Country: Part 1",
+        "S4E2": "Night Country: Part 2",
+        "S4E3": "Night Country: Part 3",
+        "S4E4": "Night Country: Part 4",
+        "S4E5": "Night Country: Part 5",
+        "S4E6": "Night Country: Part 6"
+      },
+      "overview": "An anthology series in which police investigations unearth the dark secrets of those involved on both sides of the law.",
+      "concluded": false,
+      "createdAt": "2026-07-20T11:55:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T11:55:00.000Z",
+      "userScore": 8.7,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/v8YFr8BbU9qsO8PYIulzTeM6Qk.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 4,
+        "episode": 6,
+        "title": "Night Country: Part 6",
+        "progressUpdatedAt": "2026-07-20T11:55:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:55:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.472Z",
+      "progressUpdatedAt": "2026-07-20T11:55:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:50.001Z",
+      "rottenTomatoesScore": 78
+    },
+    {
+      "id": "ejc-12",
+      "title": "Fargo",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "Crime",
+        "Comedy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S5E1": "The Tragedy of the Commons",
+        "S5E2": "Trials and Tribulations",
+        "S5E3": "The Paradox of Intermediate Transactions",
+        "S5E4": "Insolubilia",
+        "S5E5": "The Tiger",
+        "S5E6": "The Tender Trap",
+        "S5E7": "Linda",
+        "S5E8": "Blanket",
+        "S5E9": "The Useless Hand",
+        "S5E10": "Bisquik"
+      },
+      "overview": "Various chronicles of deception, intrigue and murder in and around frozen Minnesota. Yet all of these tales mysteriously lead back, one way or another, to Fargo, North Dakota.",
+      "concluded": false,
+      "createdAt": "2026-07-20T12:00:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-07-20T12:00:00.000Z",
+      "userScore": 9.1,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/4jrSbRpLqpvYJtLKncaxZVC47EW.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 5,
+        "episode": 10,
+        "title": "Bisquik",
+        "progressUpdatedAt": "2026-07-20T12:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:00:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.472Z",
+      "progressUpdatedAt": "2026-07-20T12:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:50.988Z",
+      "rottenTomatoesScore": 93
+    },
+    {
+      "id": "ejc-13",
+      "title": "Stranger Things",
+      "actors": [],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Mystery"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S5E1": "Chapter One: The Crawl",
+        "S5E2": "Chapter Two: The Vanishing of Holly Wheeler",
+        "S5E3": "Chapter Three: The Turnbow Trap",
+        "S5E4": "Chapter Four: Sorcerer",
+        "S5E5": "Chapter Five: Shock Jock",
+        "S5E6": "Chapter Six: Escape from Camazotz",
+        "S5E7": "Chapter Seven: The Bridge",
+        "S5E8": "Chapter Eight: The Rightside Up"
+      },
+      "overview": "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl.",
+      "concluded": true,
+      "createdAt": "2026-07-20T12:05:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T12:05:00.000Z",
+      "userScore": 8.9,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 5,
+        "episode": 1,
+        "title": "Chapter One: The Crawl",
+        "progressUpdatedAt": "2026-07-20T12:05:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:05:00.000Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        8,
+        9,
+        8,
+        9,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.472Z",
+      "progressUpdatedAt": "2026-07-20T12:05:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:51.139Z",
+      "rottenTomatoesScore": 91
+    },
+    {
+      "id": "ejc-14",
+      "title": "Only Murders in the Building",
+      "actors": [],
+      "genres": [
+        "Comedy",
+        "Mystery"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S4E1": "Once Upon a Time in the West",
+        "S4E2": "Gates of Heaven",
+        "S4E3": "Two for the Road",
+        "S4E4": "The Stunt Man",
+        "S4E5": "Adaptation",
+        "S4E6": "Blow-Up",
+        "S4E7": "Valley of the Dolls",
+        "S4E8": "Lifeboat",
+        "S4E9": "Escape From Planet Klongo",
+        "S6E1": "TBA",
+        "S6E2": "TBA",
+        "S6E3": "TBA",
+        "S6E4": "TBA",
+        "S6E5": "TBA",
+        "S6E6": "TBA",
+        "S6E7": "TBA",
+        "S6E8": "TBA",
+        "S6E9": "TBA",
+        "S4E10": "My Best Friend's Wedding",
+        "S6E10": "TBA"
+      },
+      "overview": "Three strangers who share an obsession with true crime podcasts suddenly find themselves wrapped up in one when a gruesome death occurs inside their exclusive Upper West Side apartment building.",
+      "concluded": false,
+      "createdAt": "2026-07-20T12:10:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T12:10:00.000Z",
+      "userScore": 9.1,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmVSb15sNxoG3kQxUKQQhfpS98F_rpqY7zUQDlTsScvA&s=10",
+      "nextEpisode": {
+        "season": 6,
+        "episode": 1,
+        "title": "Season 6 Premiere",
+        "airDate": "2026-09-29",
+        "overview": "A new mystery unfolds in the storied hallways of the Arconia."
+      },
+      "totalSeasons": 6,
+      "familyDetails": [
+        {
+          "latestWatched": {
+            "title": "Not Started",
+            "season": 1,
+            "episode": 0
+          },
+          "userScore": null,
+          "ownerName": "Julio",
+          "status": "Backlog",
+          "userNotes": ""
+        }
+      ],
+      "latestWatched": {
+        "season": 4,
+        "episode": 4,
+        "title": "The Stunt Man",
+        "progressUpdatedAt": "2026-07-20T12:10:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:10:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:12.678Z",
+      "progressUpdatedAt": "2026-07-20T12:10:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:49:29.607Z",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "ejc-15",
+      "title": "Hacks",
+      "actors": [],
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Just for Laughs",
+        "S3E2": "Better Late",
+        "S3E3": "The Roast of Deborah Vance",
+        "S3E4": "Join the Club",
+        "S3E5": "One Day",
+        "S3E6": "Par for the Course",
+        "S3E7": "The Deborah Vance Christmas Spectacular",
+        "S3E8": "Yes, And",
+        "S3E9": "Bulletproof",
+        "S5E1": "EGOT",
+        "S5E2": "Number One Fan",
+        "S5E3": "No New Tricks",
+        "S5E4": "Who's Making Dinner?",
+        "S5E5": "D'Amazing Race",
+        "S5E6": "QuikScribbl",
+        "S5E7": "Montecito",
+        "S5E8": "The Cube",
+        "S5E9": "The Garden",
+        "S5E10": "Hacks"
+      },
+      "overview": "Explores a dark mentorship that forms between Deborah Vance, a legendary Las Vegas comedian, and an entitled, outcast 25-year-old comedy writer.",
+      "concluded": true,
+      "createdAt": "2026-07-20T12:15:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T12:15:00.000Z",
+      "userScore": 9.3,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://static.tvmaze.com/uploads/images/original_untouched/623/1557822.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 3,
+        "episode": 5,
+        "title": "One Day",
+        "progressUpdatedAt": "2026-07-20T12:15:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:15:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        8,
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.472Z",
+      "progressUpdatedAt": "2026-07-20T12:15:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:51.109Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "ejc-16",
+      "title": "Abbott Elementary",
+      "actors": [
+        "Quinta Brunson",
+        "Tyler James Williams",
+        "Sheryl Lee Ralph",
+        "Lisa Ann Walter",
+        "Chris Perfetti"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Career Day Part 1",
+        "S3E2": "Career Day Part 2",
+        "S3E3": "Gregory's Garden Goofballs",
+        "S3E4": "Smoking",
+        "S3E5": "Breakup",
+        "S3E6": "Willard R. Abbott",
+        "S3E7": "Librarian",
+        "S3E8": "Panel",
+        "S3E9": "Alex",
+        "S6E1": "Back to School Night",
+        "S3E10": "2 Ava 2 Fest",
+        "S3E11": "Double Date",
+        "S3E12": "Mother's Day",
+        "S3E13": "Smith Playground",
+        "S3E14": "Party"
+      },
+      "overview": "In this workplace comedy, a group of dedicated, passionate teachers \u2014 and a slightly tone-deaf principal \u2014 are brought together in a Philadelphia public school where, despite the odds stacked against them, they are determined to help their students succeed in life. Though these incredible public servants may be outnumbered and underfunded, they love what they do \u2014 even if they don\u2019t love the school district\u2019s less-than-stellar attitude toward educating children.",
+      "concluded": false,
+      "createdAt": "2026-07-20T12:20:00.000Z",
+      "directors": [
+        "Quinta Brunson",
+        "Justin Tan",
+        "Kate Peterman"
+      ],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T12:20:00.000Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/jbFkZSsmFFLjqZzxQHTBYyQb0RR.jpg",
+      "nextEpisode": {
+        "season": 6,
+        "episode": 1,
+        "title": "Back to School Night",
+        "airDate": "2026-10-07",
+        "overview": "Janine and Gregory start a brand new school year with unexpected district funding cuts."
+      },
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 3,
+        "episode": 12,
+        "title": "Mother's Day",
+        "progressUpdatedAt": "2026-07-20T12:20:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:20:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        13,
+        22,
+        14,
+        22,
+        22,
+        1
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.472Z",
+      "progressUpdatedAt": "2026-07-20T12:20:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:49:29.611Z",
+      "rottenTomatoesScore": 75
+    },
+    {
+      "id": "ejc-17",
+      "title": "The White Lotus",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S3E1": "Sawatdee",
+        "S3E2": "Special Treatments",
+        "S3E3": "The Meaning of Dreams",
+        "S3E4": "Hide or Seek",
+        "S3E5": "Full-Moon Party",
+        "S3E6": "Denials",
+        "S3E7": "Killer Instincts",
+        "S3E8": "Karma"
+      },
+      "overview": "Follows the exploits of various guests and employees at an exclusive tropical resort over the span of a week.",
+      "concluded": false,
+      "createdAt": "2026-07-20T12:25:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T12:25:00.000Z",
+      "userScore": 8.8,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/qVBIAcZkK5j6WRq7JehJcOMbdgb.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "Season 4 Premiere",
+        "airDate": "2027-02-14",
+        "overview": "A new resort destination welcomes an eccentric group of vacationers."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 1,
+        "title": "Sawatdee",
+        "progressUpdatedAt": "2026-07-20T12:25:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:25:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:14.221Z",
+      "progressUpdatedAt": "2026-07-20T12:25:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:51.034Z",
+      "rottenTomatoesScore": 92
+    },
+    {
+      "id": "ejc-18",
+      "title": "Squid Game",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "Action",
+        "Mystery"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S2E1": "Bread and Lottery",
+        "S2E2": "Halloween Party",
+        "S2E3": "001",
+        "S2E4": "Six Legs",
+        "S2E5": "One More Game",
+        "S2E6": "O \ufeff X",
+        "S2E7": "Friend or Foe",
+        "S3E1": "Keys and Knives",
+        "S3E2": "The Starry Night",
+        "S3E3": "It's Not Your Fault",
+        "S3E4": "222",
+        "S3E5": "\u25cb\u25b3\u25a1",
+        "S3E6": "Humans Are\u2026"
+      },
+      "overview": "Hundreds of cash-strapped contestants accept an invitation to compete in children\u2019s games for a tempting prize, but the stakes are deadly.",
+      "concluded": true,
+      "createdAt": "2026-07-20T12:30:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T12:30:00.000Z",
+      "userScore": 8.8,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/2meX1nMdScFOoV4370rqHWKmXhY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 2,
+        "episode": 1,
+        "title": "Bread and Lottery",
+        "progressUpdatedAt": "2026-07-20T12:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:30:00.000Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        9,
+        7,
+        6
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.472Z",
+      "progressUpdatedAt": "2026-07-20T12:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:51.060Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "ejc-19",
+      "title": "The Mandalorian",
+      "actors": [],
+      "genres": [
+        "Sci-Fi",
+        "Action",
+        "Adventure"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S3E1": "Chapter 17: The Apostate",
+        "S3E2": "Chapter 18: The Mines of Mandalore",
+        "S3E3": "Chapter 19: The Convert",
+        "S3E4": "Chapter 20: The Foundling",
+        "S3E5": "Chapter 21: The Pirate",
+        "S3E6": "Chapter 22: Guns for Hire",
+        "S3E7": "Chapter 23: The Spies",
+        "S3E8": "Chapter 24: The Return"
+      },
+      "overview": "The travels of a lone bounty hunter in the outer reaches of the galaxy, far from the authority of the New Republic.",
+      "concluded": true,
+      "createdAt": "2026-07-20T12:35:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-07-20T12:35:00.000Z",
+      "userScore": 8.9,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/9zcbqSxdsRMZWHYtyCd1nXPr2xq.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 3,
+        "episode": 8,
+        "title": "Chapter 24: The Return",
+        "progressUpdatedAt": "2026-07-20T12:35:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:35:00.000Z",
+      "streamingService": "Disney+",
+      "episodesPerSeason": [
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.472Z",
+      "progressUpdatedAt": "2026-07-20T12:35:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:51.159Z",
+      "rottenTomatoesScore": 90
+    },
+    {
+      "id": "ejc-20",
+      "title": "Industry",
+      "actors": [],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Il Mattino ha L'Oro Bocca",
+        "S3E2": "Smoke and Mirrors",
+        "S3E3": "It",
+        "S3E4": "White Mischief",
+        "S3E5": "Company Man",
+        "S3E6": "Nikki Beach, or: So Many Ways to Lose",
+        "S3E7": "Useful Idiot",
+        "S3E8": "Infinite Largesse",
+        "S4E1": "Market Open",
+        "S4E2": "Leveraged Buyout",
+        "S4E3": "Habseligkeiten",
+        "S4E4": "1000 Yoots, 1 Marilyn",
+        "S4E5": "Eyes Without a Face",
+        "S4E6": "Dear Henry",
+        "S4E7": "Points of Emphasis",
+        "S4E8": "Both, And"
+      },
+      "overview": "Young graduates compete for a limited number of permanent positions at a top investment bank in London.",
+      "concluded": false,
+      "createdAt": "2026-07-20T12:40:00.000Z",
+      "directors": [],
+      "ownerName": "EJC",
+      "updatedAt": "2026-07-20T12:40:00.000Z",
+      "userScore": 9.2,
+      "isFavorite": false,
+      "ownerNames": [
+        "EJC"
+      ],
+      "bannerImage": "https://static.tvmaze.com/uploads/images/original_untouched/554/1387331.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 2,
+        "title": "Leveraged Buyout",
+        "airDate": "2026-09-13",
+        "overview": "Pierpoint executives clash over a clandestine international acquisition."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 4,
+        "title": "White Mischief",
+        "progressUpdatedAt": "2026-07-20T12:40:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T12:40:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:15.661Z",
+      "progressUpdatedAt": "2026-07-20T12:40:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:51.094Z",
+      "rottenTomatoesScore": 96
+    }
+  ],
+  "updatedAt": "2026-09-19T19:46:27.408Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": [
+    "silo",
+    "ejc-3"
+  ]
+}

@@ -97,6 +97,7 @@ export function computeShowFandoms(
 ): ShowFandom[] {
   const fandomMap = new Map<string, {
     canonicalTitle: string;
+    representativeShow: TvShow;
     shows: Array<{ show: TvShow; board: Board; owner: User }>;
   }>();
 
@@ -106,18 +107,32 @@ export function computeShowFandoms(
     allBoardEntries.push(currentBoard);
   }
 
+  const joinedNorms = new Set(joinedTitles.map(normalizeTitleForComparison));
+
   // Group shows by normalized title
   allBoardEntries.forEach(board => {
     if (!board || !Array.isArray(board.shows)) return;
     
+    const isCurrentBoardUser = Boolean(
+      board.id === currentBoard?.id ||
+      board.id === 'default' ||
+      (currentUser && (board.owner?.id === currentUser.id || board.id === currentUser.id))
+    );
+
     // Determine the user/owner for this board
-    const owner: User = board.owner || {
+    const owner: User = (isCurrentBoardUser && currentUser) ? {
+      ...currentUser,
+      id: currentUser.id || 'default',
+      name: currentUser.name || board.name || 'Julio',
+      avatarUrl: currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name || 'Julio'}`,
+      createdAt: currentUser.createdAt || board.updatedAt || new Date().toISOString()
+    } : (board.owner || {
       id: board.id,
       name: board.name || (board.id === 'default' ? 'Julio' : 'Member'),
       email: `${board.id}@couchtater.com`,
       avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${board.name || board.id}`,
       createdAt: board.updatedAt || new Date().toISOString()
-    };
+    });
 
     board.shows.forEach(show => {
       if (!show || !show.title) return;
@@ -127,31 +142,37 @@ export function computeShowFandoms(
       if (!fandomMap.has(norm)) {
         fandomMap.set(norm, {
           canonicalTitle: show.title.trim(),
+          representativeShow: show,
           shows: []
         });
       }
 
       const entry = fandomMap.get(norm)!;
-      // Avoid duplicate shows from the same user for the same title
-      if (!entry.shows.some(s => s.owner.id === owner.id)) {
-        entry.shows.push({ show, board, owner });
+      // Prefer representative show with banner image if available
+      if (!entry.representativeShow.bannerImage && show.bannerImage) {
+        entry.representativeShow = show;
+      }
+
+      // If this board belongs to current user, only add them as an active superfan member in the network/rankings if they actually joined
+      const isUserFandomJoined = joinedNorms.has(norm) || Boolean(show.isFandomActive);
+      if (!isCurrentBoardUser || isUserFandomJoined) {
+        if (!entry.shows.some(s => s.owner.id === owner.id)) {
+          entry.shows.push({ show, board, owner });
+        }
       }
     });
   });
-
-  const joinedNorms = new Set(joinedTitles.map(normalizeTitleForComparison));
 
   // Build ShowFandom objects
   const fandoms: ShowFandom[] = [];
 
   fandomMap.forEach((entry, normKey) => {
-    const { canonicalTitle, shows } = entry;
-    if (shows.length === 0) return;
+    const { canonicalTitle, representativeShow, shows } = entry;
 
     // Pick best banner image and streaming service
-    const representativeShow = shows.find(s => s.show.bannerImage)?.show || shows[0].show;
-    const bannerImage = getShowBannerImage(representativeShow);
-    const streamingService = representativeShow.streamingService;
+    const bestShow = shows.find(s => s.show.bannerImage)?.show || representativeShow;
+    const bannerImage = getShowBannerImage(bestShow);
+    const streamingService = bestShow.streamingService;
 
     // Build members
     const members: FandomMember[] = shows.map(({ show, owner, board }) => {
@@ -214,7 +235,7 @@ export function computeShowFandoms(
     const scores = shows.map(s => s.show.userScore).filter((s): s is number => typeof s === 'number' && s > 0);
     const avgRating = scores.length > 0 
       ? Number((scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1))
-      : null;
+      : (representativeShow.userScore && representativeShow.userScore > 0 ? representativeShow.userScore : null);
 
     // Check if user has joined this fandom
     const isUserJoined = joinedNorms.has(normKey) || (
@@ -244,6 +265,46 @@ export function computeShowFandoms(
     if (!a.isUserJoined && b.isUserJoined) return 1;
     return b.memberCount - a.memberCount;
   });
+}
+
+/**
+ * Creates a fallback ShowFandom object for any single show on demand
+ */
+export function createSingleShowFandom(
+  show: TvShow,
+  currentUser?: User | null,
+  board?: Board | null,
+  joinedTitles: string[] = []
+): ShowFandom {
+  const norm = normalizeTitleForComparison(show.title);
+  const isJoined = joinedTitles.some(t => normalizeTitleForComparison(t) === norm) || Boolean(show.isFandomActive);
+  const member: FandomMember | null = isJoined && currentUser ? {
+    userId: currentUser.id || 'default',
+    userName: currentUser.name || 'Julio',
+    userAvatarUrl: currentUser.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${currentUser.name || 'Julio'}`,
+    status: show.status,
+    latestWatched: show.latestWatched,
+    userScore: show.userScore || null,
+    userNotes: show.userNotes,
+    episodeReviewsCount: Object.keys(show.episodeReviews || {}).length,
+    isOnline: true,
+    activityScore: calculateMemberActivityScore(show),
+    totalShowsTracked: Array.isArray(board?.shows) ? board.shows.length : 1
+  } : null;
+
+  return {
+    showTitle: show.title,
+    normalizedTitle: norm,
+    streamingService: show.streamingService,
+    bannerImage: getShowBannerImage(show),
+    memberCount: member ? 1 : 0,
+    members: member ? [member] : [],
+    topTenMembers: member ? [member] : [],
+    avgRating: show.userScore || null,
+    totalReviewsCount: Object.keys(show.episodeReviews || {}).length,
+    recentTakes: [],
+    isUserJoined: isJoined
+  };
 }
 
 /**

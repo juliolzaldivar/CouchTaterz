@@ -7,6 +7,7 @@ import { doc, getDoc, setDoc, getDocs, collection } from 'firebase/firestore';
 import { db } from '../firebase';
 import { Board, User } from '../types';
 import { sanitizeBoardForUser } from './reviewSanitizer';
+import { reconcileShowLists } from './progressReconciler';
 
 const STORAGE_PREFIX = 'couchtater_board_';
 
@@ -222,8 +223,10 @@ export async function resilientFetchBoard(boardId: string, options?: { preferCac
       .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data && Array.isArray(data.shows)) {
-          localStorage.setItem(`${STORAGE_PREFIX}${boardId}`, JSON.stringify(data));
-          localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(data));
+          const reconciled = reconcileShowLists(cachedBoard.shows || [], data.shows);
+          const boardToSave = { ...data, shows: reconciled };
+          localStorage.setItem(`${STORAGE_PREFIX}${boardId}`, JSON.stringify(boardToSave));
+          localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(boardToSave));
         }
       })
       .catch(() => {});
@@ -242,9 +245,23 @@ export async function resilientFetchBoard(boardId: string, options?: { preferCac
     if (res.ok && contentType && contentType.includes('application/json')) {
       const data = await res.json();
       if (data && Array.isArray(data.shows)) {
-        localStorage.setItem(`${STORAGE_PREFIX}${boardId}`, JSON.stringify(data));
-        localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(data));
-        return data;
+        const reconciled = cachedBoard && Array.isArray(cachedBoard.shows)
+          ? reconcileShowLists(cachedBoard.shows, data.shows)
+          : data.shows;
+        const boardToSave = { ...data, shows: reconciled };
+        localStorage.setItem(`${STORAGE_PREFIX}${boardId}`, JSON.stringify(boardToSave));
+
+        // Permanence Guarantee: If local client retained shows not yet on server, sync them back
+        if (reconciled.length > data.shows.length) {
+          saveBoardToFirestore(boardToSave).catch(() => {});
+          fetch('/api/boards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(boardToSave)
+          }).catch(() => {});
+        }
+
+        return boardToSave;
       }
     }
   } catch (apiErr) {
@@ -256,9 +273,12 @@ export async function resilientFetchBoard(boardId: string, options?: { preferCac
     try {
       const firestoreBoard = await getBoardFromFirestore(boardId);
       if (firestoreBoard && Array.isArray(firestoreBoard.shows)) {
-        localStorage.setItem(`${STORAGE_PREFIX}${boardId}`, JSON.stringify(firestoreBoard));
-        localStorage.setItem(`couchtater_board_${boardId}`, JSON.stringify(firestoreBoard));
-        return firestoreBoard;
+        const reconciled = cachedBoard && Array.isArray(cachedBoard.shows)
+          ? reconcileShowLists(cachedBoard.shows, firestoreBoard.shows)
+          : firestoreBoard.shows;
+        const boardToSave = { ...firestoreBoard, shows: reconciled };
+        localStorage.setItem(`${STORAGE_PREFIX}${boardId}`, JSON.stringify(boardToSave));
+        return boardToSave;
       }
     } catch (fsErr) {
       handleFirestoreError(fsErr, `resilientFetch(${boardId})`);

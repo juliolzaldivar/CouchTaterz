@@ -1,0 +1,313 @@
+{
+  "name": "El Dude's Collection",
+  "id": "user-el-dude-9821",
+  "shows": [
+    {
+      "id": "show-1787723924681",
+      "title": "The Madison",
+      "actors": [
+        "Michelle Pfeiffer",
+        "Kurt Russell",
+        "Beau Garrett",
+        "Patrick J. Adams",
+        "Elle Chapman"
+      ],
+      "genres": [
+        "Drama",
+        "Western"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "River's Edge",
+        "S1E2": "Under the Pines",
+        "S1E3": "Watch Her Fall",
+        "S1E4": "Tomorrow Is Goodbye",
+        "S1E5": "No Name and a New Dream",
+        "S1E6": "I Give Me Permission"
+      },
+      "overview": "The Clyburns uproot their comfortable New York City lives to the wild, untamed beauty of Montana's Madison River Valley on a search for connection.",
+      "concluded": false,
+      "createdAt": "2026-08-26T05:58:44.681Z",
+      "directors": [
+        "Taylor Sheridan",
+        "Christina Alexandra Voros"
+      ],
+      "updatedAt": "2026-09-09T03:56:30.180Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/lhQQE9vlNCKOYWamaHW8CBiI09B.jpg",
+      "nextEpisode": {
+        "season": 1,
+        "episode": 2,
+        "title": "Under the Pines",
+        "airDate": "2026-09-20",
+        "overview": "The family struggles to adapt to rural life while confronting unresolved grief."
+      },
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-09-09T03:56:30.180Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-09-09T03:56:30.180Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        6
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-09-09T03:56:30.180Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "show-1787723901536-893997-0",
+      "title": "The Bear",
+      "actors": [
+        "Jeremy Allen White",
+        "Ebon Moss-Bachrach",
+        "Ayo Edebiri"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "System",
+        "S1E2": "Hands",
+        "S1E3": "Brigade",
+        "S1E4": "Dogs",
+        "S1E5": "Sheridan",
+        "S1E6": "Ceres",
+        "S1E7": "Review",
+        "S1E8": "Braciole",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family sandwich shop after a heartbreaking death.",
+      "concluded": true,
+      "createdAt": "2026-08-26T05:58:21.536Z",
+      "directors": [
+        "Christopher Storer"
+      ],
+      "isStarter": true,
+      "ownerName": "El Dude",
+      "updatedAt": "2026-08-26T05:58:26.132Z",
+      "userScore": 9.4,
+      "isFavorite": false,
+      "ownerNames": [
+        "El Dude"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "System",
+        "progressUpdatedAt": "2026-08-26T05:58:26.132Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-26T05:58:26.132Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-08-26T05:58:26.132Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1787723901536-162926-1",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Thriller",
+        "Mystery",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Good News About Hell",
+        "S1E2": "Half Loop",
+        "S1E3": "In Perpetuity",
+        "S1E4": "The You You Are",
+        "S1E5": "The Grim Barbarity of Optics and Design",
+        "S1E6": "Hide and Seek",
+        "S1E7": "Defiant Jazz",
+        "S1E8": "What's for Dinner?",
+        "S1E9": "The We We Are"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-08-26T05:58:21.536Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-26T05:58:26.133Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-26T05:58:26.133Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-26T05:58:26.133Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:14.860Z",
+      "progressUpdatedAt": "2026-08-26T05:58:26.133Z",
+      "metadataAuditStatus": "updated",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "show-1787723901536-120952-2",
+      "title": "Sh\u014dgun",
+      "actors": [
+        "Hiroyuki Sanada",
+        "Cosmo Jarvis",
+        "Anna Sawai"
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun",
+        "S1E10": "A Dream of a Dream"
+      },
+      "overview": "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him.",
+      "concluded": false,
+      "createdAt": "2026-08-26T05:58:21.536Z",
+      "directors": [
+        "Jonathan van Tulleken",
+        "Charlotte Br\u00e4ndstr\u00f6m"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-26T05:58:26.133Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-26T05:58:26.133Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-26T05:58:26.133Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-08-26T05:58:26.133Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 99
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:44.921Z",
+  "preferences": {
+    "genres": [
+      "Action",
+      "Comedy",
+      "Drama",
+      "Sci-Fi",
+      "Horror",
+      "Thriller",
+      "Mystery",
+      "Dystopian",
+      "Western",
+      "Animation",
+      "Spy Thriller"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu",
+      "Apple TV",
+      "Paramount+",
+      "Peacock",
+      "AMC+",
+      "Starz"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "owner": {
+    "email": "julio.zaldivar@westtechalliance.com",
+    "name": "El Dude",
+    "id": "user-el-dude-9821",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=El%20Dude",
+    "createdAt": "2026-08-26T05:58:21.536Z"
+  },
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

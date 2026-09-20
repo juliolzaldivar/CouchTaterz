@@ -63,12 +63,14 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 1,
     episodes: [
-      { season: 1, episode: 1, title: "First Rule", airDate: "2026-08-28", overview: "When a former military colleague from the 110th Special Investigations Unit dies under suspicious circumstances, Frances Neagley launches a relentless private investigation." },
-      { season: 1, episode: 2, title: "Bad Blood", airDate: "2026-09-04", overview: "Neagley uncovers a corporate conspiracy connecting defense contractors to corrupt government officials." },
-      { season: 1, episode: 3, title: "Shadow Protocol", airDate: "2026-09-11", overview: "Targeted by professional hitmen, Neagley goes off the grid to turn the hunters into the hunted." },
-      { season: 1, episode: 4, title: "The Setup", airDate: "2026-09-18", overview: "A break-in at a high-security tech facility reveals a global cyber-espionage conspiracy." },
-      { season: 1, episode: 5, title: "Payback", airDate: "2026-09-25", overview: "With help from unexpected allies, Neagley corners the mastermind behind the killings." },
-      { season: 1, episode: 6, title: "Retribution", airDate: "2026-10-02", overview: "Season 1 finale: Frances Neagley settles the score in a high-octane confrontation." }
+      { season: 1, episode: 1, title: "L Train", airDate: "2026-09-16", overview: "When Neagley's childhood friend, Tommy, dies after walking into an oncoming train, the police are ready to label this as an apparent accident. But after receiving a mysterious message from the deceased, Neagley knows something is amiss." },
+      { season: 1, episode: 2, title: "Team Building Exercises", airDate: "2026-09-16", overview: "With Neagley's investigation into the suspicious death of her childhood friend, Tommy Crane, hitting countless roadblocks, a long-buried secret from Neagley's past threatens to upend everything she once knew of her childhood." },
+      { season: 1, episode: 3, title: "Hammer Time", airDate: "2026-09-16", overview: "After an ambush turns up her best break in the case thus far, Neagley is blindsided by local law enforcement's attempts to sideline her." },
+      { season: 1, episode: 4, title: "Breaking & Entering", airDate: "2026-09-16", overview: "Neagley's investigation into Tommy's death has drawn the focus of powerful enemies - putting herself and her team in danger." },
+      { season: 1, episode: 5, title: "Trip", airDate: "2026-09-16", overview: "Hidden truths from Neagley's past come rushing to the forefront, forcing her to rely on her newfound team more than ever." },
+      { season: 1, episode: 6, title: "Rocked", airDate: "2026-09-16", overview: "With new evidence coming to light, Neagley realizes she is not only responsible for solving Tommy's murder, but countless others as well." },
+      { season: 1, episode: 7, title: "Lebron's No Jordan", airDate: "2026-09-16", overview: "As clues dry up, Hudson is forced to make a devil's bargain to keep the case from going cold." },
+      { season: 1, episode: 8, title: "Touched", airDate: "2026-09-16", overview: "With the legacy of her deceased childhood friend on the line, and the lives of her team under threat, Neagley mounts one last stand to bring Tommy's killers to justice." }
     ]
   },
   "silo": {
@@ -248,7 +250,36 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
     concluded: false,
     totalSeasons: 29,
     episodes: [
-      { season: 29, episode: 1, title: "AI Takeover", airDate: "2026-09-16", overview: "The boys discover the entire school administration has been replaced by experimental AI chatbots." }
+      { season: 24, episode: 1, title: "The Pandemic Special", airDate: "2020-09-30", overview: "Randy comes to terms with his role in the COVID-19 outbreak as the kids head back to school." },
+      { season: 24, episode: 2, title: "South ParQ Vaccination Special", airDate: "2021-03-10", overview: "The citizens of South Park clamor for the COVID-19 vaccine while a new militant group tries to stop them." },
+      { season: 25, episode: 1, title: "Pajama Day", airDate: "2022-02-02", overview: "PC Principal revokes Pajama Day privileges for the fourth grade class." },
+      { season: 25, episode: 2, title: "The Big Fix", airDate: "2022-02-09", overview: "Randy invites the Black family to Tegridy Farms for dinner." },
+      { season: 25, episode: 3, title: "City People", airDate: "2022-02-16", overview: "Cartman is furious when his mom gets a job as a real estate agent." },
+      { season: 25, episode: 4, title: "Back to the Cold War", airDate: "2022-03-02", overview: "Mr. Garrison relives his Cold War trauma through an intense dressage competition." },
+      { season: 25, episode: 5, title: "Help, My Teenager Hates Me!", airDate: "2022-03-09", overview: "The boys take up airsofting and are forced to bond with actual teenagers." },
+      { season: 25, episode: 6, title: "Credigree Weed St. Patrick's Day Special", airDate: "2022-03-16", overview: "Butters gets arrested for not wearing green on St. Patrick's Day." },
+      { season: 26, episode: 1, title: "Cupid Ye", airDate: "2023-02-08", overview: "Cartman is jealous of Stan and Kyle's friendship." },
+      { season: 26, episode: 2, title: "The Worldwide Privacy Tour", airDate: "2023-02-15", overview: "The prince of Canada and his wife try to find privacy and seclusion in South Park." },
+      { season: 26, episode: 3, title: "Japanese Toilet", airDate: "2023-03-01", overview: "Randy purchases a high-tech Japanese toilet, igniting a town-wide toilet paper conspiracy." },
+      { season: 26, episode: 4, title: "Deep Learning", airDate: "2023-03-08", overview: "Stan relies on ChatGPT to write essays and text messages to his girlfriend." },
+      { season: 26, episode: 5, title: "DikinBaus Hot Dogs", airDate: "2023-03-22", overview: "Cartman dreams of opening his own hot dog restaurant inside an abandoned landmark." },
+      { season: 26, episode: 6, title: "Spring Break", airDate: "2023-03-29", overview: "Garrison goes back to his old ways while vacationing in Myrtle Beach." },
+      { season: 27, episode: 1, title: "Sermon on the 'Mount", airDate: "2025-07-23", overview: "The twenty-seventh season premiere of South Park." },
+      { season: 27, episode: 2, title: "Got a Nut", airDate: "2025-08-06", overview: "The town reacts to an unprecedented local shortage." },
+      { season: 27, episode: 3, title: "Sickofancy", airDate: "2025-08-20", overview: "The boys navigate social hierarchy and sycophantic behavior." },
+      { season: 27, episode: 4, title: "Wok is Dead", airDate: "2025-09-03", overview: "Culinary traditions clash with modern town fads." },
+      { season: 27, episode: 5, title: "Conflict of Interest", airDate: "2025-09-24", overview: "Town politics reach a boiling point." },
+      { season: 28, episode: 1, title: "Twisted Christian", airDate: "2025-10-15", overview: "Season 28 premiere following the continuing town drama." },
+      { season: 28, episode: 2, title: "The Woman in the Hat", airDate: "2025-10-29", overview: "A mysterious visitor causes a stir among the fourth graders." },
+      { season: 28, episode: 3, title: "Sora Not Sorry", airDate: "2025-11-12", overview: "AI video generation creates utter chaos at South Park Elementary." },
+      { season: 28, episode: 4, title: "Turkey Trot", airDate: "2025-11-26", overview: "Thanksgiving holiday brings fierce competition." },
+      { season: 28, episode: 5, title: "The Crap Out", airDate: "2025-12-10", overview: "The Season 28 finale." },
+      { season: 29, episode: 1, title: "South American Biker Gangs", airDate: "2026-09-16", overview: "The arrival of e-bikes in town ignites a fierce turf war between the boys and adult cyclists." },
+      { season: 29, episode: 2, title: "Episode 2", airDate: "2026-09-30", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 3, title: "Episode 3", airDate: "2026-10-14", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 4, title: "Episode 4", airDate: "2026-10-28", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 5, title: "Episode 5", airDate: "2026-11-11", overview: "The twenty-ninth season of South Park continues." },
+      { season: 29, episode: 6, title: "Episode 6", airDate: "2026-11-25", overview: "The twenty-ninth season of South Park continues." }
     ]
   },
   "slow horses": {
@@ -538,11 +569,13 @@ export const SHOW_SCHEDULES: Record<string, ShowScheduleData> = {
   "fear factor": {
     title: "Fear Factor",
     streamingService: "Peacock",
-    concluded: false,
+    concluded: true,
     totalSeasons: 2,
     episodes: [
-      { season: 2, episode: 1, title: "Ice Is Thicker Than Water", airDate: "2026-08-15", overview: "Competitors face freezing underwater obstacles and high-altitude stunts." },
-      { season: 2, episode: 2, title: "High Wire Terror", airDate: "2026-08-22", overview: "Teams must balance across a swaying cable between two soaring skyscrapers." }
+      { season: 1, episode: 1, title: "Ice Is Thicker Than Water", airDate: "2017-05-30", overview: "Competitors face freezing underwater obstacles and high-altitude stunts." },
+      { season: 1, episode: 2, title: "Party Games", airDate: "2017-06-06", overview: "Contestants take part in extreme party game challenges." },
+      { season: 2, episode: 1, title: "Get the Hell Out", airDate: "2018-02-25", overview: "Contestants face their deepest fears in a battle to escape high-stress environments." },
+      { season: 2, episode: 2, title: "Tech-Hell", airDate: "2018-03-04", overview: "Contestants face tech-related challenges and extreme digital stunts." }
     ]
   },
   "vanderpump rules": {

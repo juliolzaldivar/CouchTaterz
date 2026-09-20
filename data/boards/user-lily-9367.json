@@ -1,0 +1,1685 @@
+{
+  "id": "user-lily-9367",
+  "name": "Lily's Collection",
+  "owner": {
+    "createdAt": "2026-07-15T18:50:21.963Z",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Sarah",
+    "name": "AnnaDee",
+    "email": "user-lily-9367@coughtater.com",
+    "id": "user-lily-9367"
+  },
+  "preferences": {
+    "genres": [
+      "Action",
+      "Drama",
+      "Dystopian",
+      "Sci-Fi",
+      "Thriller",
+      "Horror",
+      "Western",
+      "Mystery"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Prime Video",
+      "Paramount+",
+      "Peacock",
+      "Hulu",
+      "Disney+",
+      "Apple TV",
+      "AMC+",
+      "HBO"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1785393992588",
+      "title": "The Five Star Weekend",
+      "actors": [
+        "Jennifer Garner",
+        "D'Arcy Carden",
+        "Gemma Chan",
+        "Regina Hall",
+        "Chlo\u00eb Sevigny"
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Nantucket Gathering",
+        "S1E2": "Friday Night: Pajama Dance Party",
+        "S1E3": "Saturday Morning: Shopping in Town",
+        "S1E4": "Saturday Afternoon: The Spa",
+        "S1E5": "Saturday Night: Nice Dinner Out",
+        "S1E6": "Sunday Morning: Fun Surprise",
+        "S1E7": "Sunday Night: Make Your Own Pizza Party",
+        "S1E8": "Monday Morning: Departures"
+      },
+      "overview": "After her husband's unexpected death and a very public breakdown, famed cook Hollis hosts her best friends for an elaborate weekend on Nantucket.",
+      "concluded": false,
+      "createdAt": "2026-07-30T06:46:32.588Z",
+      "directors": [
+        "Bekah Brunstetter",
+        "Jennifer Garner",
+        "Beth Schacter"
+      ],
+      "updatedAt": "2026-07-30T06:46:32.588Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/lq2aJdPlyOo11aBwojmLvGjlJS1.jpg",
+      "nextEpisode": {
+        "season": 1,
+        "episode": 1,
+        "title": "Nantucket Gathering",
+        "airDate": "2026-09-18",
+        "overview": "A food blogger organizes a weekend bringing together friends from every stage of her life."
+      },
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 8,
+        "title": "Monday Morning: Departures",
+        "progressUpdatedAt": "2026-07-30T06:46:32.588Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.084Z",
+      "streamingService": "Peacock",
+      "episodesPerSeason": [
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:42.623Z",
+      "progressUpdatedAt": "2026-07-30T06:46:32.588Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-05T17:46:21.656Z",
+      "rottenTomatoesScore": 53
+    },
+    {
+      "id": "show-1785393952283",
+      "title": "The Crown",
+      "actors": [
+        "Imelda Staunton",
+        "Jonathan Pryce",
+        "Lesley Manville",
+        "Dominic West",
+        "Claudia Harrison"
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S6E1": "Persona Non Grata",
+        "S6E2": "Two Photographs",
+        "S6E3": "Dis-Moi Oui",
+        "S6E4": "Aftermath",
+        "S6E5": "Willsmania",
+        "S6E6": "Ruritania",
+        "S6E7": "Alma Mater",
+        "S6E8": "Ritz",
+        "S6E9": "Hope Street",
+        "S6E10": "Sleep, Dearie Sleep"
+      },
+      "overview": "The gripping, decades-spanning inside story of Her Majesty Queen Elizabeth II and the Prime Ministers who shaped Britain's post-war destiny. \n\nThe Crown tells the inside story of two of the most famous addresses in the world \u2013 Buckingham Palace and 10 Downing Street \u2013 and the intrigues, love lives and machinations behind the great events that shaped the second half of the 20th century. Two houses, two courts, one Crown.",
+      "concluded": true,
+      "createdAt": "2026-07-30T06:45:52.283Z",
+      "directors": [
+        "Peter Morgan",
+        "Christian Schwochow",
+        "Oona O'Beirn"
+      ],
+      "updatedAt": "2026-07-30T06:45:52.283Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/8VXhcrl5z2I1zEU9X3pkkNrZlD.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 6,
+        "episode": 10,
+        "title": "Sleep, Dearie Sleep",
+        "progressUpdatedAt": "2026-07-30T06:45:52.283Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.084Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.473Z",
+      "progressUpdatedAt": "2026-07-30T06:45:52.283Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:21.665Z",
+      "rottenTomatoesScore": 82
+    },
+    {
+      "id": "show-1784480995165",
+      "title": "American Idol",
+      "actors": [
+        "Jennifer Lopez",
+        "Ryan Seacrest",
+        "Keith Urban",
+        "Harry Connick Jr."
+      ],
+      "genres": [
+        "Reality"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S24E1": "Auditions 1",
+        "S24E2": "Auditions 2",
+        "S24E3": "Auditions 3",
+        "S24E4": "Auditions 4",
+        "S24E5": "Hollywood Week in Music City Part 1",
+        "S24E6": "Hollywood Week in Music City Part 2",
+        "S24E7": "'Ohana Round",
+        "S24E8": "Top 20 at Disney's Aulani Resort in Hawai'i Part 1",
+        "S24E9": "Top 20 at Disney's Aulani Resort in Hawai'i Part 2",
+        "S24E10": "Songs of Faith",
+        "S24E11": "90s Judges' Song Contest",
+        "S24E12": "Rock & Roll Hall of Fame",
+        "S24E13": "Disney Night",
+        "S24E14": "Celebrating Taylor Swift on American Idol",
+        "S24E15": "Class of 2006: Reunion / Idol X DWTS",
+        "S24E16": "Grand Finale"
+      },
+      "overview": "Each year, hopeful singers from all over the country audition to be part of one of the biggest shows in American television history. Who will become the new American Idol?",
+      "concluded": false,
+      "createdAt": "2026-07-19T17:09:55.165Z",
+      "directors": [
+        "Simon Fuller"
+      ],
+      "ownerName": "AnnaDee",
+      "updatedAt": "2026-07-19T17:09:55.165Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "AnnaDee"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/7BAzz0Asm3FDwQimAmnqQhdMreB.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 24,
+      "latestWatched": {
+        "season": 24,
+        "episode": 16,
+        "title": "Grand Finale",
+        "progressUpdatedAt": "2026-07-19T17:09:55.165Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.084Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        25,
+        39,
+        44,
+        42,
+        41,
+        41,
+        42,
+        40,
+        43,
+        39,
+        40,
+        37,
+        39,
+        30,
+        23,
+        19,
+        18,
+        16,
+        19,
+        20,
+        20,
+        18,
+        19,
+        16
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-19T17:09:55.165Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:22.260Z",
+      "rottenTomatoesScore": 50
+    },
+    {
+      "id": "show-1784480828364",
+      "title": "Mayfair Witches",
+      "actors": [
+        "Alexandra Daddario",
+        "Tongayi Chirisa",
+        "Ben Feldman",
+        "Alyssa Jirrels",
+        "Jack Huston"
+      ],
+      "genres": [
+        "Drama",
+        "Sci-Fi & Fantasy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "The Witching Hour",
+        "S1E2": "The Dark Place",
+        "S1E3": "Second Line",
+        "S1E4": "Curiouser and Curiouser",
+        "S1E5": "The Thrall",
+        "S1E6": "Transference",
+        "S1E7": "Tessa",
+        "S1E8": "What Rough Beast",
+        "S2E1": "The Lasher Legacy",
+        "S2E2": "Blood Ties",
+        "S2E3": "Cover the Mirrors",
+        "S2E4": "Double Helix",
+        "S2E5": "Julien's Victrola",
+        "S2E6": "Michaelmas",
+        "S2E7": "A Tangled Web",
+        "S2E8": "The Innocents"
+      },
+      "overview": "An intuitive young neurosurgeon discovers that she is the unlikely heir to a family of witches. As she grapples with her newfound powers, she must contend with a sinister presence that has haunted her family for generations.",
+      "concluded": false,
+      "createdAt": "2026-07-19T17:07:08.364Z",
+      "directors": [
+        "Esta Spalding",
+        "Michelle Ashford",
+        "Tom Williams"
+      ],
+      "updatedAt": "2026-07-19T17:07:08.364Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/9DHo5qXkG0titQmr2PF92N3aYYk.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 2,
+        "title": "Blood Ties",
+        "airDate": "2026-09-13",
+        "overview": "The Mayfair family gathers for a solemn ritual to protect their ancestral sanctuary."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "The Witching Hour",
+        "progressUpdatedAt": "2026-07-19T17:07:08.364Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "AMC+",
+      "episodesPerSeason": [
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:44.420Z",
+      "progressUpdatedAt": "2026-07-19T17:07:08.364Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-05T17:46:21.971Z",
+      "rottenTomatoesScore": 73
+    },
+    {
+      "id": "show-1784447059295",
+      "title": "Euphoria",
+      "actors": [
+        "Zendaya",
+        "Hunter Schafer",
+        "Sydney Sweeney",
+        "Jacob Elordi",
+        "Alexa Demie"
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Stuntin' Like My Daddy",
+        "S1E3": "Made You Look",
+        "S1E4": "Shook Ones Pt. II",
+        "S1E5": "'03 Bonnie and Clyde",
+        "S1E6": "The Next Episode",
+        "S1E7": "The Trials and Tribulations of Trying to Pee While Depressed",
+        "S1E8": "And Salt the Earth Behind You",
+        "S3E1": "\u00c1ndale",
+        "S3E2": "America My Dream",
+        "S3E3": "The Ballad of Paladin",
+        "S3E4": "Kitty Likes to Dance",
+        "S3E5": "This Little Piggy",
+        "S3E6": "Stand Still and See",
+        "S3E7": "Rain or Shine",
+        "S3E8": "In God We Trust"
+      },
+      "overview": "A group of high school students navigate love and friendships in a world of drugs, sex, trauma, and social media.",
+      "concluded": true,
+      "createdAt": "2026-07-19T07:44:19.295Z",
+      "directors": [
+        "Sam Levinson",
+        "Sara E. White",
+        "Amy Schmidt"
+      ],
+      "updatedAt": "2026-07-19T07:44:19.295Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/GN2KFXiHPVV6sIw4v2P2pqCJty.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Pilot",
+        "progressUpdatedAt": "2026-07-19T07:44:19.295Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-19T07:44:19.295Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:22.960Z",
+      "rottenTomatoesScore": 83
+    },
+    {
+      "id": "show-1784445478564-950089",
+      "title": "Silo",
+      "actors": [
+        "Rebecca Ferguson",
+        "Common",
+        "Tim Robbins",
+        "Harriet Walter",
+        "Chinaza Uche",
+        "Avi Nash"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Mystery",
+        "Dystopian"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Freedom Day",
+        "S1E2": "Holston\u2019s Pick",
+        "S1E3": "Machines",
+        "S1E4": "Truth",
+        "S1E5": "The Janitor\u2019s Boy",
+        "S1E6": "The Relic",
+        "S1E7": "The Flamekeepers",
+        "S1E8": "Hanna",
+        "S1E9": "The Getaway",
+        "S3E1": "Who Are You?",
+        "S3E2": "It's All Good",
+        "S3E3": "A Dark Web",
+        "S3E4": "Whatever You Do, Don't Go Home",
+        "S3E5": "Memory",
+        "S3E6": "The Drive",
+        "S3E7": "Radio",
+        "S3E8": "Gray Goo",
+        "S3E9": "The Surface",
+        "S1E10": "Outside",
+        "S3E10": "Legacy"
+      },
+      "overview": "In a ruined and toxic future, a community exists in a giant underground silo that plunges hundreds of stories deep. There, men and women live in a society full of regulations they believe are meant to protect them.",
+      "concluded": false,
+      "createdAt": "2026-07-19T07:17:58.564Z",
+      "directors": [
+        "Morten Tyldum",
+        "David Semel",
+        "Alethea Jones"
+      ],
+      "updatedAt": "2026-07-19T07:17:58.564Z",
+      "userScore": 9.2,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 10,
+        "title": "Legacy",
+        "airDate": "2026-09-04",
+        "overview": "Season 3 finale: The ultimate struggle for the future of the remaining silos."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Freedom Day",
+        "progressUpdatedAt": "2026-07-19T07:17:58.564Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:45.364Z",
+      "progressUpdatedAt": "2026-07-19T07:17:58.564Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-20T20:48:03.598Z",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "show-1784441575642",
+      "title": "The Vampire Lestat",
+      "actors": [
+        "Sam Reid",
+        "Jacob Anderson",
+        "Assad Zaman",
+        "Joseph Potter",
+        "Delainey Hayles"
+      ],
+      "genres": [
+        "Drama",
+        "Sci-Fi & Fantasy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Detroit",
+        "S1E2": "Toledo",
+        "S1E3": "Toronto",
+        "S1E4": "The Devil's Road",
+        "S1E5": "New York",
+        "S1E6": "Montreal",
+        "S1E7": "The Failures"
+      },
+      "overview": "The Vampire Lestat goes on tour while being haunted by \"muses\" from his past. As the band's popularity grows, so does Lestat's influence over vampires & humans alike, leaving others to contend with Lestat's power in the face of the Great Conversion.",
+      "concluded": true,
+      "createdAt": "2026-07-19T06:12:55.642Z",
+      "directors": [
+        "Rolin Jones",
+        "Anne Rice",
+        "Christopher Rice"
+      ],
+      "updatedAt": "2026-07-19T06:12:55.642Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/iw1knpC8Jg5davMn2MPxNVxBF8N.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Detroit",
+        "progressUpdatedAt": "2026-07-19T06:12:55.642Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "AMC+",
+      "episodesPerSeason": [
+        7
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-19T06:12:55.642Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:23.089Z",
+      "rottenTomatoesScore": 63
+    },
+    {
+      "id": "show-1784440243361",
+      "title": "The Comeback",
+      "actors": [
+        "Lisa Kudrow",
+        "Laura Silverman",
+        "Damian Young"
+      ],
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "The Comeback",
+        "S1E2": "Valerie Triumphs at the Upfronts",
+        "S1E3": "Valerie Bonds with the Cast",
+        "S1E4": "Valerie Stands Up for Aunt Sassy",
+        "S1E5": "Valerie Demands Dignity",
+        "S1E6": "Valerie Saves the Show",
+        "S1E7": "Valerie Gets a Very Special Episode",
+        "S1E8": "Valerie Relaxes in Palm Springs",
+        "S1E9": "Valerie Hangs with the Cool Kids",
+        "S3E1": "Valerie Gets a New Chapter",
+        "S3E2": "Valerie Has a Secret",
+        "S3E3": "Valerie Faces Reality",
+        "S3E4": "Valerie Does It All",
+        "S3E5": "Valerie Lights a Candle",
+        "S3E6": "Valerie's Home Alone",
+        "S3E7": "Valerie Chases the Truth",
+        "S3E8": "Valerie Cherish",
+        "S1E10": "Valerie Gets a Magazine Cover",
+        "S1E11": "Valerie Stands Out on the Red Carpet",
+        "S1E12": "Valerie Shines Under Stress",
+        "S1E13": "Valerie Does Another Classic Leno"
+      },
+      "overview": "For Valerie Cherish, no price is too high to pay for clinging to the spotlight. Desperate to revive her career, she agrees to star in a reality TV series, allowing cameras to follow her every move as she lands a part on a new network sitcom.",
+      "concluded": true,
+      "createdAt": "2026-07-19T05:50:43.361Z",
+      "directors": [
+        "Michael Patrick King",
+        "Lisa Kudrow",
+        "Julie Camino"
+      ],
+      "updatedAt": "2026-07-19T05:50:43.361Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/5xryckgoAnJC0t8O9RjHs0YIBaQ.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "The Comeback",
+        "progressUpdatedAt": "2026-07-19T05:50:43.361Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        13,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-19T05:50:43.361Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:23.064Z",
+      "rottenTomatoesScore": 74
+    },
+    {
+      "id": "show-1784440220729",
+      "title": "Big Love",
+      "actors": [
+        "Bill Paxton",
+        "Jeanne Tripplehorn",
+        "Chlo\u00eb Sevigny",
+        "Ginnifer Goodwin",
+        "Grace Zabriskie"
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Viagra Blue",
+        "S1E3": "Home Invasion",
+        "S1E4": "Eclipse",
+        "S1E5": "The Affair",
+        "S1E6": "Roberta's Funeral (aka Splinter)",
+        "S1E7": "Eviction",
+        "S1E8": "Easter",
+        "S1E9": "A Barbecue for Betty",
+        "S5E1": "Winter",
+        "S5E2": "A Seat at the Table",
+        "S5E3": "Certain Poor Shepherds",
+        "S5E4": "The Oath",
+        "S5E5": "The Special Relationship",
+        "S5E6": "D.I.V.O.R.C.E.",
+        "S5E7": "Til Death Do Us Part",
+        "S5E8": "The Noose Tightens",
+        "S5E9": "Exorcism",
+        "S1E10": "The Baptism (aka Margene's Baptism)",
+        "S1E11": "Where There's a Will",
+        "S1E12": "The Ceremony (aka A Family Outing)",
+        "S5E10": "Where Men and Mountains Meet"
+      },
+      "overview": "The story of Bill Henrickson and his life in suburban Salt Lake City, balancing the needs of his three wives -- Barb, Nicki and Margene-- their seven kids, three new houses and the opening of his newest hardware store. When disturbing news arrives about Bill's father, he is forced to reconnect with his polygamist parents who live on a fundamentalist compound in rural Utah.",
+      "concluded": true,
+      "createdAt": "2026-07-19T05:50:20.729Z",
+      "directors": [
+        "Will Scheffer",
+        "Mark V. Olsen",
+        "Bernadette Caulfield"
+      ],
+      "updatedAt": "2026-07-19T05:50:20.729Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/tmkOxFigy2CS0ZCUTAC6nDidflT.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Pilot",
+        "progressUpdatedAt": "2026-07-19T05:50:20.729Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        12,
+        12,
+        10,
+        9,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-19T05:50:20.729Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.852Z",
+      "rottenTomatoesScore": 69
+    },
+    {
+      "id": "show-1784440197678",
+      "title": "True Blood",
+      "actors": [
+        "Anna Paquin",
+        "Stephen Moyer",
+        "Alexander Skarsg\u00e5rd",
+        "Sam Trammell",
+        "Ryan Kwanten"
+      ],
+      "genres": [
+        "Sci-Fi & Fantasy",
+        "Drama",
+        "Mystery"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Strange Love",
+        "S1E2": "The First Taste",
+        "S1E3": "Mine",
+        "S1E4": "Escape from Dragon House",
+        "S1E5": "Sparks Fly Out",
+        "S1E6": "Cold Ground",
+        "S1E7": "Burning House of Love",
+        "S1E8": "The Fourth Man in the Fire",
+        "S1E9": "Plaisir D'Amour",
+        "S7E1": "Jesus Gonna Be Here",
+        "S7E2": "I Found You",
+        "S7E3": "Fire in the Hole",
+        "S7E4": "Death is Not the End",
+        "S7E5": "Lost Cause",
+        "S7E6": "Karma",
+        "S7E7": "May Be the Last Time",
+        "S7E8": "Almost Home",
+        "S7E9": "Love is to Die",
+        "S1E10": "I Don't Wanna Know",
+        "S1E11": "To Love Is to Bury",
+        "S1E12": "You'll Be the Death of Me",
+        "S7E10": "Thank You"
+      },
+      "overview": "Thanks to a Japanese scientist's invention of synthetic blood, vampires have progressed overnight from legendary monsters to fellow citizens. And while humans have been safely removed from the menu, many remain apprehensive about these creatures \"coming out of the coffin.\" Religious leaders, government officials, and vampire fundamentalists around the world have chosen their sides.  But in the small Louisiana town of Bon Temps, the jury is still out.",
+      "concluded": true,
+      "createdAt": "2026-07-19T05:49:57.678Z",
+      "directors": [
+        "Alan Ball",
+        "Brian Buckner",
+        "Gregg Fienberg"
+      ],
+      "updatedAt": "2026-07-19T05:49:57.678Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/nGhC6P0lgcrY57NRB9nweu4nWaK.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 7,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Strange Love",
+        "progressUpdatedAt": "2026-07-19T05:49:57.678Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        12,
+        12,
+        12,
+        12,
+        12,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-19T05:49:57.678Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:23.143Z",
+      "rottenTomatoesScore": 76
+    },
+    {
+      "id": "show-1784440125344",
+      "title": "Sex and the City",
+      "actors": [
+        "Sarah Jessica Parker",
+        "Kim Cattrall",
+        "Cynthia Nixon",
+        "Kristin Davis"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Sex and the City",
+        "S1E2": "Models and Mortals",
+        "S1E3": "Bay of Married Pigs",
+        "S1E4": "Valley of the Twenty-Something Guys",
+        "S1E5": "The Power of Female Sex",
+        "S1E6": "Secret Sex",
+        "S1E7": "The Monogamists",
+        "S1E8": "Three's a Crowd",
+        "S1E9": "The Turtle and the Hare",
+        "S6E1": "To Market, To Market",
+        "S6E2": "Great Sexpectations",
+        "S6E3": "The Perfect Present",
+        "S6E4": "Pick-a-Little, Talk-a-Little",
+        "S6E5": "Lights, Camera, Relationship",
+        "S6E6": "Hop, Skip and a Week",
+        "S6E7": "The Post-It Always Sticks Twice",
+        "S6E8": "The Catch",
+        "S6E9": "A Woman's Right to Shoes",
+        "S1E10": "The Baby Shower",
+        "S1E11": "The Drought",
+        "S1E12": "Oh Come All Ye Faithful",
+        "S6E10": "Boy, Interrupted",
+        "S6E11": "The Domino Effect",
+        "S6E12": "One",
+        "S6E13": "Let There Be Light",
+        "S6E14": "The Ick Factor",
+        "S6E15": "Catch-38",
+        "S6E16": "Out of the Frying Pan",
+        "S6E17": "The Cold War",
+        "S6E18": "Splat!",
+        "S6E19": "An American Girl in Paris (Part Une)",
+        "S6E20": "An American Girl in Paris (Part Deux)"
+      },
+      "overview": "Based on the bestselling book by Candace Bushnell, Sex and the City tells the story of four best friends, all single and in their late thirties, as they pursue their careers and talk about their sex lives, all while trying to survive the New York social scene.\u00a0",
+      "concluded": true,
+      "createdAt": "2026-07-19T05:48:45.344Z",
+      "directors": [
+        "Darren Star",
+        "Antonia Ellis",
+        "Sarah Jessica Parker"
+      ],
+      "updatedAt": "2026-07-19T05:48:45.344Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/jvHw1zF20kYA9gbF2VprXD6uJpq.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Sex and the City",
+        "progressUpdatedAt": "2026-07-19T05:48:45.344Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.085Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        12,
+        18,
+        18,
+        18,
+        8,
+        20
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-19T05:48:45.344Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:23.230Z",
+      "rottenTomatoesScore": 74
+    },
+    {
+      "id": "show-1784353081022",
+      "title": "Band of Brothers",
+      "actors": [
+        "Michael Cudlitz",
+        "Rick Gomez",
+        "Scott Grimes",
+        "Damian Lewis",
+        "Ron Livingston"
+      ],
+      "genres": [
+        "Drama",
+        "War & Politics"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Currahee",
+        "S1E2": "Day of Days",
+        "S1E3": "Carentan",
+        "S1E4": "Replacements",
+        "S1E5": "Crossroads",
+        "S1E6": "Bastogne",
+        "S1E7": "The Breaking Point",
+        "S1E8": "The Last Patrol",
+        "S1E9": "Why We Fight",
+        "S1E10": "Points"
+      },
+      "overview": "Drawn from interviews with survivors of Easy Company, as well as their journals and letters, Band of Brothers chronicles the experiences of these men from paratrooper training in Georgia through the end of the war. As an elite rifle company parachuting into Normandy early on D-Day morning, participants in the Battle of the Bulge, and witness to the horrors of war, the men of Easy knew extraordinary bravery and extraordinary fear - and became the stuff of legend. Based on Stephen E. Ambrose's acclaimed book of the same name.",
+      "concluded": true,
+      "createdAt": "2026-07-18T05:38:01.022Z",
+      "directors": [
+        "Tom Hanks",
+        "Steven Spielberg",
+        "Mary Richards"
+      ],
+      "updatedAt": "2026-07-18T05:38:01.022Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/2yDV0xLyqW88dn5qE7YCRnoYmfy.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Currahee",
+        "progressUpdatedAt": "2026-07-18T05:38:01.022Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.086Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-18T05:38:01.022Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.846Z",
+      "rottenTomatoesScore": 86
+    },
+    {
+      "id": "show-1784353002275",
+      "title": "Parks and Recreation",
+      "actors": [
+        "Amy Poehler",
+        "Aziz Ansari",
+        "Nick Offerman",
+        "Aubrey Plaza",
+        "Chris Pratt"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Make My Pit a Park",
+        "S1E2": "Canvassing",
+        "S1E3": "The Reporter",
+        "S1E4": "Boys' Club",
+        "S1E5": "The Banquet",
+        "S1E6": "Rock Show",
+        "S7E1": "2017",
+        "S7E2": "Ron & Jammy",
+        "S7E3": "William Henry Harrison",
+        "S7E4": "Leslie and Ron",
+        "S7E5": "Gryzzlbox",
+        "S7E6": "Save JJ's",
+        "S7E7": "Donna and Joe",
+        "S7E8": "Ms. Ludgate-Dwyer Goes to Washington",
+        "S7E9": "Pie-Mary",
+        "S7E10": "The Johnny Karate Super Awesome Musical Explosion Show",
+        "S7E11": "Two Funerals",
+        "S7E12": "One Last Ride (1)",
+        "S7E13": "One Last Ride (2)"
+      },
+      "overview": "In an attempt to beautify her town \u2014 and advance her career \u2014 Leslie Knope, a mid-level bureaucrat in the Parks and Recreation Department of Pawnee, Indiana, takes on bureaucrats, cranky neighbors, and single-issue fanatics whose weapons are lawsuits, the jumble of city codes, and the democratic process she loves so much.",
+      "concluded": true,
+      "createdAt": "2026-07-18T05:36:42.275Z",
+      "directors": [
+        "Michael Schur",
+        "Greg Daniels",
+        "Dave King"
+      ],
+      "updatedAt": "2026-07-18T05:36:42.275Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/frwl2zBNAl5ZbFDJGoJv0mYo0rF.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 7,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Make My Pit a Park",
+        "progressUpdatedAt": "2026-07-18T05:36:42.275Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-18T05:36:42.275Z",
+      "streamingService": "Peacock",
+      "episodesPerSeason": [
+        6,
+        24,
+        16,
+        22,
+        22,
+        22,
+        13
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-18T05:36:42.275Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:23.101Z",
+      "rottenTomatoesScore": 80
+    },
+    {
+      "id": "show-1784352951196",
+      "title": "Calabasas Confidential",
+      "actors": [
+        "Nicole Sahebi",
+        "Suede Brooks",
+        "Jemma Durrant",
+        "Sterling Retzlaff",
+        "Raine Michaels"
+      ],
+      "genres": [
+        "Reality"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Calabasas Coded",
+        "S1E2": "Gated Secrets",
+        "S1E3": "The Hidden Hills",
+        "S1E4": "VIP Access",
+        "S1E5": "Cut The Cap",
+        "S1E6": "All's Fair In Love And Calabasas",
+        "S1E7": "Who Needs Enemies",
+        "S1E8": "Playing With Fire"
+      },
+      "overview": "After graduating college, the group return to Calabasas for \u201ca summer they\u2019ll never forget\u201d. Back home and living in their parents\u2019 hillside mansions, they\u2019ll be faced with the daunting reality of confronting unresolved drama while trying to define what\u2019s next for their lives and relationships. Four years may have put distance between them, but new flames, old feuds, and unexpected secrets don\u2019t stay hidden forever behind the gates of LA\u2019s most envied zip code.",
+      "concluded": false,
+      "createdAt": "2026-07-18T05:35:51.196Z",
+      "directors": [
+        "Ally Gasparian",
+        "Alex Rosenberg",
+        "Gardner Reed"
+      ],
+      "updatedAt": "2026-07-18T05:35:51.196Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/gmbFovggdk0nbDpYM1WNtLvjbum.jpg",
+      "nextEpisode": {
+        "season": 1,
+        "episode": 4,
+        "title": "VIP Access",
+        "airDate": "2026-08-31",
+        "overview": "Financial audits uncover decades of undisclosed offshore accounts."
+      },
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Calabasas Coded",
+        "progressUpdatedAt": "2026-07-18T05:35:51.196Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:49.609Z",
+      "progressUpdatedAt": "2026-07-18T05:35:51.196Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.847Z",
+      "rottenTomatoesScore": 80
+    },
+    {
+      "id": "show-1784352921663",
+      "title": "Temptation Island",
+      "actors": [
+        "Mark L. Walberg"
+      ],
+      "genres": [
+        "Reality"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Temptation Begins",
+        "S1E2": "Single Again",
+        "S1E3": "The Epiphany",
+        "S1E4": "Rock My World",
+        "S1E5": "Rules Are Made to Be Broken",
+        "S1E6": "Head in the Sand",
+        "S1E7": "Mixed Messages",
+        "S1E8": "The Beginning of the End",
+        "S1E9": "Romantic Getaways",
+        "S6E1": "Temptation Begins",
+        "S6E2": "First Bonfire",
+        "S6E3": "The Truth Comes Out",
+        "S6E4": "Getting Steamy",
+        "S6E5": "Temptation Haven",
+        "S6E6": "Guessing Games",
+        "S6E7": "Mixed Messages",
+        "S6E8": "Trust the Process",
+        "S6E9": "Beginning of the End",
+        "S7E1": "Temptation's Knocking",
+        "S7E2": "Rip the Band-Aid Off",
+        "S7E3": "Catching Feelings",
+        "S7E4": "Is This Real Life?",
+        "S7E5": "Heated Rivalry",
+        "S7E6": "Message Received",
+        "S7E7": "Villa Swap",
+        "S7E8": "No Turning Back",
+        "S7E9": "The Final Bonfire",
+        "S1E10": "Final Bonfire Part 1",
+        "S1E11": "Final Bonfire Part 2",
+        "S1E12": "Casting Special",
+        "S6E10": "The Final Bonfire"
+      },
+      "overview": "Couples travel to a tropical paradise where they are forced to decide if they're ready to commit to one another for the rest of their lives. A reboot of the 2001 reality series.",
+      "concluded": false,
+      "createdAt": "2026-07-18T05:35:21.663Z",
+      "directors": [
+        "Lyndsey Burr",
+        "Michael Carroll",
+        "Andres Garcia"
+      ],
+      "updatedAt": "2026-07-18T05:35:21.663Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/9olkwJQROQQfA0AGFXMWmcrqVbT.jpg",
+      "nextEpisode": {
+        "season": 6,
+        "episode": 3,
+        "title": "The Truth Comes Out",
+        "airDate": "2026-08-26",
+        "overview": "Singles and couples navigate intense emotional connections during island dates."
+      },
+      "totalSeasons": 7,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Temptation Begins",
+        "progressUpdatedAt": "2026-07-18T05:35:21.663Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Other",
+      "episodesPerSeason": [
+        12,
+        12,
+        12,
+        12,
+        12,
+        10,
+        9
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:50.383Z",
+      "progressUpdatedAt": "2026-07-18T05:35:21.663Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.851Z",
+      "rottenTomatoesScore": 68
+    },
+    {
+      "id": "show-1784307883816",
+      "title": "Dead Like Me",
+      "actors": [
+        "Ellen Muth",
+        "Mandy Patinkin",
+        "Laura Harris",
+        "Callum Blue",
+        "Jasmine Guy",
+        "Cynthia Stevenson"
+      ],
+      "genres": [
+        "Comedy",
+        "Drama",
+        "Fantasy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Dead Girl Walking",
+        "S1E3": "Curious George",
+        "S1E4": "Reapercussions",
+        "S1E5": "Reaping Havoc",
+        "S1E6": "My Room",
+        "S1E7": "Reaper Madness",
+        "S1E8": "A Cook",
+        "S1E9": "Sunday Mornings",
+        "S2E1": "Send in the Clown",
+        "S2E2": "The Ledger",
+        "S2E3": "Ghost Story",
+        "S2E4": "The Shallow End",
+        "S2E5": "Hurry",
+        "S2E6": "In Escrow",
+        "S2E7": "Rites of Passage",
+        "S2E8": "The Escape Artist",
+        "S2E9": "Be Still My Heart",
+        "S1E10": "Business Unfinished",
+        "S1E11": "The Bicycle Thief",
+        "S1E12": "Nighthawks",
+        "S1E13": "Vacation",
+        "S1E14": "Rest in Peace",
+        "S2E10": "Death Defying",
+        "S2E11": "Ashes to Ashes",
+        "S2E12": "Forget Me Not",
+        "S2E13": "Last Call",
+        "S2E14": "Always",
+        "S2E15": "Haunted"
+      },
+      "overview": "After being killed by a toilet seat falling from the Mir space station, 18-year-old George Lass becomes a Grim Reaper in Seattle, helping transition the souls of the recently deceased.",
+      "concluded": true,
+      "createdAt": "2026-07-17T17:04:43.816Z",
+      "directors": [
+        "Bryan Fuller",
+        "John Masius"
+      ],
+      "updatedAt": "2026-07-17T17:04:43.816Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRRFqxxmhhIj1Ff7d33PnM1G_aaFzmOIAx3ekWlCFFF-A&s",
+      "nextEpisode": null,
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Pilot",
+        "progressUpdatedAt": "2026-07-17T17:04:43.816Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Peacock",
+      "episodesPerSeason": [
+        15,
+        14
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-17T17:04:43.816Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.853Z",
+      "rottenTomatoesScore": 85
+    },
+    {
+      "id": "show-1784307793651",
+      "title": "Twin Peaks",
+      "actors": [
+        "Kyle MacLachlan",
+        "Michael Ontkean",
+        "M\u00e4dchen Amick",
+        "Sherilyn Fenn",
+        "Lara Flynn Boyle",
+        "Dana Ashbrook"
+      ],
+      "genres": [
+        "Mystery",
+        "Drama",
+        "Sci-Fi & Fantasy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Traces to Nowhere",
+        "S1E3": "Zen, or the Skill to Catch a Killer",
+        "S1E4": "Rest in Pain",
+        "S1E5": "The One-Armed Man",
+        "S1E6": "Cooper's Dreams",
+        "S1E7": "Realization Time",
+        "S1E8": "The Last Evening",
+        "S3E1": "The Return, Part 1",
+        "S3E2": "The Return, Part 2",
+        "S3E3": "The Return, Part 3",
+        "S3E4": "The Return, Part 4",
+        "S3E5": "The Return, Part 5",
+        "S3E6": "The Return, Part 6",
+        "S3E7": "The Return, Part 7",
+        "S3E8": "The Return, Part 8",
+        "S3E9": "The Return, Part 9",
+        "S3E10": "The Return, Part 10",
+        "S3E11": "The Return, Part 11",
+        "S3E12": "The Return, Part 12",
+        "S3E13": "The Return, Part 13",
+        "S3E14": "The Return, Part 14",
+        "S3E15": "The Return, Part 15",
+        "S3E16": "The Return, Part 16",
+        "S3E17": "The Return, Part 17",
+        "S3E18": "The Return, Part 18"
+      },
+      "overview": "The body of Laura Palmer is washed up on a beach near the town of Twin Peaks, Washington. FBI Special Agent Dale Cooper is called in to investigate her death and finds a web of mystery that leads him deep into the heart of the surrounding forest and his own soul.",
+      "concluded": true,
+      "createdAt": "2026-07-17T17:03:13.651Z",
+      "directors": [
+        "David Lynch",
+        "Mark Frost"
+      ],
+      "updatedAt": "2026-07-17T17:03:13.651Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/dZklTql88IDOmkC3JAYQSTgyK6f.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Pilot",
+        "progressUpdatedAt": "2026-07-17T17:03:13.651Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        8,
+        22,
+        18
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-17T17:03:13.651Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.845Z",
+      "rottenTomatoesScore": 89
+    },
+    {
+      "id": "show-1784158913658",
+      "title": "Little House on the Prairie",
+      "actors": [
+        "Michael Landon",
+        "Karen Grassle",
+        "Melissa Gilbert",
+        "Melissa Sue Anderson",
+        "Lindsay Greenbush",
+        "Sidney Greenbush",
+        "Richard Bull",
+        "Katherine MacGregor"
+      ],
+      "genres": [
+        "Drama",
+        "Family",
+        "Western"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Independence",
+        "S1E2": "The House on the Prairie",
+        "S1E3": "News of the World",
+        "S1E4": "Life Let Us Cherish",
+        "S1E5": "A Circle of Blue Sky",
+        "S1E6": "Peace on Earth",
+        "S1E7": "A Softer Note in the Sound of the Wind",
+        "S1E8": "This Is Now"
+      },
+      "overview": "The life and adventures of the Ingalls family in the nineteenth century American Midwest, focusing on their struggles, triumphs, and daily experiences in the small town of Walnut Grove, Minnesota.",
+      "concluded": false,
+      "createdAt": "2026-07-15T23:41:53.658Z",
+      "directors": [
+        "Michael Landon",
+        "William F. Claxton",
+        "Maury Dexter",
+        "Victor French"
+      ],
+      "ownerName": "AnnaDee",
+      "updatedAt": "2026-07-15T23:41:53.658Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "AnnaDee"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNn8z46g9-Ydkl8xkV6kuD5OF9gpvylf88ReJBQOMvcw&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 8,
+        "title": "This Is Now",
+        "progressUpdatedAt": "2026-07-15T23:41:53.658Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-15T23:41:53.658Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:23.122Z",
+      "rottenTomatoesScore": 80
+    },
+    {
+      "id": "show-1784141422110-326",
+      "title": "Slow Horses",
+      "actors": [
+        "Gary Oldman",
+        "Jack Lowden",
+        "Kristin Scott Thomas",
+        "Rosalind Eleazar",
+        "Saskia Reeves",
+        "Christopher Chung"
+      ],
+      "genres": [
+        "Spy Thriller",
+        "Drama",
+        "Crime"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Failure's Contagious",
+        "S1E2": "Work Drinks",
+        "S1E3": "Bad Tradecraft",
+        "S1E4": "Visiting Hours",
+        "S1E5": "Fiasco",
+        "S1E6": "Follies",
+        "S6E1": "Circle of Life",
+        "S6E2": "Daddy Issues",
+        "S6E3": "Resurrection",
+        "S6E4": "Lost and Found",
+        "S6E5": "Sayonara",
+        "S6E6": "Judgment Day"
+      },
+      "overview": "This quick-witted spy thriller follows a dysfunctional team of MI5 agents and their obnoxious boss, the notorious Jackson Lamb, as they navigate the espionage world's smoke and mirrors to defend England from sinister forces.",
+      "concluded": false,
+      "createdAt": "2026-07-15T18:50:22.110Z",
+      "directors": [
+        "James Hawes",
+        "Jeremy Lovering",
+        "Saul Metzstein",
+        "Adam Randall"
+      ],
+      "updatedAt": "2026-07-15T18:50:22.110Z",
+      "userScore": 9.3,
+      "isFavorite": false,
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR6pzwPlJXnQcGY8BkO_z2ph4-asGzeaLDUAmNU8UM3AQ&s=10",
+      "nextEpisode": {
+        "season": 6,
+        "episode": 2,
+        "title": "Daddy Issues",
+        "airDate": "2026-09-23",
+        "overview": "The team digs deeper into the conspiracy as old family tensions resurface."
+      },
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Failure's Contagious",
+        "progressUpdatedAt": "2026-07-15T18:50:22.110Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "metadataAuditedAt": "2026-09-16T19:03:41.882Z",
+      "progressUpdatedAt": "2026-07-15T18:50:22.110Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.870Z",
+      "rottenTomatoesScore": 98
+    },
+    {
+      "id": "show-1784141422110-508",
+      "title": "Pluribus",
+      "actors": [
+        "Rhea Seehorn",
+        "Karolina Wydra"
+      ],
+      "genres": [
+        "Horror",
+        "Sci-Fi"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "We Is Us",
+        "S1E2": "Pirate Lady",
+        "S1E3": "Grenade",
+        "S1E4": "Please, Carol",
+        "S1E5": "Got Milk",
+        "S1E6": "HDP",
+        "S1E7": "The Gap",
+        "S1E8": "Charm Offensive",
+        "S1E9": "La Chica o El Mundo"
+      },
+      "overview": "Carol Sturka, a romance novelist in Albuquerque, discovers she is one of the few individuals immune to an alien virus that transforms humanity into a peaceful hive mind.",
+      "concluded": false,
+      "createdAt": "2026-07-15T18:50:22.110Z",
+      "directors": [
+        "Vince Gilligan"
+      ],
+      "updatedAt": "2026-09-01T02:58:11.517Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL0jIu8CIbj8o9aY4whwMucEGJiJyuGdigiZNpE6gY&s",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "We Is Us",
+        "progressUpdatedAt": "2026-09-01T02:58:11.517Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-09-01T02:58:11.517Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:29.000Z",
+      "rottenTomatoesScore": 89
+    },
+    {
+      "id": "show-1784141422110-972",
+      "title": "Sons of Anarchy",
+      "actors": [
+        "Charlie Hunnam",
+        "Katey Sagal",
+        "Ron Perlman",
+        "Maggie Siff",
+        "Kim Coates",
+        "Tommy Flanagan",
+        "Mark Boone Junior"
+      ],
+      "genres": [
+        "Crime",
+        "Drama",
+        "Thriller"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Seeds",
+        "S1E3": "Fun Town",
+        "S1E4": "Patch Over",
+        "S1E5": "Giving Back",
+        "S1E6": "AK-51",
+        "S1E7": "Old Bones",
+        "S1E8": "The Pull",
+        "S1E9": "Hell Followed",
+        "S7E1": "Black Widower",
+        "S7E2": "Toil and Till",
+        "S7E3": "Playing with Monsters",
+        "S7E4": "Poor Little Lambs",
+        "S7E5": "Some Strange Eruption",
+        "S7E6": "Smoke 'em If You Got 'em",
+        "S7E7": "Greensleeves",
+        "S7E8": "The Separation of Crows",
+        "S7E9": "What a Piece of Work is Man",
+        "S1E10": "Better Half",
+        "S1E11": "Capybara",
+        "S1E12": "The Sleep of Babies",
+        "S1E13": "The Revelator",
+        "S7E10": "Faith and Despondency",
+        "S7E11": "Suits of Woe",
+        "S7E12": "Red Rose",
+        "S7E13": "Papa's Goods"
+      },
+      "overview": "Sons of Anarchy is an adrenaline-fueled drama with comedic undertones about a notorious outlaw motorcycle club (SAMCRO) intent on protecting their sheltered small town of Charming, California against encroaching drug dealers, corporate developers, and overzealous law officers.",
+      "concluded": true,
+      "createdAt": "2026-07-15T18:50:22.110Z",
+      "directors": [
+        "Kurt Sutter",
+        "Paris Barclay",
+        "Guy Ferland",
+        "Gwyneth Horder-Payton"
+      ],
+      "updatedAt": "2026-07-15T18:50:22.110Z",
+      "userScore": 8,
+      "isFavorite": false,
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTswcn_b-V5fpk75yok8qb1V2FYN1hxRhA7MmxYTwDI6A&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 7,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Pilot",
+        "progressUpdatedAt": "2026-07-15T18:50:22.110Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:03.087Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        13,
+        13,
+        13,
+        14,
+        13,
+        13,
+        13
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.474Z",
+      "progressUpdatedAt": "2026-07-15T18:50:22.110Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.874Z",
+      "rottenTomatoesScore": 87
+    },
+    {
+      "id": "show-1784141422110-41",
+      "title": "Lioness",
+      "actors": [
+        "Main Cast Star",
+        "Ensemble Cast Member"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S2E1": "Beware the Old Soldier",
+        "S2E2": "I Love My Country",
+        "S2E3": "Along Came a Spider",
+        "S2E4": "Five Hundred Children",
+        "S2E5": "Shatter the Moon",
+        "S2E6": "2831",
+        "S2E7": "The Devil Has Aces",
+        "S2E8": "The Compass Points Home",
+        "S3E1": "The Spider and the Fly",
+        "S3E2": "Beware the Second Strike",
+        "S3E3": "In the Shadows",
+        "S3E4": "The Reckoning",
+        "S3E5": "The Trap",
+        "S3E6": "Extraction",
+        "S3E7": "Zero Hour",
+        "S3E8": "The Lion's Den"
+      },
+      "overview": "A compelling television series tracking \"Lioness\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+      "concluded": false,
+      "createdAt": "2026-07-15T18:50:22.110Z",
+      "directors": [
+        "Showrunner Creator"
+      ],
+      "updatedAt": "2026-07-15T18:50:22.110Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUqC_tu3W9jV36t_xdOh0sOMI-jwEnqhIA_sxBz_jqCg&s=10",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 8,
+        "title": "The Lion's Den",
+        "airDate": "2026-09-20",
+        "overview": "Season 3 finale: The high-stakes showdown comes to a devastating conclusion."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 2,
+        "episode": 2,
+        "title": "I Love My Country",
+        "progressUpdatedAt": "2026-07-15T18:50:22.110Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:03.088Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:27:53.798Z",
+      "progressUpdatedAt": "2026-07-15T18:50:22.110Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-05T17:46:24.875Z",
+      "rottenTomatoesScore": 84
+    }
+  ],
+  "updatedAt": "2026-09-19T19:46:27.408Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": [
+    "silo",
+    "show-1784445478564-950089"
+  ]
+}

@@ -22,6 +22,7 @@ export interface WatchedEpisode {
   season: number;
   episode: number;
   title: string;
+  progressUpdatedAt?: string;
 }
 
 export interface NextEpisode {
@@ -69,6 +70,7 @@ export interface TvShow {
   metadataAuditStatus?: 'verified' | 'updated' | 'error';
   updatedAt?: string;
   statusUpdatedAt?: string;
+  progressUpdatedAt?: string;
   reviewUpdatedAt?: string;
   createdAt: string;
 }

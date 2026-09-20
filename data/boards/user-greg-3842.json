@@ -1,0 +1,907 @@
+{
+  "id": "user-greg-3842",
+  "name": "Greg's Collection",
+  "owner": {
+    "email": "greg@taterz.com",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Greg",
+    "createdAt": "2026-08-14T09:30:00.000Z",
+    "name": "Greg",
+    "id": "user-greg-3842"
+  },
+  "preferences": {
+    "genres": [
+      "Sci-Fi",
+      "Drama",
+      "Thriller",
+      "Comedy",
+      "Mystery"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Apple TV",
+      "HBO",
+      "Netflix",
+      "Hulu",
+      "Disney+"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-greg-1786739095414-0",
+      "title": "Ted Lasso",
+      "actors": [],
+      "genres": [
+        "Comedy",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Smells Like Mean Spirit",
+        "S3E2": "(I Don't Want to Go to) Chelsea",
+        "S3E3": "4-5-1",
+        "S3E4": "Big Week",
+        "S3E5": "Signs",
+        "S3E6": "Sunflowers",
+        "S3E7": "The Strings That Bind Us",
+        "S3E8": "We'll Never Have Paris",
+        "S3E9": "La Locker Room Aux Folles",
+        "S4E1": "Believe Again",
+        "S4E2": "Curiouser and Curiouser!",
+        "S4E3": "Richmond's Got Talent",
+        "S4E4": "Greyhound's Day Off",
+        "S4E5": "Riches of Embarrassment",
+        "S4E6": "Don't Jump Around Much Anymore",
+        "S4E7": "Yes & Baby",
+        "S4E8": "Follow the Anger",
+        "S4E9": "Episode 9",
+        "S3E10": "International Break",
+        "S3E11": "Mom City",
+        "S3E12": "So Long, Farewell",
+        "S4E10": "Episode 10"
+      },
+      "overview": "An American football coach is hired to manage a British soccer team. What he lacks in knowledge, he makes up for with optimism, determination... and biscuits.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [],
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/gEQkOMmnJcoh9Hh1vk7fpVYnksR.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "Believe Again",
+        "airDate": "2026-11-25",
+        "overview": "Ted returns to Richmond as the club embarks on a brand new European championship campaign."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 12,
+        "title": "So Long, Farewell",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        12,
+        12,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:37.571Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-11T19:20:32.153Z",
+      "rottenTomatoesScore": 90
+    },
+    {
+      "id": "show-greg-1786739095414-1",
+      "title": "Fallout",
+      "actors": [],
+      "genres": [
+        "Sci-Fi",
+        "Action",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "The End",
+        "S1E2": "The Target",
+        "S1E3": "The Head",
+        "S1E4": "The Ghouls",
+        "S1E5": "The Past",
+        "S1E6": "The Trap",
+        "S1E7": "The Radio",
+        "S1E8": "The Beginning"
+      },
+      "overview": "In a future, post-apocalyptic Los Angeles brought about by nuclear decimation, citizens must live in underground bunkers to protect themselves from radiation, mutants and bandits.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/coaPCIqQBPUZsOnJcWZxhaORcDT.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-11-10",
+        "overview": "The wasteland journey ventures into uncharted territory."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 6,
+        "title": "The Trap",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8,
+        8,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:38.038Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-11T19:20:32.184Z",
+      "rottenTomatoesScore": 94
+    },
+    {
+      "id": "show-greg-1786739095414-2",
+      "title": "Succession",
+      "actors": [],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S4E1": "The Munsters",
+        "S4E2": "Rehearsal",
+        "S4E3": "Connor's Wedding",
+        "S4E4": "Honeymoon States",
+        "S4E5": "Kill List",
+        "S4E6": "Living+",
+        "S4E7": "Tailgate Party",
+        "S4E8": "America Decides",
+        "S4E9": "Church and State",
+        "S4E10": "With Open Eyes"
+      },
+      "overview": "The Roy family is known for controlling the biggest media and entertainment company in the world. However, their world changes when their father steps down from the company.",
+      "concluded": true,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/bcdUYUFk8GdpZJPiSAas9UeocLH.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 4,
+        "episode": 10,
+        "title": "With Open Eyes",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 0%",
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        10,
+        9,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-11T19:20:32.184Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "show-greg-1786739095414-3",
+      "title": "The Bear",
+      "actors": [
+        "Jeremy Allen White",
+        "Ebon Moss-Bachrach",
+        "Ayo Edebiri",
+        "Lionel Boyce",
+        "Liza Col\u00f3n-Zayas",
+        "Abby Elliott",
+        "Matty Matheson"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "System",
+        "S1E2": "Hands",
+        "S1E3": "Brigade",
+        "S1E4": "Dogs",
+        "S1E5": "Sheridan",
+        "S1E6": "Ceres",
+        "S1E7": "Review",
+        "S1E8": "Braciole",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S4E10": "Goodbye"
+      },
+      "overview": "Carmen 'Carmy' Berzatto, a elite chef from the fine dining world, returns home to Chicago to run his family's Italian beef sandwich shop after the suicide of his older brother.",
+      "concluded": true,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Christopher Storer",
+        "Joanna Calo"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 9.4,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "System",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:05.685Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-11T19:20:26.121Z",
+      "rottenTomatoesScore": 96
+    },
+    {
+      "id": "show-greg-1786739095414-4",
+      "title": "House of the Dragon",
+      "actors": [
+        "Matt Smith",
+        "Emma D'Arcy",
+        "Olivia Cooke",
+        "Paddy Considine",
+        "Rhys Ifans",
+        "Steve Toussaint",
+        "Eve Best"
+      ],
+      "genres": [
+        "Fantasy",
+        "Drama",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S3E1": "The Battle of the Gullet",
+        "S3E2": "Queen's Landing",
+        "S3E3": "Rhaenyra Triumphant",
+        "S3E4": "Tumbleton",
+        "S3E5": "Unbowed and Unbent",
+        "S3E6": "Faceless Men",
+        "S3E7": "The Dragon in Winter",
+        "S3E8": "The Fall of King's Landing",
+        "S4E1": "The Hour of the Wolf"
+      },
+      "overview": "An internal succession war within House Targaryen at the height of its power, 172 years before the birth of Daenerys Targaryen.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Miguel Sapochnik",
+        "Clare Kilner",
+        "Geeta Vasant Patel",
+        "Greg Yaitanes",
+        "Alan Taylor"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 9.1,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/577eXC8wFQT0eUrJcgznSiFPRmk.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "The Hour of the Wolf",
+        "airDate": "2028-06-18",
+        "overview": "The climactic final season of the Targaryen civil war begins."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 5,
+        "title": "Unbowed and Unbent",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 60%",
+      "reviewUpdatedAt": "2026-08-24T20:00:05.685Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        8,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:39.436Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-11T19:20:24.256Z",
+      "rottenTomatoesScore": 89
+    },
+    {
+      "id": "show-greg-1786739095414-5",
+      "title": "Sh\u014dgun",
+      "actors": [
+        "Hiroyuki Sanada",
+        "Cosmo Jarvis",
+        "Anna Sawai",
+        "Tadanobu Asano",
+        "Takehiro Hira",
+        "Tommy Bastow",
+        "Fumi Nikaido"
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S1E10": "A Dream of a Dream",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun"
+      },
+      "overview": "Set in Japan in the year 1600 at the dawn of a century-defining civil war, Lord Yoshii Toranaga struggles for survival as his enemies on the Council of Regents unite against him. When a mysterious European ship is found marooned in a nearby fishing village, its English pilot, John Blackthorne, comes bearing secrets that could help Toranaga tip the scales of power.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Jonathan van Tulleken",
+        "Frederick E.O. Toye",
+        "Charlotte Br\u00e4ndstr\u00f6m",
+        "Hiromi Kamata",
+        "Emmanuel Osei-Kuffour"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Anjin",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:05.685Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-11T19:20:24.239Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-greg-1786739095414-6",
+      "title": "Peaky Blinders",
+      "actors": [
+        "Cillian Murphy",
+        "Paul Anderson",
+        "Helen McCrory",
+        "Sophie Rundle",
+        "Tom Hardy"
+      ],
+      "genres": [
+        "Crime",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Episode 1",
+        "S1E2": "Episode 2",
+        "S1E3": "Episode 3",
+        "S1E4": "Episode 4",
+        "S1E5": "Episode 5",
+        "S1E6": "Episode 6",
+        "S6E1": "Black Day",
+        "S6E2": "Black Shirt",
+        "S6E3": "Gold",
+        "S6E4": "Sapphire",
+        "S6E5": "The Road to Hell",
+        "S6E6": "Lock and Key"
+      },
+      "overview": "A gangster family epic set in 1919 Birmingham, England, centered on a gang who sew razor blades in the peaks of their caps, and their fierce boss Tommy Shelby.",
+      "concluded": true,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Anthony Byrne",
+        "Colm McCarthy",
+        "Tim Mielants",
+        "Otto Bathurst"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://m.media-amazon.com/images/M/MV5BMThlOWE3MWEtZjM4Ny00M2FiLTkyMmYtZGY3ZTcyMzM5YmNlXkEyXkFqcGdeQWpnYW1i._V1_.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Episode 1",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:05.685Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-11T19:20:24.294Z",
+      "rottenTomatoesScore": 94
+    },
+    {
+      "id": "show-greg-1786739095414-7",
+      "title": "Silo",
+      "actors": [
+        "Rebecca Ferguson",
+        "Common",
+        "Tim Robbins",
+        "Harriet Walter",
+        "Chinaza Uche",
+        "Avi Nash"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Mystery",
+        "Dystopian"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S3E1": "Who Are You?",
+        "S3E2": "It's All Good",
+        "S3E3": "A Dark Web",
+        "S3E4": "Whatever You Do, Don't Go Home",
+        "S3E5": "Memory",
+        "S3E6": "The Drive",
+        "S3E7": "Radio",
+        "S3E8": "Gray Goo",
+        "S3E9": "The Surface",
+        "S3E10": "Legacy"
+      },
+      "overview": "In a ruined and toxic future, a community exists in a giant underground silo that plunges hundreds of stories deep. There, men and women live in a society full of regulations they believe are meant to protect them.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Morten Tyldum",
+        "David Semel",
+        "Alethea Jones"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 10,
+        "title": "Legacy",
+        "airDate": "2026-09-04",
+        "overview": "Season 3 finale: The ultimate struggle for the future of the remaining silos."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 3,
+        "episode": 7,
+        "title": "Radio",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:41.915Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "hasAirDateReminder": true,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-20T20:48:03.598Z",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "show-greg-1786739095414-8",
+      "title": "Stranger Things",
+      "actors": [
+        "Winona Ryder",
+        "David Harbour",
+        "Millie Bobby Brown",
+        "Finn Wolfhard",
+        "Gaten Matarazzo",
+        "Caleb McLaughlin",
+        "Noah Schnapp",
+        "Sadie Sink",
+        "Natalia Dyer",
+        "Charlie Heaton",
+        "Joe Keery"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Horror",
+        "Fantasy",
+        "Mystery"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Chapter One: The Vanishing of Will Byers",
+        "S1E2": "Chapter Two: The Weirdo on Maple Street",
+        "S1E3": "Chapter Three: Holly, Jolly",
+        "S1E4": "Chapter Four: The Body",
+        "S1E5": "Chapter Five: The Flea and the Acrobat",
+        "S1E6": "Chapter Six: The Monster",
+        "S1E7": "Chapter Seven: The Bathtub",
+        "S1E8": "Chapter Eight: The Upside Down",
+        "S5E1": "Chapter One: The Crawl",
+        "S5E2": "Chapter Two: The Vanishing of Holly Wheeler",
+        "S5E3": "Chapter Three: The Turnbow Trap",
+        "S5E4": "Chapter Four: Sorcerer",
+        "S5E5": "Chapter Five: Shock Jock",
+        "S5E6": "Chapter Six: Escape from Camazotz",
+        "S5E7": "Chapter Seven: The Bridge",
+        "S5E8": "Chapter Eight: The Rightside Up"
+      },
+      "overview": "When a young boy vanishes, a small town uncovers a mystery involving secret experiments, terrifying supernatural forces and one strange little girl.",
+      "concluded": true,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "The Duffer Brothers",
+        "Shawn Levy"
+      ],
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/56v2KjBlU4XaOv9rVYEQypROD7P.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "Chapter One: The Vanishing of Will Byers",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        8,
+        9,
+        8,
+        9,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-11T19:20:24.085Z",
+      "rottenTomatoesScore": 91
+    },
+    {
+      "id": "show-greg-1786739095414-9",
+      "title": "X-Men '97",
+      "actors": [
+        "Ray Chase",
+        "Jennifer Hale",
+        "Alison Sealy-Smith",
+        "Cal Dodd",
+        "Lenore Zann",
+        "George Buza",
+        "AJ LoCascio"
+      ],
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Sci-Fi"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S2E1": "Days of Past Future",
+        "S2E2": "A Force to be Reckoned With",
+        "S2E3": "Rise of Apocalypse: Part 1",
+        "S2E4": "Rise of Apocalypse Part II",
+        "S2E5": "Weapon X, Lies, and DVDs",
+        "S2E6": "Danger.exe",
+        "S2E7": "Strange Land, Savage Heart",
+        "S2E8": "The Dead Man's Hand",
+        "S2E9": "The Dead Man's Hand",
+        "S2E10": "Age of Apocalypse Finale"
+      },
+      "overview": "A continuation of the classic 1990s animated series, X-Men '97 revisits the iconic era of the X-Men as the band of mutants face dangerous new challenges following the loss of their leader, Professor Charles Xavier.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Jake Castorena",
+        "Chase Conley",
+        "Emi Yonemura"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://images.squarespace-cdn.com/content/v1/51b3dc8ee4b051b96ceb10de/a3d300bb-f1b7-4fca-b376-03273a92de3e/X-MEN+%2797+Star+is+%2522Amazed+Disney+Greenlit%2522+Season+2+Because+It%E2%80%99s+%2522Very%2C+Very+Dark%2522+and+%2522A+Lot+of+People+Die%2522.jpg?format=2500w",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 10,
+        "title": "Age of Apocalypse Finale",
+        "airDate": "2026-08-26",
+        "overview": "The X-Men unite across fractured timelines for the ultimate battle against Apocalypse."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 2,
+        "episode": 8,
+        "title": "The Dead Man's Hand",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 15%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "Disney+",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:42.852Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-11T19:20:32.389Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-greg-1786739095414-10",
+      "title": "The Last of Us",
+      "actors": [
+        "Pedro Pascal",
+        "Bella Ramsey",
+        "Gabriel Luna"
+      ],
+      "genres": [
+        "Horror",
+        "Drama",
+        "Sci-Fi",
+        "Action"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S2E1": "Jackson",
+        "S2E2": "Through the Valley",
+        "S2E3": "The Path",
+        "S2E4": "Day One",
+        "S2E5": "Feel Her Love",
+        "S2E6": "The Price",
+        "S2E7": "Seattle Day 3"
+      },
+      "overview": "Twenty years after modern civilization has been destroyed, Joel, a hardened survivor, is hired to smuggle Ellie, a 14-year-old girl, out of an oppressive quarantine zone.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Craig Mazin",
+        "Neil Druckmann"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/acevLdSl5I2MK5RYAm7gwAndt1w.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-04-18",
+        "overview": "The next chapter in Ellie's journey begins across the fractured frontier."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 2,
+        "episode": 7,
+        "title": "Seattle Day 3",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        9,
+        7,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:43.317Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-11T19:20:32.389Z",
+      "rottenTomatoesScore": 96
+    },
+    {
+      "id": "show-greg-1786739095414-11",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Thriller",
+        "Mystery"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Good News About Hell",
+        "S1E2": "Half Loop",
+        "S1E3": "In Perpetuity",
+        "S1E4": "The You You Are",
+        "S1E5": "The Grim Barbarity of Optics and Design",
+        "S1E6": "Hide and Seek",
+        "S1E7": "Defiant Jazz",
+        "S1E8": "What's for Dinner?",
+        "S1E9": "The We We Are"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-08-14T09:30:00.000Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-14T09:30:00.000Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 9,
+        "title": "The We We Are",
+        "progressUpdatedAt": "2026-08-14T09:30:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:43.782Z",
+      "progressUpdatedAt": "2026-08-14T09:30:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-11T19:20:32.390Z",
+      "rottenTomatoesScore": 97
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:34.365Z",
+  "notifications": [],
+  "dismissedNotificationIds": [
+    "airdate-1788320940776-hi4d6k"
+  ],
+  "dismissedAlertKeys": [
+    "silo",
+    "show-greg-1786739095414-7"
+  ]
+}

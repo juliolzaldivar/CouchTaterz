@@ -1,0 +1,856 @@
+{
+  "id": "user-stphsolowgmailcom-4369",
+  "name": "Stphsolow@gmail.com's Collection",
+  "owner": {
+    "id": "user-stphsolowgmailcom-4369",
+    "name": "Stef",
+    "createdAt": "2026-08-03T00:57:33.432Z",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Stphsolow%40gmail.com",
+    "email": "stphsolow@gmail.com"
+  },
+  "preferences": {
+    "genres": [
+      "Horror",
+      "Action",
+      "Animation"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1785719635339-8206",
+      "title": "American Horor Story",
+      "actors": [
+        "Main Cast Star",
+        "Ensemble Cast Member"
+      ],
+      "genres": [
+        "Mystery",
+        "Horror"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Home Invasion",
+        "S1E3": "Murder House",
+        "S1E4": "Halloween Part 1",
+        "S1E5": "Halloween Part 2",
+        "S1E6": "Piggy, Piggy",
+        "S1E7": "Open House",
+        "S1E8": "Rubber Man",
+        "S1E9": "Spooky Little Girl",
+        "S1E10": "Smoldering Children",
+        "S1E11": "Birth",
+        "S1E12": "Afterbirth",
+        "S13E1": "The Awakening",
+        "S13E2": "Dark Passage",
+        "S13E3": "Rauhnacht",
+        "S13E4": "Is That All There Is?",
+        "S13E5": "Date Night",
+        "S13E6": "The Return of Devil's Night",
+        "S13E7": "The Baddest Witch Of Them All",
+        "S13E8": "Hell No",
+        "S13E9": "The Devil Is in the Details",
+        "S13E10": "The Prodigal Son",
+        "S13E11": "Madison's Happy Ending",
+        "S13E12": "Sisters in Arms",
+        "S13E13": "Devil of a Good Time"
+      },
+      "overview": "A compelling television series tracking \"American Horor Story\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+      "concluded": false,
+      "createdAt": "2026-08-03T01:13:55.339Z",
+      "directors": [
+        "Showrunner Creator"
+      ],
+      "ownerName": "Lilyann",
+      "updatedAt": "2026-08-03T01:13:55.339Z",
+      "userScore": 7,
+      "isFavorite": false,
+      "ownerNames": [
+        "Lilyann"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSS4MH4eq5gyUqE9Bf1GoupPWvuFQdyA5FGlPErgpurWQ&s=10",
+      "nextEpisode": {
+        "season": 13,
+        "episode": 1,
+        "title": "The Awakening",
+        "airDate": "2026-09-24",
+        "overview": "A chilling new chapter in the horror anthology series unfolds."
+      },
+      "totalSeasons": 13,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T01:13:55.339Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.452Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        12,
+        13,
+        13,
+        13,
+        12,
+        10,
+        11,
+        10,
+        9,
+        10,
+        10,
+        9,
+        13
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T01:13:55.339Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:26.564Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "show-1785719115236-872839",
+      "title": "Sh\u014dgun",
+      "actors": [
+        "Hiroyuki Sanada",
+        "Cosmo Jarvis",
+        "Anna Sawai",
+        "Tadanobu Asano",
+        "Takehiro Hira",
+        "Tommy Bastow",
+        "Fumi Nikaido"
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S1E10": "A Dream of a Dream",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun"
+      },
+      "overview": "Set in Japan in the year 1600 at the dawn of a century-defining civil war, Lord Yoshii Toranaga struggles for survival as his enemies on the Council of Regents unite against him. When a mysterious European ship is found marooned in a nearby fishing village, its English pilot, John Blackthorne, comes bearing secrets that could help Toranaga tip the scales of power.",
+      "concluded": false,
+      "createdAt": "2026-08-03T01:05:15.236Z",
+      "directors": [
+        "Jonathan van Tulleken",
+        "Frederick E.O. Toye",
+        "Charlotte Br\u00e4ndstr\u00f6m",
+        "Hiromi Kamata",
+        "Emmanuel Osei-Kuffour"
+      ],
+      "ownerName": "Stef",
+      "updatedAt": "2026-08-03T01:05:15.236Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "ownerNames": [
+        "Stef"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "familyDetails": [
+        {
+          "userNotes": "Absolutely epic and beautiful. Like watching a short film in each episode. Strongly recommend this on a big tv.",
+          "ownerName": "Julio",
+          "userScore": 10,
+          "status": "Completed",
+          "latestWatched": {
+            "season": 1,
+            "title": "Episode 1",
+            "episode": 1
+          }
+        }
+      ],
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T01:05:15.236Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.452Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T01:05:15.236Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:26.211Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1785719110807-560520",
+      "title": "Cowboy Bebop",
+      "actors": [
+        "Koichi Yamadera",
+        "Unsho Ishizuka",
+        "Megumi Hayashibara",
+        "Aoi Tada"
+      ],
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Sci-Fi"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Asteroid Blues",
+        "S1E2": "Stray Dog Strut",
+        "S1E3": "Honky Tonk Women",
+        "S1E4": "Gateway Shuffle",
+        "S1E5": "Ballad of Fallen Angels",
+        "S1E6": "Sympathy for the Devil",
+        "S1E7": "Heavy Metal Queen",
+        "S1E8": "Waltz for Venus",
+        "S1E9": "Jamming with Edward",
+        "S1E10": "Ganymede Elegy",
+        "S1E11": "Toys in the Attic",
+        "S1E12": "Jupiter Jazz (Part 1)",
+        "S1E13": "Jupiter Jazz (Part 2)",
+        "S1E14": "Bohemian Rhapsody",
+        "S1E15": "My Funny Valentine",
+        "S1E16": "Black Dog Serenade",
+        "S1E17": "Mushroom Samba",
+        "S1E18": "Speak Like a Child",
+        "S1E19": "Wild Horses",
+        "S1E20": "Pierrot le Fou",
+        "S1E21": "Boogie Woogie Feng Shui",
+        "S1E22": "Cowboy Funk",
+        "S1E23": "Brain Scratch",
+        "S1E24": "Hard Luck Woman",
+        "S1E25": "The Real Folk Blues (Part I)",
+        "S1E26": "The Real Folk Blues (Part II)"
+      },
+      "overview": "In 2071, roughly fifty years after an accident with a hyperspace gateway made the Earth almost uninhabitable, humanity has colonized most of the rocky planets and moons of the Solar System. Amidst a rising crime rate, the Inter Solar System Police (ISSP) set up a legalized contract system, in which registered bounty hunters (also known as 'Cowboys') chase criminals and bring them in alive in return for a reward.",
+      "concluded": true,
+      "createdAt": "2026-08-03T01:05:10.807Z",
+      "directors": [
+        "Shinichir\u014d Watanabe"
+      ],
+      "ownerName": "Stef",
+      "updatedAt": "2026-08-03T01:05:10.807Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Stef"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8DoXs0kKeJ_x-wB3Lz76HhIUIN1NKrfdJrir8WG1shg&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "familyDetails": [
+        {
+          "userNotes": "",
+          "status": "Completed",
+          "ownerName": "Julio",
+          "userScore": 9,
+          "latestWatched": {
+            "season": 1,
+            "episode": 1,
+            "title": "Asteroid Blues"
+          }
+        }
+      ],
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T01:05:10.807Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.452Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        26
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T01:05:10.807Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:26.180Z",
+      "rottenTomatoesScore": 100
+    },
+    {
+      "id": "show-1785719108121-541463",
+      "title": "Death Note",
+      "actors": [
+        "Mamoru Miyano",
+        "Kappei Yamaguchi",
+        "Shidou Nakamura",
+        "Aya Hirano"
+      ],
+      "genres": [
+        "Animation",
+        "Mystery",
+        "Thriller",
+        "Crime",
+        "Anime"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Rebirth",
+        "S1E2": "Confrontation",
+        "S1E3": "Dealings",
+        "S1E4": "Pursuit",
+        "S1E5": "Tactics",
+        "S1E6": "Unraveling",
+        "S1E7": "Overcast",
+        "S1E8": "Glare",
+        "S1E9": "Encounter",
+        "S1E10": "Doubt",
+        "S1E11": "Assault",
+        "S1E12": "Love",
+        "S1E13": "Confession",
+        "S1E14": "Friend",
+        "S1E15": "Wager",
+        "S1E16": "Decision",
+        "S1E17": "Execution",
+        "S1E18": "Ally",
+        "S1E19": "Matsuda",
+        "S1E20": "Makeshift",
+        "S1E21": "Performance",
+        "S1E22": "Guidance",
+        "S1E23": "Frenzy",
+        "S1E24": "Revival",
+        "S1E25": "Silence",
+        "S1E26": "Renewal",
+        "S1E27": "Abduction",
+        "S1E28": "Impatience",
+        "S1E29": "Father",
+        "S1E30": "Justice",
+        "S1E31": "Transfer",
+        "S1E32": "Selection",
+        "S1E33": "Scorn",
+        "S1E34": "Vigilance",
+        "S1E35": "Malice",
+        "S1E36": "1.28",
+        "S1E37": "New World"
+      },
+      "overview": "Light Yagami is an high school student who discovers a supernatural notebook, the \"Death Note\", which grants its user the ability to kill anyone whose name and face they know. The series centers around Light's subsequent attempts to use the Death Note to carry out a worldwide massacre of individuals whom he deems immoral and to create a utopian society free of crime, using the alias of a god-like vigilante named \"Kira\", and the subsequent efforts of an elite task force of law enforcement officers, led by L, a detection prodigy, to apprehend him.",
+      "concluded": true,
+      "createdAt": "2026-08-03T01:05:08.121Z",
+      "directors": [
+        "Tetsur\u014d Araki"
+      ],
+      "ownerName": "Stef",
+      "updatedAt": "2026-08-03T01:05:08.121Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Stef"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcREvnqhiZXcTNBTQ3vb4-v_4Io3ZARKCbpECNcipvSWZQ&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "familyDetails": [
+        {
+          "status": "Completed",
+          "userNotes": "",
+          "userScore": 9,
+          "ownerName": "Julio",
+          "latestWatched": {
+            "season": 1,
+            "title": "Rebirth",
+            "episode": 1
+          }
+        }
+      ],
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T01:05:08.121Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.452Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        37
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T01:05:08.121Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:27.083Z",
+      "rottenTomatoesScore": 100
+    },
+    {
+      "id": "show-1785718792018-945719",
+      "title": "Watchmen",
+      "actors": [
+        "Regina King",
+        "Yahya Abdul-Mateen II",
+        "Tom Mison",
+        "Sara Vickers",
+        "Jeremy Irons",
+        "Jean Smart",
+        "Tim Blake Nelson",
+        "Hong Chau"
+      ],
+      "genres": [
+        "Action",
+        "Drama",
+        "Mystery",
+        "Sci-Fi",
+        "Fantasy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "It's Summer and We're Running Out of Ice",
+        "S1E2": "Martial Feats of Comanche Horsemanship",
+        "S1E3": "She Was Killed by Space Junk",
+        "S1E4": "If You Don't Like My Story, Write Your Own",
+        "S1E5": "Little Fear of Lightning",
+        "S1E6": "This Extraordinary Being",
+        "S1E7": "An Almost Religious Awe",
+        "S1E8": "A God Walks into Abar",
+        "S1E9": "See How They Fly"
+      },
+      "overview": "Set in an alternate history where masked vigilantes are treated as outlaws, Watchmen embraces the nostalgia of the original groundbreaking graphic novel of the same name while attempting to break new ground of its own.",
+      "concluded": true,
+      "createdAt": "2026-08-03T00:59:52.018Z",
+      "directors": [
+        "Nicole Kassell",
+        "Stephen Williams",
+        "Steph Green",
+        "Andrij Parekh",
+        "David Semel"
+      ],
+      "ownerName": "Stef",
+      "updatedAt": "2026-08-03T00:59:52.018Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Stef"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQzqWmIO2MVdKQhudUZXp4oGxPFmnXf4WEENCQgidyk3Q&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T00:59:52.018Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.452Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        9
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T00:59:52.018Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:27.057Z",
+      "rottenTomatoesScore": 96
+    },
+    {
+      "id": "show-1785718653751-997862-0",
+      "title": "THE GHOST IN THE SHELL",
+      "actors": [
+        "Maaya Sakamoto",
+        "Hiroki Yasumoto",
+        "Yuichi Nakamura",
+        "Kazuhiro Yamaji",
+        "Kousuke Goto"
+      ],
+      "genres": [
+        "Animation",
+        "Action & Adventure",
+        "Sci-Fi & Fantasy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Prologue + Super Spartan I",
+        "S1E2": "Super Spartan II + Junk Jungle I",
+        "S1E3": "Junk Jungle II + Megatech Machine I + II",
+        "S1E4": "Robot Rondo",
+        "S1E5": "Phantom Fund",
+        "S1E6": "Dumb Barter",
+        "S1E7": "Idolator",
+        "S1E8": "Intermission + Brain Drain I",
+        "S1E9": "Brain Drain II",
+        "S1E10": "Brain Drain III + Ghost Coast + Epilogue"
+      },
+      "overview": "2029, a near-future Japan. The full cyborg Motoko Kusanagi envisions a task force that preemptively strikes emerging threats. She and her team are scouted by Daisuke Aramaki as Public Security Section 9, AKA the \"Shell Squad.\" An international conspiracy hints at a hacker known as The \"Puppet Master.\" What fate awaits Kusanagi? What is the hacker's endgame?",
+      "concluded": true,
+      "createdAt": "2026-08-03T00:57:33.751Z",
+      "directors": [
+        "Kengo Abe",
+        "Daichi Sasa",
+        "Kohei Sakita"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-03T00:57:33.751Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/app8YXZ4NS0hMTYZuIA6zx92xVm.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T00:57:33.751Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:04.452Z",
+      "streamingService": "Other",
+      "episodesPerSeason": [
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T00:57:33.751Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:27.136Z",
+      "rottenTomatoesScore": 85
+    },
+    {
+      "id": "show-1785718653751-567156-1",
+      "title": "American Dad!",
+      "actors": [
+        "Seth MacFarlane",
+        "Wendy Schaal",
+        "Rachael MacFarlane",
+        "Scott Grimes",
+        "Dee Bradley Baker"
+      ],
+      "genres": [
+        "Animation",
+        "Comedy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Threat Levels",
+        "S1E3": "Stan Knows Best",
+        "S1E4": "Francine's Flashback",
+        "S1E5": "Roger Codger",
+        "S1E6": "Homeland Insecurity",
+        "S1E7": "Deacon Stan, Jesus Man",
+        "S1E8": "Bullocks to Stan",
+        "S1E9": "A Smith in Hand",
+        "S1E10": "All About Steve",
+        "S1E11": "Con Heir",
+        "S1E12": "Stan of Arabia: Part 1",
+        "S1E13": "Stan of Arabia: Part 2",
+        "S1E14": "Stannie Get Your Gun",
+        "S1E15": "Star Trek",
+        "S1E16": "Not Particularly Desperate Housewives",
+        "S1E17": "Rough Trade",
+        "S1E18": "Finances with Wolves",
+        "S1E19": "It's Good to Be Queen",
+        "S1E20": "Roger 'n Me",
+        "S1E21": "Helping Handis",
+        "S1E22": "With Friends Like Steve's",
+        "S1E23": "Tears of a Clooney",
+        "S21E1": "Stan's New Angle",
+        "S21E2": "Francine Gets Crafty",
+        "S21E3": "Powering Through",
+        "S21E4": "Camera Stan",
+        "S21E5": "Idol Threat",
+        "S21E6": "The Treasure of Old Chinatown",
+        "S21E7": "Reaper Madness",
+        "S21E8": "Dude, You're Getting a Del!",
+        "S21E9": "Where the Wild Boars Are",
+        "S21E10": "Dumbston Checks In",
+        "S21E11": "A Donkey's Shame",
+        "S21E12": "400?!",
+        "S21E13": "Tales from the Outer Frontier"
+      },
+      "overview": "The series focuses on an eccentric motley crew that is the Smith family and their three housemates: Father, husband, and breadwinner Stan Smith; his better half housewife, Francine Smith; their college-aged daughter, Hayley Smith; and their high-school-aged son, Steve Smith. Outside of the Smith family, there are three additional main characters, including Hayley's boyfriend turned husband, Jeff Fischer; the family's man-in-a-goldfish-body pet, Klaus; and most notably the family's zany alien, Roger, who is \"full of masquerades, brazenness, and shocking antics.\"",
+      "concluded": false,
+      "createdAt": "2026-08-03T00:57:33.751Z",
+      "directors": [
+        "Mike Barker",
+        "Matt Weitzman",
+        "Seth MacFarlane"
+      ],
+      "isStarter": true,
+      "ownerName": "Kris",
+      "updatedAt": "2026-08-03T00:57:33.751Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Kris"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/iixxhk3ycXmFqBn616pAsC3lu53.jpg",
+      "nextEpisode": {
+        "season": 21,
+        "episode": 2,
+        "title": "Francine Gets Crafty",
+        "airDate": "2026-09-21",
+        "overview": "Francine starts an artisanal crafting enterprise with Roger as her volatile business manager."
+      },
+      "totalSeasons": 21,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T00:57:33.751Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:04.452Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        23,
+        19,
+        16,
+        20,
+        18,
+        19,
+        18,
+        19,
+        20,
+        3,
+        15,
+        22,
+        22,
+        22,
+        20,
+        24,
+        22,
+        22,
+        22,
+        22,
+        11
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:08.348Z",
+      "progressUpdatedAt": "2026-08-03T00:57:33.751Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-07T23:19:27.260Z",
+      "rottenTomatoesScore": 70
+    },
+    {
+      "id": "show-1785718653751-71515-2",
+      "title": "Justice League Unlimited",
+      "actors": [
+        "Kevin Conroy",
+        "George Newbern",
+        "Susan Eisenberg",
+        "Carl Lumbly",
+        "Phil LaMarr"
+      ],
+      "genres": [
+        "Animation",
+        "Action & Adventure",
+        "Sci-Fi & Fantasy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Initiation",
+        "S1E2": "For the Man Who Has Everything",
+        "S1E3": "Kid Stuff",
+        "S1E4": "Hawk and Dove",
+        "S1E5": "This Little Piggy",
+        "S1E6": "Fearful Symmetry",
+        "S1E7": "The Greatest Story Never Told",
+        "S1E8": "The Return",
+        "S1E9": "Ultimatum",
+        "S3E1": "I Am Legion",
+        "S3E2": "Shadow of the Hawk",
+        "S3E3": "Chaos at the Earth's Core",
+        "S3E4": "To Another Shore",
+        "S3E5": "Flash and Substance",
+        "S3E6": "Dead Reckoning",
+        "S3E7": "Patriot Act",
+        "S3E8": "The Great Brain Robbery",
+        "S3E9": "Grudge Match",
+        "S1E10": "Dark Heart",
+        "S1E11": "Wake the Dead",
+        "S1E12": "The Once and Future Thing (1): Weird Western Tales",
+        "S1E13": "The Once and Future Thing (2): Time, Warped",
+        "S3E10": "Far from Home",
+        "S3E11": "Ancient History",
+        "S3E12": "Alive! (1)",
+        "S3E13": "Destroyer (2)"
+      },
+      "overview": "The galaxy's most powerful superheroes return to battle the allied villains and criminal plots that endanger the universe.",
+      "concluded": true,
+      "createdAt": "2026-08-03T00:57:33.751Z",
+      "directors": [
+        "Showrunner Creator"
+      ],
+      "isStarter": true,
+      "ownerName": "Stphsolow@gmail.com",
+      "updatedAt": "2026-08-03T00:57:33.751Z",
+      "userScore": 8,
+      "isFavorite": false,
+      "ownerNames": [
+        "Stphsolow@gmail.com"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ySxWguK7c9iB8VLoARu94n4yZn3.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T00:57:33.751Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.456Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        13,
+        13,
+        13
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T00:57:33.751Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:27.114Z",
+      "rottenTomatoesScore": 83
+    },
+    {
+      "id": "show-1785718653751-630152-3",
+      "title": "Fullmetal Alchemist",
+      "actors": [
+        "Romi Park",
+        "Rie Kugimiya",
+        "Megumi Toyoguchi",
+        "Toru Okawa",
+        "Ryotaro Okiayu"
+      ],
+      "genres": [
+        "Animation",
+        "Action & Adventure",
+        "Sci-Fi & Fantasy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "To Challenge the Sun",
+        "S1E2": "Body of the Sanctioned",
+        "S1E3": "Mother",
+        "S1E4": "A Forger's Love",
+        "S1E5": "The Man with the Mechanical Arm",
+        "S1E6": "The Alchemy Exam",
+        "S1E7": "Night of the Chimera's Cry",
+        "S1E8": "The Philosopher's Stone",
+        "S1E9": "Be Thou for the People",
+        "S1E10": "The Phantom Thief",
+        "S1E11": "The Other Brothers Elric (1)",
+        "S1E12": "The Other Brothers Elric (2)",
+        "S1E13": "Fullmetal vs. Flame",
+        "S1E14": "Destruction's Right Hand",
+        "S1E15": "The Ishbal Massacre",
+        "S1E16": "That Which Is Lost",
+        "S1E17": "House of the Waiting Family",
+        "S1E18": "Marcoh's Notes",
+        "S1E19": "The Truth Behind Truths",
+        "S1E20": "Soul of the Guardian",
+        "S1E21": "The Red Glow",
+        "S1E22": "Created Human",
+        "S1E23": "Heart of Steel",
+        "S1E24": "Bonding Memories",
+        "S1E25": "Words of Farewell",
+        "S1E26": "Her Reason",
+        "S1E27": "Teacher",
+        "S1E28": "One is All, All is One",
+        "S1E29": "The Untainted Child",
+        "S1E30": "Assault on South Headquarters",
+        "S1E31": "Sin",
+        "S1E32": "Dante of the Deep Wood",
+        "S1E33": "Al, Captured",
+        "S1E34": "Theory of Avarice",
+        "S1E35": "Reunion of the Fallen",
+        "S1E36": "The Sinner Within Me",
+        "S1E37": "The Flame Alchemist, The Bachelor Lieutenant, & The Mystery of Warehouse 13",
+        "S1E38": "With the River's Flow",
+        "S1E39": "Secret of Ishbal",
+        "S1E40": "The Scar",
+        "S1E41": "Holy Mother",
+        "S1E42": "His Name is Unknown",
+        "S1E43": "The Stray Dog",
+        "S1E44": "Hohenheim of Light",
+        "S1E45": "One Who Lets Her Heart Rot",
+        "S1E46": "Human Transmutation",
+        "S1E47": "Homunculus Sealed",
+        "S1E48": "Farewell",
+        "S1E49": "Beyond the Gate",
+        "S1E50": "Death",
+        "S1E51": "Laws and Promises"
+      },
+      "overview": "Two young brothers are raised as alchemists, but when they are severely injured trying to perform a forbidden act, they begin searching for the one thing that can save them; the fabled philosopher's stone.",
+      "services": [
+        "HBO"
+      ],
+      "concluded": true,
+      "createdAt": "2026-08-03T00:57:33.751Z",
+      "directors": [
+        "Ryo Oyama",
+        "Seiji Takeda",
+        "Koji Taguchi"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-03T00:57:33.751Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/p1z1B4bMf6tgUA4VLpI4smLxbCf.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-03T00:57:33.751Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:04.456Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        51
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-03T00:57:33.751Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-07T23:19:27.163Z",
+      "rottenTomatoesScore": 82
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:31.762Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

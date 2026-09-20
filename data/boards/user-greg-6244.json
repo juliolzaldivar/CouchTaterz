@@ -1,0 +1,622 @@
+{
+  "owner": {
+    "id": "user-greg-6244",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Greg",
+    "createdAt": "2026-08-14T17:53:54.208Z",
+    "email": "bluebirdgm@aol.com",
+    "name": "Greg"
+  },
+  "id": "user-greg-6244",
+  "notifications": [],
+  "preferences": {
+    "genres": [
+      "Sci-Fi",
+      "Comedy",
+      "Action",
+      "Drama"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Disney+",
+      "Hulu",
+      "Prime Video",
+      "Paramount+",
+      "Peacock"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "name": "Greg's Collection",
+  "shows": [
+    {
+      "id": "show-1788049469689",
+      "title": "Star Trek: Strange New Worlds",
+      "actors": [
+        "Anson Mount",
+        "Ethan Peck",
+        "Jess Bush",
+        "Christina Chong",
+        "Celia Rose Gooding"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Fantasy",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S4E1": "Valles Marineris",
+        "S4E2": "The Griffin Incident",
+        "S4E3": "Human Best Friend",
+        "S4E4": "A Case of Chiaroscuro",
+        "S4E5": "Level-Five Transporter Accident",
+        "S4E6": "Off-Hour",
+        "S4E7": "Like Chronitons Through the Hourglass",
+        "S4E8": "Orders of Magnitude",
+        "S4E9": "Once La'An a Time",
+        "S4E10": "Tomorrow's Enterprise"
+      },
+      "overview": "Follow Captain Christopher Pike, Science Officer Spock and Number One in the years before Captain Kirk boarded the U.S.S. Enterprise, as they explore new worlds around the galaxy.",
+      "concluded": false,
+      "createdAt": "2026-08-30T00:24:29.689Z",
+      "directors": [
+        "Jenny Lumet",
+        "Alex Kurtzman",
+        "Akiva Goldsman"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-30T00:24:51.677Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/fZJs6xgU9dqIg9phIXjZAZOInzy.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 7,
+        "title": "Like Chronitons Through the Hourglass",
+        "airDate": "2026-09-03"
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 4,
+        "episode": 6,
+        "title": "Off-Hour",
+        "progressUpdatedAt": "2026-08-30T00:24:51.677Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-30T00:24:45.752Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.485Z",
+      "progressUpdatedAt": "2026-08-30T00:24:51.677Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 79
+    },
+    {
+      "id": "show-1788049409202",
+      "title": "Conan O'Brien Must Go",
+      "actors": [
+        "Conan O'Brien"
+      ],
+      "genres": [
+        "Documentary",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Norway",
+        "S1E2": "Argentina",
+        "S1E3": "Thailand",
+        "S1E4": "Ireland",
+        "S3E1": "India",
+        "S3E2": "The Netherlands",
+        "S3E3": "Morocco",
+        "S3E4": "The Philippines"
+      },
+      "overview": "Conan O'Brien visits new friends he met through his podcast, \"Conan O'Brien Needs a Fan,\" where he dives deep with listeners from across the country and the world.",
+      "concluded": false,
+      "createdAt": "2026-08-30T00:23:29.202Z",
+      "directors": [
+        "Conan O'Brien",
+        "Jeff Ross"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-30T00:23:57.879Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ktrkqJrNoIBufIszGnU5xOPdtqX.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 3,
+        "title": "Morocco",
+        "airDate": "2026-09-04"
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 2,
+        "title": "Argentina",
+        "progressUpdatedAt": "2026-08-30T00:23:57.879Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-30T00:23:50.785Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        4,
+        3,
+        4
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-30T00:23:57.879Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 76
+    },
+    {
+      "id": "show-1788049388407",
+      "title": "Lanterns",
+      "actors": [
+        "Kyle Chandler",
+        "Aaron Pierre",
+        "Kelly Macdonald",
+        "Garret Dillahunt",
+        "Poorna Jagannathan"
+      ],
+      "genres": [
+        "Drama",
+        "Mystery",
+        "Sci-Fi",
+        "Fantasy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Trust Fall",
+        "S1E3": "OutKast",
+        "S1E4": "The Weenie",
+        "S1E5": "Lights Out",
+        "S1E6": "Bad Optics"
+      },
+      "overview": "Two intergalactic cops, new recruit John Stewart and Lantern legend Hal Jordan, are drawn into a dark, Earth-based mystery as they investigate a murder in the American heartland.",
+      "concluded": false,
+      "createdAt": "2026-08-30T00:23:08.407Z",
+      "directors": [
+        "Damon Lindelof",
+        "Tom King",
+        "Chris Mundy"
+      ],
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-30T00:23:51.047Z",
+      "userScore": 8,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://static.tvmaze.com/uploads/images/original_untouched/637/1592971.jpg",
+      "nextEpisode": {
+        "season": 1,
+        "episode": 6,
+        "title": "TBA",
+        "airDate": "2026-09-20",
+        "overview": "The mystery behind the murder reaches a boiling point."
+      },
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 2,
+        "title": "Trust Fall",
+        "progressUpdatedAt": "2026-08-30T00:23:51.047Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-30T00:23:29.485Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-30T00:23:51.047Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 83
+    },
+    {
+      "id": "show-1786730034562-706033-0",
+      "title": "Growing Pains",
+      "actors": [
+        "Alan Thicke",
+        "Joanna Kerns",
+        "Kirk Cameron",
+        "Tracey Gold",
+        "Jeremy Miller"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S7E1": "Back to School",
+        "S7E2": "Stop, Luke, and Listen",
+        "S7E3": "In Vino Veritas",
+        "S7E4": "Paper Tigers",
+        "S7E5": "The Young and the Homeless",
+        "S7E6": "Jason Sings the Blues",
+        "S7E7": "The Kid's Still Got It",
+        "S7E8": "There Must Be a Pony",
+        "S7E9": "The Big Fix",
+        "S7E10": "Home Malone",
+        "S7E11": "Bad Day Cafe",
+        "S7E12": "B=MC2",
+        "S7E13": "It's Not Easy Being Green",
+        "S7E14": "The Call of the Wild",
+        "S7E15": "Honest Abe",
+        "S7E16": "Vicious Cycle",
+        "S7E17": "Menage a Luke",
+        "S7E18": "The Five Fingers of Ben",
+        "S7E19": "Don't Go Changin'",
+        "S7E20": "The Truck Stops Here",
+        "S7E21": "Maggie's Brilliant Career",
+        "S7E22": "The Wrath of Con Ed",
+        "S7E23": "The Last Picture Show (1)",
+        "S7E24": "The Last Picture Show (2)"
+      },
+      "overview": "Fatherhood has taken on a whole new meaning for Jason Seaver, who has assumed the chores of cooking, cleaning and minding the kids so that his wife, Maggie, can pursue a career in journalism after spending 15 years as a housewife.",
+      "concluded": true,
+      "createdAt": "2026-08-14T17:53:54.562Z",
+      "directors": [
+        "Neal Marlens",
+        "Steve Marshall",
+        "Arnold Margolin"
+      ],
+      "isStarter": true,
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-30T00:23:29.485Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/rwr4VtrwuUuRbIGz5Nar0QmPoNO.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 7,
+      "latestWatched": {
+        "season": 7,
+        "episode": 24,
+        "title": "The Last Picture Show (2)",
+        "progressUpdatedAt": "2026-08-30T00:23:29.485Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-30T00:23:29.485Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        22,
+        22,
+        26,
+        22,
+        26,
+        24,
+        24
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-30T00:23:29.485Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-14T17:33:43.819Z",
+      "rottenTomatoesScore": 65
+    },
+    {
+      "id": "show-1786730034562-662368-1",
+      "title": "Who's the Boss?",
+      "actors": [
+        "Tony Danza",
+        "Judith Light",
+        "Alyssa Milano",
+        "Danny Pintauro",
+        "Katherine Helmond"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S8E1": "Seer of Love",
+        "S8E2": "An Affair to Forget",
+        "S8E3": "Misery",
+        "S8E4": "Selling Sam Short",
+        "S8E5": "Tony Bags a Big One",
+        "S8E6": "A Well-Kept Housekeeper",
+        "S8E7": "Death and Love (1)",
+        "S8E8": "Death and Love (2)",
+        "S8E9": "Grandmommie Dearest",
+        "S8E10": "Field of Screams",
+        "S8E11": "This Sold House",
+        "S8E12": "Tony Can You Spare a Dime?",
+        "S8E13": "Mrs. Al",
+        "S8E14": "Who's the Boss?",
+        "S8E15": "Tony Micelli, This Is Your Life",
+        "S8E16": "Allergic to Love",
+        "S8E17": "Better Off Wed (1)",
+        "S8E18": "Better Off Wed (2)",
+        "S8E19": "Tony and the Honeymooners",
+        "S8E20": "Split Decision",
+        "S8E21": "Mr. Micelli Builds His Dream House",
+        "S8E22": "Savor the Veal (1)",
+        "S8E23": "Savor the Veal (2)",
+        "S8E24": "Savor the Veal (3)"
+      },
+      "overview": "A former professional baseball player, along with his preteen daughter, moves into New York advertising executive Angela Bower's house to be both a housekeeper and a father figure to her young son. Tony 's laid-back personality contrasts with Angela's type-A behavior.",
+      "concluded": true,
+      "createdAt": "2026-08-14T17:53:54.562Z",
+      "directors": [
+        "Blake Hunter",
+        "Danny Kallis"
+      ],
+      "isStarter": true,
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-30T00:23:29.486Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/xKqLdmlf7FJ2VKYtA0qjBgg89RJ.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 8,
+      "latestWatched": {
+        "season": 8,
+        "episode": 24,
+        "title": "Savor the Veal (3)",
+        "progressUpdatedAt": "2026-08-30T00:23:29.486Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-30T00:23:29.486Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        22,
+        26,
+        24,
+        24,
+        25,
+        26,
+        25,
+        24
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-30T00:23:29.486Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-14T17:33:43.820Z",
+      "rottenTomatoesScore": 74
+    },
+    {
+      "id": "show-1786730034562-582559-2",
+      "title": "MADtv",
+      "actors": [
+        "Aries Spears",
+        "Mo Collins",
+        "Nicole Sullivan",
+        "Alex Borstein",
+        "Ike Barinholtz"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S15E1": "Episode One",
+        "S15E2": "Episode Two",
+        "S15E3": "Episode Three",
+        "S15E4": "Episode Four",
+        "S15E5": "Episode Five",
+        "S15E6": "Episode Six",
+        "S15E7": "Episode Seven",
+        "S15E8": "Episode Eight"
+      },
+      "overview": "MADtv is an American sketch comedy television series originally inspired by Mad magazine. The one-hour show aired Saturday nights on Fox.",
+      "concluded": true,
+      "createdAt": "2026-08-14T17:53:54.562Z",
+      "directors": [
+        "David Salzman",
+        "Fax Bahr",
+        "Adam Small"
+      ],
+      "isStarter": true,
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-30T00:23:29.487Z",
+      "userNotes": "Mongo like Mad TV",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/s5VqxC5Bhnotw0zaf0DNGSSOqGg.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 15,
+      "latestWatched": {
+        "season": 15,
+        "episode": 8,
+        "title": "Episode Eight",
+        "progressUpdatedAt": "2026-08-30T00:23:29.487Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-30T00:23:29.487Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        20,
+        22,
+        25,
+        25,
+        25,
+        27,
+        25,
+        25,
+        25,
+        23,
+        22,
+        22,
+        16,
+        17,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-30T00:23:29.487Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-14T17:33:43.821Z",
+      "rottenTomatoesScore": 71
+    },
+    {
+      "id": "show-1786730034562-606985-3",
+      "title": "Saturday Night Live",
+      "actors": [
+        "Ensemble Cast"
+      ],
+      "genres": [
+        "Comedy",
+        "News"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S51E1": "Bad Bunny / Doja Cat",
+        "S51E2": "Amy Poehler / Role Model",
+        "S51E3": "Sabrina Carpenter",
+        "S51E4": "Miles Teller / Brandi Carlile",
+        "S51E5": "Nikki Glaser / sombr",
+        "S51E6": "Glen Powell / Olivia Dean",
+        "S51E7": "Melissa McCarthy / Dijon",
+        "S51E8": "Josh O'Connor / Lily Allen",
+        "S51E9": "Ariana Grande / Cher",
+        "S52E1": "Jalen Brunson / KATSEYE",
+        "S52E2": "Dakota Johnson / Turnstile",
+        "S52E3": "Shane Gillis / Rosal\u00eda",
+        "S52E4": "Inde\u00a0Navarrette / Gracie Abrams",
+        "S51E10": "Finn Wolfhard / A$AP Rocky",
+        "S51E11": "Teyana Taylor / Geese",
+        "S51E12": "Alexander Skarsg\u00e5rd / Cardi B",
+        "S51E13": "Connor Storrie / Mumford & Sons",
+        "S51E14": "Ryan Gosling / Gorillaz",
+        "S51E15": "Harry Styles",
+        "S51E16": "Jack Black / Jack White",
+        "S51E17": "Colman Domingo / Anitta",
+        "S51E18": "Olivia Rodrigo",
+        "S51E19": "Matt Damon / Noah Kahan",
+        "S51E20": "Will Ferrell / Paul McCartney"
+      },
+      "overview": "A late-night live television sketch comedy and variety show created by Lorne Michaels. The show's comedy sketches, which parody contemporary culture and politics, are performed by a large and varying cast of repertory and newer cast members. Each episode is hosted by a celebrity guest, who usually delivers an opening monologue and performs in sketches with the cast, and features performances by a musical guest.",
+      "concluded": false,
+      "createdAt": "2026-08-14T17:53:54.562Z",
+      "directors": [
+        "Dick Ebersol",
+        "Lorne Michaels"
+      ],
+      "isStarter": true,
+      "ownerName": "Greg",
+      "updatedAt": "2026-08-30T00:23:29.490Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Greg"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/sSAX59Kf01lBRkBW4UcIL4kIoIm.jpg",
+      "nextEpisode": {
+        "season": 52,
+        "episode": 1,
+        "title": "Season 52 Premiere",
+        "airDate": "2026-10-03",
+        "overview": "Live from New York, SNL kicks off its historic 52nd season with music, sketches, and Weekend Update."
+      },
+      "totalSeasons": 52,
+      "latestWatched": {
+        "season": 51,
+        "episode": 20,
+        "title": "Will Ferrell / Paul McCartney",
+        "progressUpdatedAt": "2026-08-30T00:23:29.490Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-30T00:23:29.490Z",
+      "streamingService": "Peacock",
+      "episodesPerSeason": [
+        24,
+        22,
+        20,
+        20,
+        20,
+        13,
+        20,
+        20,
+        19,
+        17,
+        18,
+        20,
+        13,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        19,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        19,
+        20,
+        12,
+        22,
+        22,
+        22,
+        22,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        21,
+        18,
+        20,
+        21,
+        18,
+        20,
+        20,
+        20,
+        1
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-30T00:23:29.490Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-14T17:33:43.822Z",
+      "rottenTomatoesScore": 69
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:34.776Z",
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

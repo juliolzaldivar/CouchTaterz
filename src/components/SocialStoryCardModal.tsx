@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   X, 
   Download, 
@@ -20,15 +20,27 @@ import {
   RectangleVertical,
   Square,
   Quote,
-  Trophy
+  Trophy,
+  Camera,
+  Image as ImageIcon
 } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import { TvShow, User } from '../types';
 import { getTitleForEpisode, getMaxAiredEpisodeForSeason } from '../utils/airedEpisodes';
 import { getEpisodeAirDate } from '../utils/showSchedules';
+import { getShowBannerImage, getShowFallbackBanner } from '../utils/showBanners';
 
 export type CardFormat = 'story' | 'portrait' | 'square';
+
+export interface CardImageOption {
+  id: string;
+  url: string;
+  thumbnail: string;
+  label: string;
+  source: string;
+  category: 'default' | 'episode' | 'backdrop';
+}
 
 interface SocialStoryCardModalProps {
   isOpen: boolean;
@@ -36,7 +48,7 @@ interface SocialStoryCardModalProps {
   show: TvShow | null;
   currentUser: User | null;
   boardId?: string;
-  triggerReason?: 'completed' | 'high_rating' | 'manual';
+  triggerReason?: 'completed' | 'high_rating' | 'manual' | 'episode_review';
   allUsers?: User[];
   friendsList?: string[];
   theme?: 'dark' | 'light';
@@ -46,30 +58,50 @@ interface SocialStoryCardModalProps {
 type CardTheme = 'neon' | 'cyberpunk' | 'twilight' | 'emerald' | 'sunset';
 type ModalTab = 'story' | 'invite';
 
+// Utility to get critic review score descriptor and color (IGN style)
+const getScoreDescriptor = (score: number | undefined | null): { label: string; color: string } => {
+  if (score == null) return { label: 'REVIEW', color: '#22c55e' };
+  if (score >= 10) return { label: 'MASTERPIECE', color: '#22c55e' };
+  if (score >= 9) return { label: 'AMAZING', color: '#22c55e' };
+  if (score >= 8) return { label: 'GREAT', color: '#22c55e' };
+  if (score >= 7) return { label: 'GOOD', color: '#10b981' };
+  if (score >= 6) return { label: 'OKAY', color: '#eab308' };
+  if (score >= 5) return { label: 'MEDIOCRE', color: '#f59e0b' };
+  if (score >= 4) return { label: 'BAD', color: '#ef4444' };
+  return { label: 'POOR', color: '#ef4444' };
+};
+
 // Utility to convert image URL to base64 Data URL via server proxy to prevent CORS export breaks
 const convertToBase64DataUrl = async (imgUrl: string): Promise<string> => {
-  if (!imgUrl) return '';
-  if (imgUrl.startsWith('data:')) return imgUrl;
+  if (!imgUrl || typeof imgUrl !== 'string') return '';
+  const cleanUrl = imgUrl.trim();
+  if (!cleanUrl) return '';
+  if (cleanUrl.startsWith('data:')) return cleanUrl;
 
-  const proxyUrl = imgUrl.startsWith('http')
-    ? `/api/image-proxy?url=${encodeURIComponent(imgUrl)}`
-    : imgUrl;
+  const proxyUrl = cleanUrl.startsWith('http')
+    ? `/api/image-proxy?url=${encodeURIComponent(cleanUrl)}`
+    : cleanUrl;
 
   try {
     const res = await fetch(proxyUrl);
     if (res.ok) {
       const blob = await res.blob();
+      // Guard against tiny empty images (e.g. 1x1 blank responses < 300 bytes)
+      if (blob.size < 300) {
+        console.warn('Image proxy returned tiny/empty payload for:', cleanUrl);
+        return '';
+      }
       return new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onloadend = () => resolve((reader.result as string) || imgUrl);
-        reader.onerror = () => resolve(imgUrl);
+        reader.onloadend = () => resolve((reader.result as string) || cleanUrl);
+        reader.onerror = () => resolve(cleanUrl);
         reader.readAsDataURL(blob);
       });
     }
   } catch (err) {
     console.warn('Image conversion to base64 failed:', err);
   }
-  return imgUrl;
+  return cleanUrl;
 };
 
 export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
@@ -94,6 +126,12 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
   const [copiedInviteLink, setCopiedInviteLink] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const isMobile = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+
+  // Alternative Official Images & Episode Stills State
+  const [selectedImageOption, setSelectedImageOption] = useState<CardImageOption | null>(null);
+  const [availableImages, setAvailableImages] = useState<CardImageOption[]>([]);
+  const [isLoadingImages, setIsLoadingImages] = useState<boolean>(false);
 
   // Generate URLs
   const username = currentUser?.id || boardId || 'default';
@@ -102,30 +140,101 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
   const shareUrl = `${window.location.origin}/p/${encodeURIComponent(username)}${showParam}`;
   const inviteUrl = `${window.location.origin}/?inviteFrom=${encodeURIComponent(username)}${show?.id ? `&show=${encodeURIComponent(show.id)}` : ''}`;
 
+  // Current episode context for stills search
+  const epSeason = show?.latestWatched?.season || 1;
+  const epNumber = show?.latestWatched?.episode || 0;
+
+  // All available episode reviews logged for this show
+  const availableEpisodeReviews = useMemo(() => {
+    if (!show?.episodeReviews) return [];
+    return Object.entries(show.episodeReviews)
+      .filter(([_, rev]) => typeof rev === 'string' && rev.trim().length > 0)
+      .map(([key, review]) => {
+        const match = key.match(/S(\d+)E(\d+)/i);
+        const season = match ? parseInt(match[1], 10) : 1;
+        const episode = match ? parseInt(match[2], 10) : 0;
+        return { key, season, episode, review: review as string };
+      })
+      .sort((a, b) => b.season - a.season || b.episode - a.episode);
+  }, [show?.episodeReviews]);
+
+  // Default reviewed episode key (prioritize latest watched if reviewed, or first logged review)
+  const defaultEpKey = useMemo(() => {
+    const watchedEp = show?.latestWatched?.episode || 0;
+    const watchedSeason = show?.latestWatched?.season || 1;
+    const key = watchedEp >= 1 ? `S${watchedSeason}E${watchedEp}` : '';
+    if (key && (show?.episodeReviews?.[key] || show?.episodeScores?.[key])) return key;
+    if (availableEpisodeReviews.length > 0) return availableEpisodeReviews[0].key;
+    const scoreKeys = Object.keys(show?.episodeScores || {});
+    if (scoreKeys.length > 0) return scoreKeys[0];
+    return key || 'S1E1';
+  }, [show, availableEpisodeReviews]);
+
+  const [activeReviewEpKey, setActiveReviewEpKey] = useState<string>(defaultEpKey);
+
+  useEffect(() => {
+    setActiveReviewEpKey(defaultEpKey);
+  }, [defaultEpKey]);
+
+  const parsedEp = useMemo(() => {
+    const match = activeReviewEpKey.match(/S(\d+)E(\d+)/i);
+    if (match) {
+      return { season: parseInt(match[1], 10), episode: parseInt(match[2], 10) };
+    }
+    return {
+      season: show?.latestWatched?.season || 1,
+      episode: show?.latestWatched?.episode || 0
+    };
+  }, [activeReviewEpKey, show]);
+
+  // Track whether user explicitly selected an episode review vs general tagline/notes
+  const [isEpisodeReviewSelected, setIsEpisodeReviewSelected] = useState<boolean>(() => {
+    return triggerReason === 'episode_review' || Boolean(show?.latestWatched?.episode && show?.episodeReviews?.[`S${show?.latestWatched?.season || 1}E${show?.latestWatched?.episode}`]);
+  });
+
   // Default quote / tagline based on episode review, triggerReason, or show notes
   useEffect(() => {
     if (!show) return;
     const watchedEp = show.latestWatched?.episode || 0;
     const currentEpKey = watchedEp >= 1 ? `S${show.latestWatched?.season || 1}E${watchedEp}` : '';
     const currentEpReview = currentEpKey ? show.episodeReviews?.[currentEpKey] : undefined;
+    const firstReview = availableEpisodeReviews[0];
 
-    if (currentEpReview && currentEpReview.trim()) {
+    if (triggerReason === 'episode_review') {
+      setIsEpisodeReviewSelected(true);
+      if (currentEpReview && currentEpReview.trim()) {
+        setActiveReviewEpKey(currentEpKey);
+        setCustomQuote(`"${currentEpReview.trim()}"`);
+      } else if (firstReview) {
+        setActiveReviewEpKey(firstReview.key);
+        setCustomQuote(`"${firstReview.review.trim()}"`);
+      } else {
+        setActiveReviewEpKey(currentEpKey || 'S1E1');
+        setCustomQuote(`"Just watched S${show.latestWatched?.season || 1}E${watchedEp}! Incredible episode."`);
+      }
+    } else if (currentEpReview && currentEpReview.trim()) {
+      setIsEpisodeReviewSelected(true);
+      setActiveReviewEpKey(currentEpKey);
       setCustomQuote(`"${currentEpReview.trim()}"`);
     } else if (show.userNotes && show.userNotes.trim()) {
+      setIsEpisodeReviewSelected(false);
       setCustomQuote(`"${show.userNotes.trim()}"`);
     } else if (triggerReason === 'completed' || show.status === 'Completed') {
+      setIsEpisodeReviewSelected(false);
       setCustomQuote(`"Just completed watching ${show.title}! Absolute masterpiece."`);
     } else if (triggerReason === 'high_rating' || (show.userScore && show.userScore >= 9)) {
+      setIsEpisodeReviewSelected(false);
       setCustomQuote(`"Giving ${show.title} a ★ ${show.userScore || 10}/10 score! Don't miss this show."`);
     } else {
+      setIsEpisodeReviewSelected(false);
       setCustomQuote(`"Currently watching ${show.title} on CouchTaterz!"`);
     }
-  }, [show, triggerReason]);
+  }, [show, triggerReason, availableEpisodeReviews]);
 
   // Load and convert poster/banner and avatar images to base64 Data URLs
   useEffect(() => {
     if (!show) return;
-    const rawBanner = show.bannerImage || '/fallback-tv.jpg';
+    const rawBanner = selectedImageOption?.url || getShowBannerImage(show);
 
     convertToBase64DataUrl(rawBanner)
       .then((b64) => setBannerDataUrl(b64 || rawBanner));
@@ -135,7 +244,77 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
     } else {
       setAvatarDataUrl('');
     }
-  }, [show, currentUser]);
+  }, [show, currentUser, selectedImageOption]);
+
+  // Fetch official episodic stills & series backdrops
+  useEffect(() => {
+    if (!isOpen || !show) return;
+
+    const rawBanner = getShowBannerImage(show);
+    const defaultOption: CardImageOption = {
+      id: 'default-banner',
+      url: rawBanner,
+      thumbnail: rawBanner,
+      label: 'Series Poster',
+      source: 'Official Poster',
+      category: 'default',
+    };
+
+    setSelectedImageOption(defaultOption);
+    setAvailableImages([defaultOption]);
+    setIsLoadingImages(true);
+
+    const s = epSeason || 1;
+    const e = epNumber && epNumber > 0 ? epNumber : 1;
+
+    fetch(`/api/episode-images?title=${encodeURIComponent(show.title)}&season=${s}&episode=${e}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const options: CardImageOption[] = [defaultOption];
+        const seenUrls = new Set<string>([rawBanner]);
+
+        if (Array.isArray(data.episodeStills)) {
+          data.episodeStills.forEach((still: any, idx: number) => {
+            if (still.url && !seenUrls.has(still.url)) {
+              seenUrls.add(still.url);
+              options.push({
+                id: still.id || `ep-still-${idx + 1}`,
+                url: still.url,
+                thumbnail: still.thumbnail || still.url,
+                label: still.label || `Scene Still ${idx + 1}`,
+                source: still.source || 'Episode Still',
+                category: 'episode',
+              });
+            }
+          });
+        }
+
+        if (Array.isArray(data.showBackdrops)) {
+          data.showBackdrops.forEach((bd: any, idx: number) => {
+            if (bd.url && !seenUrls.has(bd.url)) {
+              seenUrls.add(bd.url);
+              options.push({
+                id: bd.id || `backdrop-${idx + 1}`,
+                url: bd.url,
+                thumbnail: bd.thumbnail || bd.url,
+                label: bd.label || `Show Backdrop ${idx + 1}`,
+                source: bd.source || 'Show Backdrop',
+                category: 'backdrop',
+              });
+            }
+          });
+        }
+
+        setAvailableImages(options);
+      })
+      .catch((err) => {
+        console.warn('Failed to load episodic stills:', err);
+      })
+      .finally(() => {
+        setIsLoadingImages(false);
+      });
+  }, [isOpen, show?.id, show?.title, epSeason, epNumber]);
 
   // Generate QR Code data URL based on active mode
   useEffect(() => {
@@ -157,6 +336,30 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleSelectImage = async (option: CardImageOption) => {
+    setSelectedImageOption(option);
+    showToast(`Artwork updated: ${option.label}`);
+    const b64 = await convertToBase64DataUrl(option.url);
+    setBannerDataUrl(b64 || option.url);
+  };
+
+  const handleResetToDefaultImage = async () => {
+    if (!show) return;
+    const rawBanner = getShowBannerImage(show);
+    const defaultOption: CardImageOption = {
+      id: 'default-banner',
+      url: rawBanner,
+      thumbnail: rawBanner,
+      label: 'Series Poster',
+      source: 'Official Poster',
+      category: 'default',
+    };
+    setSelectedImageOption(defaultOption);
+    showToast('Reset to series poster');
+    const b64 = await convertToBase64DataUrl(rawBanner);
+    setBannerDataUrl(b64 || rawBanner);
   };
 
   // Theme styling definitions
@@ -218,11 +421,16 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
 
   const currentTheme = themeStyles[selectedTheme];
 
-  const currentEpSeason = show.latestWatched?.season || 1;
-  const currentEpNumber = show.latestWatched?.episode || 0;
+  const currentEpSeason = parsedEp.season;
+  const currentEpNumber = parsedEp.episode;
   const currentEpKey = `S${currentEpSeason}E${currentEpNumber}`;
-  const currentEpReview = show.episodeReviews?.[currentEpKey];
-  const currentEpScore = show.episodeScores?.[currentEpKey];
+  const currentEpAltPaddedKey = `S${String(currentEpSeason).padStart(2, '0')}E${String(currentEpNumber).padStart(2, '0')}`;
+  const currentEpLegacyKey = `${currentEpSeason}-${currentEpNumber}`;
+  const currentEpReview = show.episodeReviews?.[currentEpKey] || show.episodeReviews?.[currentEpAltPaddedKey] || show.episodeReviews?.[currentEpLegacyKey];
+  const currentEpScore = show.episodeScores?.[currentEpKey] ?? show.episodeScores?.[currentEpAltPaddedKey] ?? show.episodeScores?.[currentEpLegacyKey];
+  const rawScore = currentEpScore != null ? currentEpScore : (show.userScore != null ? show.userScore : 10);
+  const scoreVal = rawScore;
+  const scoreDescriptor = getScoreDescriptor(scoreVal);
   const isFeaturedEpReview = Boolean(
     (currentEpReview &&
     currentEpReview.trim() &&
@@ -230,9 +438,23 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
     Boolean(currentEpScore && activeTab === 'story')
   );
 
-  // Distinguish Episode Score (Star) and Series Score (Trophy)
-  const isEpisodeReviewMode = Boolean(activeTab !== 'invite' && (isFeaturedEpReview || currentEpScore));
-  const showSeriesScoreOnPoster = Boolean(show.userScore);
+  // Episode Review Card Mode:
+  // Triggered via 'episode_review', or having an episode review selected/featured.
+  const isEpisodeReviewMode = Boolean(
+    activeTab !== 'invite' && (
+      triggerReason === 'episode_review' ||
+      isEpisodeReviewSelected ||
+      isFeaturedEpReview ||
+      (currentEpScore != null && Boolean(currentEpReview))
+    )
+  );
+
+  // On episode review cards:
+  // 1. RT score is dropped
+  // 2. Series score replaces the platform cell at bottom right
+  // 3. Episode review is moved to the top right corner of the show/card image
+  const showSeriesScoreOnPoster = Boolean(show.userScore && !isEpisodeReviewMode);
+  const showRtScoreOnPoster = Boolean(show.rottenTomatoesScore && !isEpisodeReviewMode);
 
   const currentEpResolvedTitle = getTitleForEpisode(show, currentEpSeason, currentEpNumber);
   const currentEpName = (currentEpResolvedTitle && currentEpResolvedTitle !== 'Not Started' && !/^Episode \d+$/i.test(currentEpResolvedTitle))
@@ -259,6 +481,30 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
     }
   };
 
+  const quoteText = activeTab === 'invite'
+    ? `"Join me on CouchTaterz so we can track ${show.title} together!"`
+    : customQuote;
+
+  // Dynamic typography scale so reviews of any length (e.g. South Park) are never cut off or clamped
+  const getQuoteTypography = (text: string, format: CardFormat) => {
+    const len = text.length;
+    if (format === 'square') {
+      if (len > 180) return 'text-[7.5px] sm:text-[8px] leading-tight';
+      if (len > 110) return 'text-[8px] sm:text-[8.5px] leading-snug';
+      return 'text-[8.5px] sm:text-[9.5px] leading-snug';
+    }
+    if (format === 'portrait') {
+      if (len > 180) return 'text-[8px] sm:text-[8.5px] leading-tight';
+      if (len > 110) return 'text-[8.5px] sm:text-[9px] leading-snug';
+      return 'text-[9px] sm:text-[10px] leading-snug';
+    }
+    // story 9:16
+    if (len > 220) return 'text-[8.5px] sm:text-[9px] leading-tight';
+    if (len > 130) return 'text-[9px] sm:text-[9.5px] leading-snug';
+    if (len > 70) return 'text-[9.5px] sm:text-[10.5px] leading-snug';
+    return 'text-[10.5px] sm:text-[11.5px] leading-relaxed';
+  };
+
   const getFormatSuffix = (fmt: CardFormat) => {
     switch (fmt) {
       case 'portrait': return 'feed-4x5';
@@ -267,24 +513,130 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
     }
   };
 
-  // Export as high-res PNG image
+  // Export as high-res PNG image with native mobile Photo Library integration
   const handleDownloadPng = async () => {
-    if (!cardRef.current) return;
+    if (!cardRef.current || !show) return;
     setIsExporting(true);
     try {
-      const pixelRatio = cardFormat === 'story' ? 3.375 : 3.0;
-      const dataUrl = await toPng(cardRef.current, {
+      const isMobileDevice = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+
+      // 1. Ensure banner image is converted to a base64 Data URL to prevent CORS canvas blanking
+      let activeBanner = bannerDataUrl;
+      if (!activeBanner || !activeBanner.startsWith('data:')) {
+        const candidateUrl = selectedImageOption?.url || getShowBannerImage(show);
+        const converted = await convertToBase64DataUrl(candidateUrl);
+        if (converted && converted.startsWith('data:')) {
+          activeBanner = converted;
+          setBannerDataUrl(converted);
+        }
+      }
+
+      // 2. Ensure avatar image is converted to base64 Data URL if present
+      if (currentUser?.avatarUrl && (!avatarDataUrl || !avatarDataUrl.startsWith('data:'))) {
+        const convertedAvatar = await convertToBase64DataUrl(currentUser.avatarUrl);
+        if (convertedAvatar && convertedAvatar.startsWith('data:')) {
+          setAvatarDataUrl(convertedAvatar);
+        }
+      }
+
+      // 3. Allow React to flush any state updates to DOM and ensure images decode
+      await new Promise((r) => setTimeout(r, 60));
+
+      const cardImages = Array.from(cardRef.current.querySelectorAll('img'));
+      await Promise.all(
+        cardImages.map((img) => {
+          if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+          return new Promise((resolve) => {
+            img.onload = () => resolve(true);
+            img.onerror = () => resolve(false);
+            setTimeout(resolve, 1000);
+          });
+        })
+      );
+
+      // 4. Set safe pixelRatio:
+      // Mobile Safari crashes/blanks out when pixelRatio exceeds hardware canvas memory (>16MP).
+      // pixelRatio 2.0 on mobile yields sharp ~700x1200 exports while staying 100% reliable.
+      const pixelRatio = isMobileDevice ? 2.0 : (cardFormat === 'story' ? 3.0 : 2.5);
+
+      // 5. iOS Safari WebKit SVG foreignObject rasterizer warmup pass
+      if (isMobileDevice) {
+        try {
+          await toPng(cardRef.current, { cacheBust: false, skipFonts: true, pixelRatio: 1 });
+        } catch {}
+        await new Promise((r) => setTimeout(r, 50));
+      }
+
+      let dataUrl = await toPng(cardRef.current, {
         quality: 0.98,
         pixelRatio,
+        skipFonts: true,
         cacheBust: false,
+        backgroundColor: '#0c0e14',
       });
 
+      // 6. Verification check: if output was blank or corrupted (< 2000 bytes), run fallback pass
+      if (!dataUrl || dataUrl === 'data:,' || dataUrl.length < 2000) {
+        console.warn('Initial card capture returned blank/small payload, executing fallback pass...');
+        await new Promise((r) => setTimeout(r, 100));
+        dataUrl = await toPng(cardRef.current, {
+          quality: 0.95,
+          pixelRatio: 1.5,
+          skipFonts: true,
+          cacheBust: true,
+          backgroundColor: '#0c0e14',
+        });
+      }
+
       const suffix = getFormatSuffix(cardFormat);
+      const fileName = `${show.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-couchtaterz-${suffix}.png`;
+
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const file = new File([blob], fileName, { type: 'image/png' });
+
+      // Automatically copy to clipboard for quick paste on iOS / Android
+      try {
+        if (navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        }
+      } catch {}
+
+      // On iOS and Android, web browsers cannot directly write to the Camera Roll / Photos app via <a download>.
+      // The native Web Share API with files: [file] provides the OS "Save Image" button to save directly into Photos.
+      if (isMobileDevice && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            title: `${show.title} - CouchTaterz Card`,
+            text: `Save this review card to your photos or share with friends:`,
+            files: [file],
+          });
+          showToast('Tap "Save Image" in the share sheet to store in Photos!');
+          return;
+        } catch (shareErr: any) {
+          if (shareErr?.name === 'AbortError') {
+            // User dismissed share sheet; continue to provide direct file download fallback
+          } else {
+            console.warn('Mobile web share error, falling back to download:', shareErr);
+          }
+        }
+      }
+
+      // High-performance blob URL download (reliable across mobile browsers and desktop without data URI memory caps)
+      const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = `${show.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-couchtaterz-${suffix}.png`;
-      link.href = dataUrl;
+      link.download = fileName;
+      link.href = blobUrl;
+      document.body.appendChild(link);
       link.click();
-      showToast(`${getFormatLabel(cardFormat)} saved to downloads!`);
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 3000);
+
+      if (isMobileDevice) {
+        showToast('Downloaded to device Files/Downloads! Use "Share Card" to save to Photos.');
+      } else {
+        showToast(`${getFormatLabel(cardFormat)} saved to downloads!`);
+      }
     } catch (err) {
       console.error('Failed to export card image:', err);
       showToast('Export failed. Please try again.');
@@ -306,11 +658,16 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
       const file = new File([blob], `${show.title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-couchtaterz-${suffix}.png`, { type: 'image/png' });
 
       const targetUrl = activeTab === 'invite' ? inviteUrl : shareUrl;
+      const cleanQuote = customQuote ? customQuote.replace(/^["']|["']$/g, '').trim() : '';
       const shareTitle = activeTab === 'invite' 
         ? `Watch ${show.title} with me on CouchTaterz!` 
+        : isEpisodeReviewMode
+        ? `${displayName}'s Review: ${show.title} S${currentEpSeason}E${currentEpNumber}`
         : `${displayName}'s CouchTaterz Card`;
       const shareText = activeTab === 'invite'
         ? `Hey! Join me as a Binge Buddy on CouchTaterz so we can track ${show.title} and swap recommendations:`
+        : isEpisodeReviewMode && cleanQuote
+        ? `${displayName}'s Take on ${show.title} S${currentEpSeason}E${currentEpNumber}${currentEpName ? ` "${currentEpName}"` : ''}:\n"${cleanQuote}"\n\nTrack ${show.title} on CouchTaterz:`
         : `Check out ${show.title} on CouchTaterz!`;
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -435,7 +792,7 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
     : show.nextEpisode?.airDate;
 
   const shouldShowAirDateBanner = isEpisodeReviewMode
-    ? Boolean(displayAirSeason !== undefined && displayAirEpisode !== undefined)
+    ? false // Cleanly integrated into the Episode Take banner header so review text has full height
     : Boolean(shouldShowNextEpNotification && show.nextEpisode);
 
   // Action badge text based on status or user rating
@@ -707,6 +1064,99 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
               ))}
             </div>
           </div>
+
+          {/* Episode Stills & Official Artwork Selector */}
+          <div className="bg-[#161822] p-2 sm:p-2.5 px-2.5 sm:px-3 rounded-xl sm:rounded-2xl border border-white/5 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Camera className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <span className="text-[10px] sm:text-[11px] font-black text-slate-300 uppercase tracking-wider truncate">
+                  Episode Stills & Artwork:
+                </span>
+                {availableImages.length > 1 && (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 font-bold shrink-0">
+                    {availableImages.length} available
+                  </span>
+                )}
+                {currentEpSeason && currentEpNumber > 0 && (
+                  <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-white/5 text-slate-400 border border-white/10 font-bold shrink-0">
+                    S{currentEpSeason}E{currentEpNumber}
+                  </span>
+                )}
+              </div>
+
+              {selectedImageOption && selectedImageOption.category !== 'default' && (
+                <button
+                  type="button"
+                  onClick={handleResetToDefaultImage}
+                  className="text-[10px] text-purple-400 hover:text-purple-300 font-bold underline cursor-pointer shrink-0"
+                >
+                  Reset to Poster
+                </button>
+              )}
+            </div>
+
+            {/* Horizontal Carousel of Official Stills & Artwork */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar scrollbar-none">
+              {availableImages.map((img) => {
+                const isSelected = selectedImageOption?.id === img.id || (!selectedImageOption && img.category === 'default');
+                return (
+                  <button
+                    key={img.id}
+                    type="button"
+                    onClick={() => handleSelectImage(img)}
+                    title={`${img.label} • ${img.source}`}
+                    className={`relative group shrink-0 w-20 sm:w-24 aspect-[16/9] rounded-lg overflow-hidden border transition-all cursor-pointer ${
+                      isSelected
+                        ? 'ring-2 ring-purple-400 border-white/40 scale-[1.02] shadow-md shadow-purple-500/25'
+                        : 'border-white/10 opacity-70 hover:opacity-100 hover:border-white/30'
+                    }`}
+                  >
+                    <img
+                      src={img.thumbnail}
+                      alt={img.label}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.src = getShowFallbackBanner(show, e.currentTarget.src);
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+
+                    {/* Category indicator badge */}
+                    <span className="absolute top-1 left-1 px-1 py-0.2 rounded text-[7px] sm:text-[7.5px] font-black uppercase tracking-wider bg-black/60 backdrop-blur-md text-slate-200 border border-white/10 leading-none">
+                      {img.category === 'episode' ? 'Still' : img.category === 'backdrop' ? 'Backdrop' : 'Poster'}
+                    </span>
+
+                    {/* Active checkmark */}
+                    {isSelected && (
+                      <span className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full bg-purple-500 text-white flex items-center justify-center shadow">
+                        <Check className="w-2.5 h-2.5" />
+                      </span>
+                    )}
+
+                    {/* Title label caption */}
+                    <span className="absolute bottom-1 left-1 right-1 text-[7.5px] sm:text-[8px] font-bold text-white truncate text-left drop-shadow leading-tight">
+                      {img.label}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {isLoadingImages && (
+                <>
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="shrink-0 w-20 sm:w-24 aspect-[16/9] rounded-lg bg-white/5 animate-pulse border border-white/5 flex items-center justify-center"
+                    >
+                      <Camera className="w-3.5 h-3.5 text-white/20" />
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* TAB 1: SOCIAL STORY EXPORT CONTROLS */}
@@ -729,12 +1179,35 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
 
               {/* Quick preset selector pills if episode review or show notes exist */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-[10px]">
-                {currentEpReview && (
+                {availableEpisodeReviews.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      setActiveReviewEpKey(item.key);
+                      setIsEpisodeReviewSelected(true);
+                      setCustomQuote(`"${item.review.trim()}"`);
+                    }}
+                    className={`px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 shrink-0 transition-all cursor-pointer ${
+                      isEpisodeReviewMode && activeReviewEpKey === item.key
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
+                    }`}
+                  >
+                    <Crown className="w-2.5 h-2.5 text-amber-400" />
+                    <span>Use {item.key} Review</span>
+                  </button>
+                ))}
+                {!availableEpisodeReviews.some(r => r.key === currentEpKey) && currentEpReview && (
                   <button
                     type="button"
-                    onClick={() => setCustomQuote(`"${currentEpReview.trim()}"`)}
+                    onClick={() => {
+                      setActiveReviewEpKey(currentEpKey);
+                      setIsEpisodeReviewSelected(true);
+                      setCustomQuote(`"${currentEpReview.trim()}"`);
+                    }}
                     className={`px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 shrink-0 transition-all cursor-pointer ${
-                      isFeaturedEpReview
+                      isEpisodeReviewMode && activeReviewEpKey === currentEpKey
                         ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                     }`}
@@ -746,9 +1219,12 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                 {show.userNotes && (
                   <button
                     type="button"
-                    onClick={() => setCustomQuote(`"${show.userNotes.trim()}"`)}
+                    onClick={() => {
+                      setIsEpisodeReviewSelected(false);
+                      setCustomQuote(`"${show.userNotes.trim()}"`);
+                    }}
                     className={`px-2 py-0.5 rounded-lg border font-bold flex items-center gap-1 shrink-0 transition-all cursor-pointer ${
-                      customQuote === `"${show.userNotes.trim()}"`
+                      !isEpisodeReviewMode && customQuote === `"${show.userNotes.trim()}"`
                         ? 'bg-purple-500/20 text-purple-300 border-purple-500/40'
                         : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                     }`}
@@ -759,9 +1235,12 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                 )}
                 <button
                   type="button"
-                  onClick={() => setCustomQuote(`"Currently watching ${show.title} on CouchTaterz!"`)}
+                  onClick={() => {
+                    setIsEpisodeReviewSelected(false);
+                    setCustomQuote(`"Currently watching ${show.title} on CouchTaterz!"`);
+                  }}
                   className={`px-2 py-0.5 rounded-lg border font-bold shrink-0 transition-all cursor-pointer ${
-                    customQuote === `"Currently watching ${show.title} on CouchTaterz!"`
+                    !isEpisodeReviewMode && customQuote === `"Currently watching ${show.title} on CouchTaterz!"`
                       ? 'bg-blue-500/20 text-blue-300 border-blue-500/40'
                       : 'bg-white/5 text-slate-400 border-white/10 hover:text-white'
                   }`}
@@ -775,10 +1254,10 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                   value={customQuote}
                   onChange={(e) => setCustomQuote(e.target.value)}
                   placeholder="Add your note or review summary..."
-                  className="w-full bg-[#161822] border border-purple-500/40 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none h-16"
+                  className="w-full bg-[#161822] border border-purple-500/40 rounded-xl p-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none h-20"
                 />
               ) : (
-                <p className="text-xs text-slate-300 italic bg-[#161822]/80 p-2.5 rounded-xl border border-white/5 break-words line-clamp-3">
+                <p className="text-xs text-slate-300 italic bg-[#161822]/80 p-2.5 rounded-xl border border-white/5 break-words">
                   {customQuote || 'No custom note added'}
                 </p>
               )}
@@ -857,10 +1336,10 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
             id="couchtaterz-story-card"
             className={`relative ${
               cardFormat === 'portrait'
-                ? 'w-[320px] xs:w-[350px] sm:w-[380px] aspect-[4/5] rounded-[24px] sm:rounded-[28px] px-3.5 py-2.5 sm:px-4 sm:py-3'
+                ? 'w-[310px] min-[360px]:w-[325px] min-[390px]:w-[350px] sm:w-[380px] aspect-[4/5] rounded-[24px] sm:rounded-[28px] px-3.5 py-2.5 sm:px-4 sm:py-3'
                 : cardFormat === 'square'
-                ? 'w-[300px] xs:w-[330px] sm:w-[360px] aspect-[1/1] rounded-[24px] sm:rounded-[28px] p-3.5 sm:p-4'
-                : 'w-[280px] xs:w-[320px] sm:w-[340px] aspect-[9/16] rounded-[28px] sm:rounded-[32px] px-4 py-3.5 sm:px-5 sm:py-4'
+                ? 'w-[290px] min-[360px]:w-[310px] min-[390px]:w-[335px] sm:w-[360px] aspect-[1/1] rounded-[24px] sm:rounded-[28px] p-3.5 sm:p-4'
+                : 'w-[300px] min-[360px]:w-[320px] min-[390px]:w-[340px] sm:w-[360px] aspect-[9/16] rounded-[28px] sm:rounded-[32px] px-3.5 py-3 sm:px-5 sm:py-4'
             } ${currentTheme.background} border ${currentTheme.border} ${currentTheme.glow} flex flex-col justify-between overflow-hidden text-white font-sans select-none transition-all duration-300`}
             style={{
               backgroundImage: 'radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.08) 0%, transparent 70%)',
@@ -881,6 +1360,7 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                         src={avatarDataUrl || currentUser.avatarUrl}
                         alt={displayName}
                         className="w-full h-full rounded-full object-cover"
+                        crossOrigin="anonymous"
                         onError={(e) => {
                           (e.currentTarget as HTMLElement).style.display = 'none';
                         }}
@@ -916,31 +1396,84 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                 {/* Left: Poster Card */}
                 <div className="w-[100px] xs:w-[110px] sm:w-[115px] aspect-[2/3] rounded-xl overflow-hidden border border-white/15 shadow-xl relative shrink-0 bg-slate-900 group">
                   <img
-                    src={bannerDataUrl || show.bannerImage || '/fallback-tv.jpg'}
+                    src={bannerDataUrl || selectedImageOption?.url || getShowBannerImage(show)}
                     alt={show.title}
                     className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
                     onError={(e) => {
-                      e.currentTarget.src = '/fallback-tv.jpg';
+                      const target = e.currentTarget;
+                      const fallback = getShowFallbackBanner(show, target.src);
+                      if (target.src !== fallback) {
+                        target.src = fallback;
+                      }
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
 
-                  {/* Rating Overlays */}
-                  {(showSeriesScoreOnPoster || show.rottenTomatoesScore) && (
-                    <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 items-end z-10">
-                      {showSeriesScoreOnPoster && (
-                        <div className="px-1.5 py-0.5 bg-purple-600/90 border border-purple-400/40 text-white font-black text-[8.5px] rounded-lg shadow-md flex items-center gap-0.5 leading-none whitespace-nowrap backdrop-blur-md">
-                          <Trophy className="w-2.5 h-2.5 text-amber-300 shrink-0" />
-                          <span>Series {show.userScore}/10</span>
+                  {/* Rating Overlays & Episode Review Badge */}
+                  {isEpisodeReviewMode ? (
+                    <>
+                      {/* Top Left Corner of Poster: Episode Pill */}
+                      <div className="absolute top-1.5 left-1.5 z-10 max-w-[calc(100%-46px)]">
+                        <div className="px-1.5 py-0.5 bg-black/85 border border-white/20 text-slate-200 font-bold text-[7.5px] rounded-lg shadow-md leading-none whitespace-nowrap truncate backdrop-blur-md flex items-center gap-1">
+                          <span className="font-black text-amber-300 shrink-0">S{currentEpSeason}E{currentEpNumber}</span>
+                          {currentEpName && (
+                            <>
+                              <span className="text-white/40 shrink-0">·</span>
+                              <span className="text-slate-200 truncate">"{currentEpName}"</span>
+                            </>
+                          )}
                         </div>
-                      )}
-                      {show.rottenTomatoesScore && (
-                        <div className="px-1.5 py-0.5 bg-red-600 text-white font-black text-[8.5px] rounded-lg shadow-md flex items-center gap-0.5 leading-none whitespace-nowrap">
-                          <span className="text-[8.5px] leading-none shrink-0">🍅</span>
-                          <span>{show.rottenTomatoesScore}%</span>
+                      </div>
+
+                      {/* Top Right Corner of Poster: Translucent Hexagon Score Badge */}
+                      <div className="absolute top-1.5 right-1.5 z-10 flex flex-col items-end">
+                        <div className="relative w-[38px] h-[44px] shrink-0">
+                          <svg
+                            viewBox="0 0 100 116"
+                            className="w-full h-full drop-shadow-xl overflow-visible"
+                          >
+                            <polygon
+                              points="50,3 97,28 97,88 50,113 3,88 3,28"
+                              fill="rgba(10, 15, 25, 0.45)"
+                              stroke={scoreDescriptor.color}
+                              strokeWidth="3.5"
+                              strokeLinejoin="round"
+                            />
+                            <text
+                              x="50"
+                              y="58"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fill="#ffffff"
+                              fontWeight="900"
+                              fontSize={scoreVal >= 10 ? '48' : '54'}
+                              fontFamily="system-ui, -apple-system, sans-serif"
+                              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.7))' }}
+                            >
+                              {scoreVal}
+                            </text>
+                          </svg>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    </>
+                  ) : (
+                    (showSeriesScoreOnPoster || showRtScoreOnPoster) && (
+                      <div className="absolute top-1.5 right-1.5 flex flex-col gap-1 items-end z-10">
+                        {showSeriesScoreOnPoster && (
+                          <div className="px-1.5 py-0.5 bg-purple-600/90 border border-purple-400/40 text-white font-black text-[8.5px] rounded-lg shadow-md flex items-center gap-0.5 leading-none whitespace-nowrap backdrop-blur-md">
+                            <Trophy className="w-2.5 h-2.5 text-amber-300 shrink-0" />
+                            <span>Series {show.userScore}/10</span>
+                          </div>
+                        )}
+                        {showRtScoreOnPoster && (
+                          <div className="px-1.5 py-0.5 bg-red-600 text-white font-black text-[8.5px] rounded-lg shadow-md flex items-center gap-0.5 leading-none whitespace-nowrap">
+                            <span className="text-[8.5px] leading-none shrink-0">🍅</span>
+                            <span>{show.rottenTomatoesScore}%</span>
+                          </div>
+                        )}
+                      </div>
+                    )
                   )}
 
                   {/* Streaming Service Tag */}
@@ -979,23 +1512,24 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                   {/* Custom Quote / Invite Note Box */}
                   {(customQuote || (activeTab === 'invite')) && (
                     <div className={`p-2 rounded-xl border ${currentTheme.quoteBg} text-left space-y-1 shadow-inner backdrop-blur-sm`}>
-                      {activeTab !== 'invite' && (isFeaturedEpReview || currentEpScore) && (
+                      {activeTab !== 'invite' && isEpisodeReviewMode && (
                         <div className="space-y-0.5 pb-0.5 border-b border-white/10">
-                          <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center justify-between gap-1 flex-wrap">
                             <div className="flex items-center gap-1 text-[7.5px] sm:text-[8px] font-black uppercase tracking-widest text-amber-300">
-                              <Star className="w-2 h-2 text-amber-400 fill-amber-400 shrink-0" />
+                              <Quote className="w-2 h-2 text-amber-400 shrink-0 rotate-180" />
                               <span>EPISODE TAKE</span>
                             </div>
-                            {currentEpScore && (
-                              <span className="px-1.5 py-0.2 rounded bg-amber-500 text-slate-950 font-black text-[8px] leading-none">
-                                ★ {currentEpScore}/10
+                            {displayAirDate && (
+                              <span className="text-[7px] font-bold text-emerald-400 bg-emerald-950/60 px-1 py-0.2 rounded border border-emerald-500/30 leading-none">
+                                {getAiringStatusText(displayAirDate)}
                               </span>
                             )}
                           </div>
-                          <div className="text-[9.5px] sm:text-[10px] font-bold text-white tracking-tight leading-snug break-words truncate">
-                            S{currentEpSeason}E{currentEpNumber}
-                            {currentEpName ? ` "${currentEpName}"` : ''}
-                          </div>
+                          {currentEpName && (
+                            <div className="text-[9px] sm:text-[9.5px] font-bold text-white tracking-tight leading-snug line-clamp-1">
+                              S{currentEpSeason}E{currentEpNumber} "{currentEpName}"
+                            </div>
+                          )}
                         </div>
                       )}
                       {activeTab === 'invite' && (
@@ -1004,10 +1538,10 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                           <span>FRIEND INVITATION</span>
                         </div>
                       )}
-                      <div className="flex items-start gap-1">
+                      <div className="flex items-start gap-1 min-h-0 flex-1">
                         <Quote className="w-2.5 h-2.5 text-purple-400 shrink-0 mt-0.5 opacity-70 rotate-180" />
-                        <p className="text-[9px] sm:text-[9.5px] font-medium italic leading-snug break-words line-clamp-3 text-slate-100 flex-1">
-                          {activeTab === 'invite' ? `"Join me on CouchTaterz so we can track ${show.title} together!"` : customQuote}
+                        <p className={`${getQuoteTypography(quoteText, 'square')} font-medium italic leading-snug break-words text-slate-100 flex-1`}>
+                          {quoteText}
                         </p>
                       </div>
                     </div>
@@ -1018,41 +1552,100 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
               /* 9:16 STORY & 4:5 PORTRAIT VERTICAL STACKED LAYOUT */
               <div className={`relative z-10 ${
                 cardFormat === 'story' 
-                  ? 'flex-1 flex flex-col justify-between space-y-2 py-0.5 min-h-0' 
-                  : 'flex-1 flex flex-col justify-between space-y-1.5 py-0.5 min-h-0'
+                  ? 'flex-1 flex flex-col gap-2 py-0.5 min-h-0' 
+                  : 'flex-1 flex flex-col gap-1.5 py-0.5 min-h-0'
               }`}>
-                {/* Poster Container */}
+                {/* Poster Container - Flexibly expands to fill remaining card space with cinematic artwork */}
                 <div className={`relative overflow-hidden border border-white/15 shadow-2xl ${
                   cardFormat === 'portrait' 
-                    ? (customQuote ? 'aspect-[16/5.8] rounded-xl' : 'aspect-[16/7.2] rounded-xl') 
-                    : 'aspect-[16/10] rounded-2xl'
-                } bg-slate-900 group shrink-0`}>
+                    ? 'rounded-xl min-h-[110px]' 
+                    : 'rounded-2xl min-h-[130px]'
+                } flex-1 bg-slate-900 group transition-all duration-200`}>
                   <img
-                    src={bannerDataUrl || show.bannerImage || '/fallback-tv.jpg'}
+                    src={bannerDataUrl || selectedImageOption?.url || getShowBannerImage(show)}
                     alt={show.title}
                     className="w-full h-full object-cover"
+                    crossOrigin="anonymous"
                     onError={(e) => {
-                      e.currentTarget.src = '/fallback-tv.jpg';
+                      const target = e.currentTarget;
+                      const fallback = getShowFallbackBanner(show, target.src);
+                      if (target.src !== fallback) {
+                        target.src = fallback;
+                      }
                     }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
 
-                  {/* Rating Badge Overlay */}
-                  {(showSeriesScoreOnPoster || show.rottenTomatoesScore) && (
-                    <div className={`absolute ${cardFormat === 'portrait' ? 'top-1.5 right-1.5' : 'top-2 right-2'} flex items-center gap-1.5 flex-nowrap z-10 max-w-[calc(100%-1rem)]`}>
-                      {showSeriesScoreOnPoster && (
-                        <div className={`px-2 py-0.5 ${cardFormat === 'portrait' ? 'sm:px-2 sm:py-0.5 text-[9px]' : 'sm:px-2.5 sm:py-1 text-[10px] sm:text-xs'} bg-purple-600/90 border border-purple-400/40 text-white font-black rounded-xl shadow-lg flex items-center gap-1 whitespace-nowrap shrink-0 leading-none backdrop-blur-md`}>
-                          <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300 shrink-0" />
-                          <span className="leading-none whitespace-nowrap">Series: {show.userScore}/10</span>
+                  {/* Rating Badge Overlay & Episode Review Badge */}
+                  {isEpisodeReviewMode ? (
+                    <>
+                      {/* Top Left Corner of Poster: Episode Pill */}
+                      <div className={`absolute ${cardFormat === 'portrait' ? 'top-1.5 left-1.5' : 'top-2 left-2'} z-10 max-w-[calc(100%-4.5rem)]`}>
+                        <div className={`px-2 py-0.5 bg-black/85 border border-white/20 text-slate-200 font-bold ${
+                          cardFormat === 'portrait' ? 'text-[7.5px] sm:text-[8px]' : 'text-[8px] sm:text-[9px]'
+                        } rounded-lg shadow-lg leading-none whitespace-nowrap truncate backdrop-blur-md flex items-center gap-1.5`}>
+                          <span className="font-black text-amber-300 shrink-0">S{currentEpSeason}E{currentEpNumber}</span>
+                          {currentEpName && (
+                            <>
+                              <span className="text-white/40 shrink-0">·</span>
+                              <span className="text-slate-200 truncate">"{currentEpName}"</span>
+                            </>
+                          )}
                         </div>
-                      )}
-                      {show.rottenTomatoesScore && (
-                        <div className={`px-2 py-0.5 ${cardFormat === 'portrait' ? 'sm:px-2 sm:py-0.5 text-[9px]' : 'sm:px-2.5 sm:py-1 text-[10px] sm:text-xs'} bg-red-600 text-white font-black rounded-xl shadow-lg flex items-center gap-1 whitespace-nowrap shrink-0 leading-none`}>
-                          <span className="text-[10px] sm:text-[11px] leading-none shrink-0 inline-block select-none">🍅</span>
-                          <span className="leading-none whitespace-nowrap">{show.rottenTomatoesScore}%</span>
+                      </div>
+
+                      {/* Top Right Corner of Poster: Translucent Hexagon Score Badge */}
+                      <div className={`absolute ${cardFormat === 'portrait' ? 'top-1.5 right-1.5' : 'top-2 right-2'} z-10 flex flex-col items-end`}>
+                        <div className={`relative ${
+                          cardFormat === 'portrait' 
+                            ? 'w-[44px] h-[51px] sm:w-[48px] sm:h-[56px]' 
+                            : 'w-[50px] h-[58px] sm:w-[56px] sm:h-[65px]'
+                        } shrink-0`}>
+                          <svg
+                            viewBox="0 0 100 116"
+                            className="w-full h-full drop-shadow-xl overflow-visible"
+                          >
+                            <polygon
+                              points="50,3 97,28 97,88 50,113 3,88 3,28"
+                              fill="rgba(10, 15, 25, 0.45)"
+                              stroke={scoreDescriptor.color}
+                              strokeWidth="3.5"
+                              strokeLinejoin="round"
+                            />
+                            <text
+                              x="50"
+                              y="58"
+                              textAnchor="middle"
+                              dominantBaseline="central"
+                              fill="#ffffff"
+                              fontWeight="900"
+                              fontSize={scoreVal >= 10 ? '48' : '54'}
+                              fontFamily="system-ui, -apple-system, sans-serif"
+                              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.7))' }}
+                            >
+                              {scoreVal}
+                            </text>
+                          </svg>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    </>
+                  ) : (
+                    (showSeriesScoreOnPoster || showRtScoreOnPoster) && (
+                      <div className={`absolute ${cardFormat === 'portrait' ? 'top-1.5 right-1.5' : 'top-2 right-2'} flex items-center gap-1.5 flex-nowrap z-10 max-w-[calc(100%-1rem)]`}>
+                        {showSeriesScoreOnPoster && (
+                          <div className={`px-2 py-0.5 ${cardFormat === 'portrait' ? 'sm:px-2 sm:py-0.5 text-[9px]' : 'sm:px-2.5 sm:py-1 text-[10px] sm:text-xs'} bg-purple-600/90 border border-purple-400/40 text-white font-black rounded-xl shadow-lg flex items-center gap-1 whitespace-nowrap shrink-0 leading-none backdrop-blur-md`}>
+                            <Trophy className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-300 shrink-0" />
+                            <span className="leading-none whitespace-nowrap">Series: {show.userScore}/10</span>
+                          </div>
+                        )}
+                        {showRtScoreOnPoster && (
+                          <div className={`px-2 py-0.5 ${cardFormat === 'portrait' ? 'sm:px-2 sm:py-0.5 text-[9px]' : 'sm:px-2.5 sm:py-1 text-[10px] sm:text-xs'} bg-red-600 text-white font-black rounded-xl shadow-lg flex items-center gap-1 whitespace-nowrap shrink-0 leading-none`}>
+                            <span className="text-[10px] sm:text-[11px] leading-none shrink-0 inline-block select-none">🍅</span>
+                            <span className="leading-none whitespace-nowrap">{show.rottenTomatoesScore}%</span>
+                          </div>
+                        )}
+                      </div>
+                    )
                   )}
 
                   {/* Title & Service Tag on Poster */}
@@ -1102,37 +1695,35 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                   </div>
                 )}
 
-                {/* Custom Quote / Invite Note / Review Box - Dedicated box for review */}
+                {/* Custom Quote / Invite Note / Review Box - Dynamically hugs content height with no awkward bottom void */}
                 {(customQuote || (activeTab === 'invite')) && (
                   <div className={`${
                     cardFormat === 'portrait' 
-                      ? 'p-2 sm:p-2.5 rounded-xl space-y-1' 
-                      : 'p-2.5 sm:p-3 rounded-2xl space-y-1.5'
-                  } border ${currentTheme.quoteBg} text-left shadow-inner backdrop-blur-md relative overflow-hidden flex-1 min-h-0 flex flex-col justify-center`}>
-                    {/* Show episode review header with Episode Score */}
-                    {activeTab !== 'invite' && (isFeaturedEpReview || currentEpScore) && (
+                      ? 'p-2 sm:p-2.5 rounded-xl space-y-1 max-h-[50%]' 
+                      : 'p-2.5 sm:p-3 rounded-2xl space-y-1 sm:space-y-1.5 max-h-[52%]'
+                  } border ${currentTheme.quoteBg} text-left shadow-inner backdrop-blur-md relative overflow-hidden shrink-0 flex flex-col justify-center`}>
+                    {/* Show episode review header */}
+                    {activeTab !== 'invite' && isEpisodeReviewMode && (
                       <div className="flex items-center justify-between gap-1.5 pb-1 border-b border-white/10 shrink-0">
-                        <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <div className={`flex items-center gap-1 ${cardFormat === 'portrait' ? 'text-[7px] sm:text-[7.5px]' : 'text-[8px] sm:text-[8.5px]'} font-black uppercase tracking-widest text-amber-300`}>
-                            <Star className={`${cardFormat === 'portrait' ? 'w-2 h-2' : 'w-2.5 h-2.5'} text-amber-400 fill-amber-400 shrink-0`} />
+                            <Quote className={`${cardFormat === 'portrait' ? 'w-2 h-2' : 'w-2.5 h-2.5'} text-amber-400 shrink-0 rotate-180`} />
                             <span>EPISODE TAKE</span>
                           </div>
-                          <div className={`${cardFormat === 'portrait' ? 'text-[8.5px] sm:text-[9.5px]' : 'text-[10px] sm:text-[11px]'} font-bold text-white tracking-tight leading-snug break-words truncate`}>
-                            S{currentEpSeason}E{currentEpNumber}
-                            {currentEpName ? ` "${currentEpName}"` : ''}
-                          </div>
+                          {displayAirDate && (
+                            <span className="text-[7px] sm:text-[7.5px] font-bold text-emerald-400 bg-emerald-950/60 px-1.5 py-0.2 rounded border border-emerald-500/30 leading-none">
+                              {getAiringStatusText(displayAirDate)}
+                            </span>
+                          )}
                         </div>
-                        {currentEpScore && (
-                          <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg bg-amber-500 text-slate-950 font-black ${
-                            cardFormat === 'portrait' ? 'text-[8px] sm:text-[8.5px]' : 'text-[9.5px] sm:text-[10.5px]'
-                          } shadow-sm leading-none shrink-0`}>
-                            <Star className="w-2 h-2 fill-current" />
-                            <span>{currentEpScore}/10</span>
+                        {currentEpName && (
+                          <div className={`${cardFormat === 'portrait' ? 'text-[8px] sm:text-[8.5px]' : 'text-[9px] sm:text-[9.5px]'} font-bold text-slate-300 truncate max-w-[150px] sm:max-w-[200px]`}>
+                            "{currentEpName}"
                           </div>
                         )}
                       </div>
                     )}
-                    {activeTab !== 'invite' && !isFeaturedEpReview && !currentEpScore && customQuote && (
+                    {activeTab !== 'invite' && !isEpisodeReviewMode && customQuote && (
                       <div className="flex items-center gap-1 text-[7px] sm:text-[7.5px] font-black uppercase tracking-widest text-purple-300 pb-0.5 shrink-0">
                         <Crown className="w-2.5 h-2.5 text-purple-400 shrink-0" />
                         <span>MY TAKE & RECOMMENDATION</span>
@@ -1144,14 +1735,10 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                         <span>FRIEND INVITATION</span>
                       </div>
                     )}
-                    <div className="flex items-start gap-1.5 min-h-0 flex-1">
+                    <div className="flex items-start gap-1.5 min-h-0">
                       <Quote className="w-2.5 h-2.5 text-purple-400 shrink-0 mt-0.5 opacity-70 rotate-180" />
-                      <p className={`${
-                        cardFormat === 'portrait' 
-                          ? 'text-[9.5px] sm:text-[10px] leading-snug line-clamp-3' 
-                          : 'text-[9.5px] sm:text-[10px] leading-snug line-clamp-3'
-                      } font-medium italic break-words text-slate-100 flex-1`}>
-                        {activeTab === 'invite' ? `"Join me on CouchTaterz so we can track ${show.title} together!"` : customQuote}
+                      <p className={`${getQuoteTypography(quoteText, cardFormat)} font-medium italic break-words text-slate-100 flex-1`}>
+                        {quoteText}
                       </p>
                     </div>
                   </div>
@@ -1159,7 +1746,7 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
 
                 {/* Current Episode Title pill when no custom review is active (in 9:16 story format) */}
                 {cardFormat === 'story' && !customQuote && activeTab !== 'invite' && show.latestWatched?.title && show.latestWatched.title !== 'Not Started' && (
-                  <div className="flex items-center justify-center gap-1 text-center bg-white/5 border border-white/10 rounded-xl py-1 px-2.5">
+                  <div className="flex items-center justify-center gap-1 text-center bg-white/5 border border-white/10 rounded-xl py-1 px-2.5 shrink-0">
                     <Tv className="w-2.5 h-2.5 text-purple-300 shrink-0" />
                     <span className="text-[8.5px] sm:text-[9px] font-semibold text-purple-200 truncate">
                       Latest Watched: <span className="font-extrabold text-white">S{show.latestWatched.season}E{show.latestWatched.episode} "{show.latestWatched.title}"</span>
@@ -1175,6 +1762,8 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                 ? 'rounded-xl p-1.5 space-y-0.5 my-0.5' 
                 : cardFormat === 'square' 
                 ? 'rounded-xl p-1.5 space-y-1 my-1' 
+                : customQuote
+                ? 'rounded-xl p-2 sm:p-2.5 space-y-1 my-1'
                 : 'rounded-2xl p-2.5 sm:p-3 space-y-1.5 my-1.5'
             } backdrop-blur-md shrink-0 shadow-lg`}>
               {/* Visual Progress Bar Track */}
@@ -1225,15 +1814,33 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
                   </div>
                 </div>
 
-                <div className="space-y-0.5">
-                  <div className="text-[6.5px] sm:text-[7px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-center gap-0.5">
-                    <Film className="w-2 h-2 text-amber-400" />
-                    <span>Platform</span>
+                {isEpisodeReviewMode ? (
+                  /* Series Score replaces Platform in bottom right cell on Episode Review Card */
+                  <div className="space-y-0.5">
+                    <div className="text-[6.5px] sm:text-[7px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-center gap-0.5">
+                      <Trophy className="w-2 h-2 text-purple-400" />
+                      <span>Series Score</span>
+                    </div>
+                    <div className="text-[8.5px] sm:text-[9px] font-black text-white truncate px-0.5">
+                      {show.userScore != null ? (
+                        <span className="text-purple-300 font-black">{show.userScore}/10</span>
+                      ) : (
+                        <span className="text-slate-400 font-medium">Unrated</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-[8.5px] sm:text-[9px] font-black text-white truncate px-0.5">
-                    {show.streamingService}
+                ) : (
+                  /* Standard Platform cell for other cards */
+                  <div className="space-y-0.5">
+                    <div className="text-[6.5px] sm:text-[7px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-center gap-0.5">
+                      <Film className="w-2 h-2 text-amber-400" />
+                      <span>Platform</span>
+                    </div>
+                    <div className="text-[8.5px] sm:text-[9px] font-black text-white truncate px-0.5">
+                      {show.streamingService}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -1305,6 +1912,8 @@ export const SocialStoryCardModal: React.FC<SocialStoryCardModalProps> = ({
             <span>
               {isExporting
                 ? 'Generating PNG...'
+                : isMobile
+                ? `Save to Photos (${cardFormat === 'story' ? '9:16' : cardFormat === 'portrait' ? '4:5' : '1:1'})`
                 : `Download ${cardFormat === 'story' ? '9:16' : cardFormat === 'portrait' ? '4:5' : '1:1'} PNG`}
             </span>
           </button>

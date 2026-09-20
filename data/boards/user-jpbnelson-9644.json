@@ -1,0 +1,252 @@
+{
+  "notifications": [
+    {
+      "senderName": "Julio",
+      "senderAvatarUrl": "https://api.dicebear.com/9.x/pixel-art/svg?seed=LazyPotato_3661&backgroundColor=1e293b&hairColor%5B%5D=261308&glassesProbability=0&mouth%5B%5D=happy04&eyes%5B%5D=variant08&eyesColor%5B%5D=48210a&clothing%5B%5D=variant03&clothingColor%5B%5D=141414&hatProbability=0&beardProbability=100&beard%5B%5D=variant01&accessoriesProbability=0",
+      "id": "msg-1788669805351-gidp",
+      "senderId": "default",
+      "message": "Welcome to beta and thank you for trying us out!",
+      "timestamp": "2026-09-06T04:43:25.351Z",
+      "type": "message"
+    }
+  ],
+  "id": "user-jpbnelson-9644",
+  "dismissedNotificationIds": [],
+  "owner": {
+    "id": "user-jpbnelson-9644",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=jpbnelson",
+    "createdAt": "2026-09-04T03:20:09.397Z",
+    "name": "jpbnelson",
+    "email": "jpbnelson@gmail.com"
+  },
+  "preferences": {
+    "genres": [
+      "Action",
+      "Mystery",
+      "Thriller",
+      "Spy Thriller",
+      "Comedy"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "Prime Video",
+      "HBO",
+      "Apple TV",
+      "Peacock",
+      "Hulu",
+      "Paramount+"
+    ],
+    "eras": [
+      "Current & Modern (2020s)",
+      "2010s Prestige TV"
+    ],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "name": "jpbnelson's Collection",
+  "dismissedAlertKeys": [],
+  "updatedAt": "2026-09-19T19:38:58.859Z",
+  "shows": [
+    {
+      "id": "show-1788492009397-223540-0",
+      "title": "The Bear",
+      "actors": [
+        "Jeremy Allen White",
+        "Ebon Moss-Bachrach",
+        "Ayo Edebiri"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "System",
+        "S1E2": "Hands",
+        "S1E3": "Brigade",
+        "S1E4": "Dogs",
+        "S1E5": "Sheridan",
+        "S1E6": "Ceres",
+        "S1E7": "Review",
+        "S1E8": "Braciole",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family sandwich shop after a heartbreaking death.",
+      "concluded": true,
+      "createdAt": "2026-09-04T03:20:09.397Z",
+      "directors": [
+        "Christopher Storer"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-09-09T03:56:33.448Z",
+      "userScore": 9.4,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-09-09T03:56:33.448Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:25:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-09-09T03:56:33.448Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1788492009397-819833-1",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Thriller",
+        "Mystery",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Good News About Hell",
+        "S1E2": "Half Loop",
+        "S1E3": "In Perpetuity",
+        "S1E4": "The You You Are",
+        "S1E5": "The Grim Barbarity of Optics and Design",
+        "S1E6": "Hide and Seek",
+        "S1E7": "Defiant Jazz",
+        "S1E8": "What's for Dinner?",
+        "S1E9": "The We We Are"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-09-04T03:20:09.397Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-09-09T03:56:33.448Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-09-09T03:56:33.448Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:05:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:20.807Z",
+      "progressUpdatedAt": "2026-09-09T03:56:33.448Z",
+      "metadataAuditStatus": "updated",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "show-1788492009397-896467-2",
+      "title": "Sh\u014dgun",
+      "actors": [
+        "Hiroyuki Sanada",
+        "Cosmo Jarvis",
+        "Anna Sawai"
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun",
+        "S1E10": "A Dream of a Dream"
+      },
+      "overview": "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him.",
+      "concluded": false,
+      "createdAt": "2026-09-04T03:20:09.397Z",
+      "directors": [
+        "Jonathan van Tulleken",
+        "Charlotte Br\u00e4ndstr\u00f6m"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-09-09T03:56:33.448Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-09-09T03:56:33.448Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:20:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-09-09T03:56:33.448Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 99
+    }
+  ]
+}

@@ -1,0 +1,355 @@
+{
+  "id": "user-mongo-4825",
+  "name": "Mongo's Collection",
+  "owner": {
+    "email": "user-mongo-4825@coughtater.com",
+    "name": "Mongo",
+    "id": "user-mongo-4825",
+    "createdAt": "2026-08-19T18:23:08.065Z",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Mongo"
+  },
+  "preferences": {
+    "genres": [
+      "Action",
+      "Comedy",
+      "Drama",
+      "Sci-Fi",
+      "Horror",
+      "Thriller",
+      "Mystery",
+      "Dystopian",
+      "Western",
+      "Animation",
+      "Spy Thriller"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu",
+      "Apple TV",
+      "Paramount+",
+      "Peacock",
+      "AMC+",
+      "Starz"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1787163809734",
+      "title": "MADtv",
+      "actors": [
+        "Aries Spears",
+        "Mo Collins",
+        "Nicole Sullivan",
+        "Alex Borstein",
+        "Ike Barinholtz"
+      ],
+      "genres": [
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Kato Kaelin and Poison",
+        "S1E2": "Kato Kaelin, Joe Walsh and Dean Stockwell",
+        "S1E3": "Peter Marshall",
+        "S1E4": "Michael Buffer, Adam West and Gary Coleman",
+        "S1E5": "Episode #105",
+        "S1E6": "Neve Campbell, Jamie Farr, Matthew Fox, Dana Gould, Scott Wolf",
+        "S1E7": "Billy Barty, Dave Foley, Ken Norton, Jr.",
+        "S1E8": "Quincy Jones, LL Cool J, RuPaul",
+        "S1E9": "Pauly Shore",
+        "S1E10": "Andy Kindler, Rip Taylor",
+        "S1E11": "Tony Orlando, The Presidents of the United States of America (Musical Guest)",
+        "S1E12": "David Faustino, Pharcyde",
+        "S1E13": "Episode #113",
+        "S1E14": "Whoopi Goldberg, Brian Austin Green",
+        "S1E15": "Dave Higgins, Doug Llewelyn",
+        "S1E16": "Chris Hardwick, Barry Williams",
+        "S1E17": "Claudia Schiffer and Kim Coles",
+        "S1E18": "Bruce McCulloch",
+        "S1E19": "Harland Williams",
+        "S1E20": "Best of Season 1",
+        "S15E1": "Episode One",
+        "S15E2": "Episode Two",
+        "S15E3": "Episode Three",
+        "S15E4": "Episode Four",
+        "S15E5": "Episode Five",
+        "S15E6": "Episode Six",
+        "S15E7": "Episode Seven",
+        "S15E8": "Episode Eight"
+      },
+      "overview": "MADtv is an American sketch comedy television series originally inspired by Mad magazine. The one-hour show aired Saturday nights on Fox.",
+      "concluded": true,
+      "createdAt": "2026-08-19T18:23:29.734Z",
+      "directors": [
+        "David Salzman",
+        "Fax Bahr",
+        "Adam Small"
+      ],
+      "ownerName": "Mongo",
+      "updatedAt": "2026-08-19T18:23:29.734Z",
+      "userNotes": "Mongo like Mad TV",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Mongo"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/s5VqxC5Bhnotw0zaf0DNGSSOqGg.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 15,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-19T18:23:29.734Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-19T18:23:29.734Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        20,
+        22,
+        25,
+        25,
+        25,
+        27,
+        25,
+        25,
+        25,
+        23,
+        22,
+        22,
+        16,
+        17,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-19T18:23:29.734Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-19T21:32:57.773Z",
+      "rottenTomatoesScore": 71
+    },
+    {
+      "id": "show-1787163788065-845839-0",
+      "title": "The Bear",
+      "actors": [
+        "Jeremy Allen White",
+        "Ebon Moss-Bachrach",
+        "Ayo Edebiri"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "System",
+        "S1E2": "Hands",
+        "S1E3": "Brigade",
+        "S1E4": "Dogs",
+        "S1E5": "Sheridan",
+        "S1E6": "Ceres",
+        "S1E7": "Review",
+        "S1E8": "Braciole",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family sandwich shop after a heartbreaking death.",
+      "concluded": true,
+      "createdAt": "2026-08-19T18:23:08.065Z",
+      "directors": [
+        "Christopher Storer"
+      ],
+      "isStarter": true,
+      "ownerName": "Mongo",
+      "updatedAt": "2026-08-19T18:23:08.065Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Mongo"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "System",
+        "progressUpdatedAt": "2026-08-19T18:23:08.065Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-19T18:23:08.065Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-19T18:23:08.065Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-19T18:23:10.878Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1787163788065-39939-1",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Thriller",
+        "Mystery",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Good News About Hell",
+        "S1E2": "Half Loop",
+        "S1E3": "In Perpetuity",
+        "S1E4": "The You You Are",
+        "S1E5": "The Grim Barbarity of Optics and Design",
+        "S1E6": "Hide and Seek",
+        "S1E7": "Defiant Jazz",
+        "S1E8": "What's for Dinner?",
+        "S1E9": "The We We Are"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-08-19T18:23:08.065Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-19T18:23:08.065Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-19T18:23:08.065Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:06.473Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:53.647Z",
+      "progressUpdatedAt": "2026-08-19T18:23:08.065Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-19T18:23:10.878Z",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "show-1787163788065-443747-2",
+      "title": "Sh\u014dgun",
+      "actors": [
+        "Hiroyuki Sanada",
+        "Cosmo Jarvis",
+        "Anna Sawai"
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S1E10": "A Dream of a Dream",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun"
+      },
+      "overview": "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him.",
+      "concluded": false,
+      "createdAt": "2026-08-19T18:23:08.065Z",
+      "directors": [
+        "Jonathan van Tulleken",
+        "Charlotte Br\u00e4ndstr\u00f6m"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-19T18:23:08.065Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-19T18:23:08.065Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:06.473Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-19T18:23:08.065Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-19T18:23:10.878Z",
+      "rottenTomatoesScore": 99
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:37.275Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

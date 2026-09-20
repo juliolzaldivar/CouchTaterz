@@ -1,0 +1,817 @@
+{
+  "id": "user-jlz-2635",
+  "name": "JLZ's Collection",
+  "owner": {
+    "email": "julio.zaldivar@westtechalliance.com",
+    "name": "JLZ",
+    "id": "user-jlz-2635",
+    "createdAt": "2026-08-25T22:53:50.490Z",
+    "avatarUrl": "https://api.dicebear.com/9.x/pixel-art/svg?seed=Tater_1921&backgroundColor=0d9488&skinColor=ffdbac&hairProbability=100&hair%5B%5D=long01&hairColor%5B%5D=170d08&glassesProbability=100&glasses%5B%5D=dark02&eyesColor%5B%5D=dc2626&clothingColor%5B%5D=5bc0de&hatProbability=0&beardProbability=0&accessoriesProbability=0"
+  },
+  "preferences": {
+    "genres": [
+      "Action",
+      "Comedy",
+      "Drama",
+      "Sci-Fi",
+      "Horror",
+      "Thriller",
+      "Mystery",
+      "Dystopian",
+      "Western",
+      "Animation",
+      "Spy Thriller"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu",
+      "Apple TV",
+      "Paramount+",
+      "Peacock",
+      "AMC+",
+      "Starz"
+    ],
+    "gender": "Prefer not to say",
+    "ageRange": "25\u201334",
+    "geography": "Los Angeles, California, United States",
+    "country": "United States",
+    "stateRegion": "California",
+    "city": "Los Angeles",
+    "timezone": "America/Los_Angeles",
+    "eras": [
+      "Current & Modern (2020s)",
+      "2010s Prestige TV"
+    ],
+    "vibes": [],
+    "favoriteShows": [],
+    "alertPreference": "email",
+    "alertDestination": "julio.zaldivar@westtechalliance.com",
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1787698591699-385483",
+      "title": "Foundation",
+      "actors": [
+        "Jared Harris",
+        "Lee Pace",
+        "Lou Llobell",
+        "Leah Harvey",
+        "Laura Birn",
+        "Terrence Mann",
+        "Cassian Bilton"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Adventure"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "The Emperor's Peace",
+        "S1E2": "Preparing to Live",
+        "S1E3": "The Mathematician's Ghost",
+        "S1E4": "Barbarians at the Gate",
+        "S1E5": "Upon Awakening",
+        "S1E6": "Death and the Maiden",
+        "S1E7": "Mysteries and Martyrs",
+        "S1E8": "The Missing Piece",
+        "S1E9": "The First Crisis",
+        "S3E1": "The Mule Strikes",
+        "S3E2": "Second Foundation",
+        "S3E3": "When a Book Finds You",
+        "S3E4": "The Stress of Her Regard",
+        "S3E5": "Where Tyrants Spend Eternity",
+        "S3E6": "The Shape of Time",
+        "S3E7": "Foundation's End",
+        "S3E8": "Skin in the Game",
+        "S3E9": "The Paths That Choose Us",
+        "S1E10": "The Leap",
+        "S3E10": "The Darkness"
+      },
+      "overview": "Based on the award-winning novels by Isaac Asimov, Foundation chronicles a band of exiles on their monumental journey to save humanity and rebuild civilization amid the fall of the Galactic Empire.",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:56:31.699Z",
+      "directors": [
+        "David S. Goyer",
+        "Alex Graves",
+        "Roxann Dawson"
+      ],
+      "ownerName": "JLZ",
+      "updatedAt": "2026-07-14T03:37:03.490Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://m.media-amazon.com/images/S/pv-target-images/738a33dbb22b100bca29e782cf83abc2b99a17d16efa5f852107d51f2f1d0768.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "The Mule Strikes",
+        "airDate": "2026-10-23",
+        "overview": "The warlord known as the Mule unleashes devastating mental powers across the galaxy."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-07-14T03:37:03.490Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": true,
+      "reviewUpdatedAt": "2026-07-14T03:37:03.490Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:44.254Z",
+      "progressUpdatedAt": "2026-07-14T03:37:03.490Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-25T01:08:29.204Z",
+      "rottenTomatoesScore": 86
+    },
+    {
+      "id": "show-1787698590509-893876",
+      "title": "3 Body Problem",
+      "actors": [
+        "Jovan Adepo",
+        "Rosalind Chao",
+        "Liam Cunningham",
+        "Eiza Gonz\u00e1lez",
+        "Jess Hong"
+      ],
+      "genres": [
+        "Sci-Fi & Fantasy",
+        "Mystery",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Countdown",
+        "S1E2": "Red Coast",
+        "S1E3": "Destroyer of Worlds",
+        "S1E4": "Our Lord",
+        "S1E5": "Judgment Day",
+        "S1E6": "The Stars Our Destination",
+        "S1E7": "Only Advance",
+        "S1E8": "Wallfacer",
+        "S2E1": "The Wallfacer",
+        "S2E2": "Dark Forest"
+      },
+      "overview": "Across continents and decades, five brilliant friends make earth-shattering discoveries as the laws of science unravel and an existential threat emerges.",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:56:30.509Z",
+      "directors": [
+        "David Benioff",
+        "D. B. Weiss",
+        "Alexander Woo"
+      ],
+      "ownerName": "JLZ",
+      "updatedAt": "2026-07-18T03:26:55.723Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ciizJ9Okzt9tBBGK7Q3T14LFT2j.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "The Wallfacer",
+        "airDate": "2026-11-06",
+        "overview": "Humanity appoints Wallfacers to devise secret planetary defenses against the approaching San-Ti fleet."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-07-18T03:26:55.723Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:06.698Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        8,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-07-18T03:26:55.723Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-25T01:08:29.171Z",
+      "rottenTomatoesScore": 75
+    },
+    {
+      "id": "show-1787698565382-49749",
+      "title": "Lioness",
+      "actors": [
+        "Main Cast Star",
+        "Ensemble Cast Member"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Sacrificial Soldiers",
+        "S1E2": "The Beating",
+        "S1E3": "Bruise Like a Fist",
+        "S1E4": "The Choice of Failure",
+        "S1E5": "Truth Is the Shrewdest Lie",
+        "S1E6": "The Lie Is the Truth",
+        "S1E7": "Wish the Fight Away",
+        "S1E8": "Gone Is the Illusion of Order",
+        "S3E1": "The Spider and the Fly",
+        "S3E2": "Beware the Second Strike",
+        "S3E3": "In the Shadows",
+        "S3E4": "The Reckoning",
+        "S3E5": "The Trap",
+        "S3E6": "Extraction",
+        "S3E7": "Zero Hour",
+        "S3E8": "The Lion's Den"
+      },
+      "overview": "A compelling television series tracking \"Lioness\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:56:05.382Z",
+      "directors": [
+        "Showrunner Creator"
+      ],
+      "ownerName": "JLZ",
+      "updatedAt": "2026-07-14T17:37:43.044Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUqC_tu3W9jV36t_xdOh0sOMI-jwEnqhIA_sxBz_jqCg&s=10",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 8,
+        "title": "The Lion's Den",
+        "airDate": "2026-09-20",
+        "overview": "Season 3 finale: The high-stakes showdown comes to a devastating conclusion."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-07-14T17:37:43.044Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-14T17:37:43.044Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:45.192Z",
+      "progressUpdatedAt": "2026-07-14T17:37:43.044Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-25T01:08:29.200Z",
+      "rottenTomatoesScore": 84
+    },
+    {
+      "id": "show-1787698558363-277416",
+      "title": "American Horor Story",
+      "actors": [
+        "Main Cast Star",
+        "Ensemble Cast Member"
+      ],
+      "genres": [
+        "Mystery",
+        "Horror"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "Home Invasion",
+        "S1E3": "Murder House",
+        "S1E4": "Halloween Part 1",
+        "S1E5": "Halloween Part 2",
+        "S1E6": "Piggy, Piggy",
+        "S1E7": "Open House",
+        "S1E8": "Rubber Man",
+        "S1E9": "Spooky Little Girl",
+        "S1E10": "Smoldering Children",
+        "S1E11": "Birth",
+        "S1E12": "Afterbirth",
+        "S13E1": "The Awakening",
+        "S13E2": "Dark Passage",
+        "S13E3": "Rauhnacht",
+        "S13E4": "Is That All There Is?",
+        "S13E5": "Date Night",
+        "S13E6": "The Return of Devil's Night",
+        "S13E7": "The Baddest Witch Of Them All",
+        "S13E8": "Hell No",
+        "S13E9": "The Devil Is in the Details",
+        "S13E10": "The Prodigal Son",
+        "S13E11": "Madison's Happy Ending",
+        "S13E12": "Sisters in Arms",
+        "S13E13": "Devil of a Good Time"
+      },
+      "overview": "A compelling television series tracking \"American Horor Story\". Log your progress, rate episodes, and stay tuned for the next season releases!",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:55:58.363Z",
+      "directors": [
+        "Showrunner Creator"
+      ],
+      "ownerName": "JLZ",
+      "updatedAt": "2026-07-17T05:16:26.886Z",
+      "userScore": 7,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSS4MH4eq5gyUqE9Bf1GoupPWvuFQdyA5FGlPErgpurWQ&s=10",
+      "nextEpisode": {
+        "season": 13,
+        "episode": 1,
+        "title": "The Awakening",
+        "airDate": "2026-09-24",
+        "overview": "A chilling new chapter in the horror anthology series unfolds."
+      },
+      "totalSeasons": 13,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-07-17T05:16:26.886Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-17T05:16:26.886Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        12,
+        13,
+        13,
+        13,
+        12,
+        10,
+        11,
+        10,
+        9,
+        10,
+        10,
+        9,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:45.767Z",
+      "progressUpdatedAt": "2026-07-17T05:16:26.886Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-25T01:08:29.198Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "show-1787698557086-538147",
+      "title": "Peaky Blinders",
+      "actors": [
+        "Cillian Murphy",
+        "Paul Anderson",
+        "Helen McCrory",
+        "Sophie Rundle",
+        "Tom Hardy"
+      ],
+      "genres": [
+        "Crime",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Episode 1",
+        "S1E2": "Episode 2",
+        "S1E3": "Episode 3",
+        "S1E4": "Episode 4",
+        "S1E5": "Episode 5",
+        "S1E6": "Episode 6",
+        "S6E1": "Black Day",
+        "S6E2": "Black Shirt",
+        "S6E3": "Gold",
+        "S6E4": "Sapphire",
+        "S6E5": "The Road to Hell",
+        "S6E6": "Lock and Key"
+      },
+      "overview": "A gangster family epic set in 1919 Birmingham, England, centered on a gang who sew razor blades in the peaks of their caps, and their fierce boss Tommy Shelby.",
+      "concluded": true,
+      "createdAt": "2026-08-25T22:55:57.086Z",
+      "directors": [
+        "Anthony Byrne",
+        "Colm McCarthy",
+        "Tim Mielants",
+        "Otto Bathurst"
+      ],
+      "ownerName": "JLZ",
+      "updatedAt": "2026-07-14T04:17:57.755Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://m.media-amazon.com/images/M/MV5BMThlOWE3MWEtZjM4Ny00M2FiLTkyMmYtZGY3ZTcyMzM5YmNlXkEyXkFqcGdeQWpnYW1i._V1_.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-07-14T04:17:57.755Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-14T04:17:57.755Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        6,
+        6,
+        6,
+        6,
+        6,
+        6
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-07-14T04:17:57.755Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-25T01:08:29.201Z",
+      "rottenTomatoesScore": 94
+    },
+    {
+      "id": "show-1787698553603-708509",
+      "title": "Reacher",
+      "actors": [
+        "Alan Ritchson",
+        "Malcolm Goodwin",
+        "Willa Fitzgerald"
+      ],
+      "genres": [
+        "Action",
+        "Crime",
+        "Drama",
+        "Thriller"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Welcome to Margrave",
+        "S1E2": "First Dance",
+        "S1E3": "Spoonful",
+        "S1E4": "In a Tree",
+        "S1E5": "No Apologies",
+        "S1E6": "Papier",
+        "S1E7": "Reacher Said Nothing",
+        "S1E8": "Pie",
+        "S4E1": "City of Brotherly Love",
+        "S4E2": "Cage Fight",
+        "S4E3": "One Small Step",
+        "S4E4": "Ambush",
+        "S4E5": "Bridge",
+        "S4E6": "Crossfire",
+        "S4E7": "No Safe Harbor",
+        "S4E8": "Justice Served"
+      },
+      "overview": "Veteran military police investigator Jack Reacher is falsely accused of murder and finds himself in the middle of a deadly conspiracy full of dirty cops, shady businessmen and scheming politicians.",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:55:53.603Z",
+      "directors": [
+        "Thomas Vincent",
+        "Nick Santora"
+      ],
+      "ownerName": "JLZ",
+      "updatedAt": "2026-07-21T05:21:39.189Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://media.press.amazonmgmstudios.com/userfiles/images/Unknown(12).jpeg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 8,
+        "title": "Justice Served",
+        "airDate": "2026-09-16",
+        "overview": "Season 4 finale: Jack Reacher delivers his unmistakable brand of justice."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-07-21T05:21:39.189Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-07-21T05:21:39.189Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8,
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:46.699Z",
+      "progressUpdatedAt": "2026-07-21T05:21:39.189Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-25T01:08:29.166Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "show-1787698450791",
+      "title": "The Madison",
+      "actors": [
+        "Michelle Pfeiffer",
+        "Kurt Russell",
+        "Beau Garrett",
+        "Patrick J. Adams",
+        "Elle Chapman"
+      ],
+      "genres": [
+        "Drama",
+        "Western"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "River's Edge",
+        "S1E2": "Under the Pines",
+        "S1E3": "Watch Her Fall",
+        "S1E4": "Tomorrow Is Goodbye",
+        "S1E5": "No Name and a New Dream",
+        "S1E6": "I Give Me Permission"
+      },
+      "overview": "The Clyburns uproot their comfortable New York City lives to the wild, untamed beauty of Montana's Madison River Valley on a search for connection.",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:54:10.791Z",
+      "directors": [
+        "Taylor Sheridan",
+        "Christina Alexandra Voros"
+      ],
+      "updatedAt": "2026-08-25T22:54:22.576Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/lhQQE9vlNCKOYWamaHW8CBiI09B.jpg",
+      "nextEpisode": {
+        "season": 1,
+        "episode": 2,
+        "title": "Under the Pines",
+        "airDate": "2026-09-20",
+        "overview": "The family struggles to adapt to rural life while confronting unresolved grief."
+      },
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-25T22:54:22.576Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-25T22:54:22.576Z",
+      "streamingService": "Paramount+",
+      "episodesPerSeason": [
+        6
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:47.165Z",
+      "progressUpdatedAt": "2026-08-25T22:54:22.576Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-25T22:54:27.839Z",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "show-1787698430491-701043-0",
+      "title": "The Bear",
+      "actors": [
+        "Jeremy Allen White",
+        "Ebon Moss-Bachrach",
+        "Ayo Edebiri"
+      ],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "System",
+        "S1E2": "Hands",
+        "S1E3": "Brigade",
+        "S1E4": "Dogs",
+        "S1E5": "Sheridan",
+        "S1E6": "Ceres",
+        "S1E7": "Review",
+        "S1E8": "Braciole",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family sandwich shop after a heartbreaking death.",
+      "concluded": true,
+      "createdAt": "2026-08-25T22:53:50.491Z",
+      "directors": [
+        "Christopher Storer"
+      ],
+      "isStarter": true,
+      "ownerName": "JLZ",
+      "updatedAt": "2026-08-25T22:57:08.810Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "System",
+        "progressUpdatedAt": "2026-08-25T22:57:08.810Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-25T22:57:08.810Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-25T22:57:08.810Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-25T22:54:27.839Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "show-1787698430491-79267-1",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Thriller",
+        "Mystery",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Good News About Hell",
+        "S1E2": "Half Loop",
+        "S1E3": "In Perpetuity",
+        "S1E4": "The You You Are",
+        "S1E5": "The Grim Barbarity of Optics and Design",
+        "S1E6": "Hide and Seek",
+        "S1E7": "Defiant Jazz",
+        "S1E8": "What's for Dinner?",
+        "S1E9": "The We We Are"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:53:50.491Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "isStarter": true,
+      "ownerName": "JLZ",
+      "updatedAt": "2026-08-25T22:57:14.176Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "JLZ"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-25T22:57:14.176Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-25T22:57:14.176Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:48.096Z",
+      "progressUpdatedAt": "2026-08-25T22:57:14.176Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-25T22:54:27.839Z",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "show-1787698430491-699952-2",
+      "title": "Sh\u014dgun",
+      "actors": [
+        "Hiroyuki Sanada",
+        "Cosmo Jarvis",
+        "Anna Sawai"
+      ],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S1E10": "A Dream of a Dream",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun"
+      },
+      "overview": "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him.",
+      "concluded": false,
+      "createdAt": "2026-08-25T22:53:50.491Z",
+      "directors": [
+        "Jonathan van Tulleken",
+        "Charlotte Br\u00e4ndstr\u00f6m"
+      ],
+      "isStarter": true,
+      "updatedAt": "2026-08-25T22:53:52.727Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-25T22:53:52.727Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-25T22:53:52.727Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.477Z",
+      "progressUpdatedAt": "2026-08-25T22:53:52.727Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-25T22:54:27.839Z",
+      "rottenTomatoesScore": 99
+    }
+  ],
+  "updatedAt": "2026-09-19T19:45:43.518Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

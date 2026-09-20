@@ -1,0 +1,42 @@
+{
+  "id": "user-stef-4912",
+  "name": "Stef's Watchlist",
+  "owner": {
+    "id": "user-stef-4912",
+    "email": "stef@taterz.com",
+    "createdAt": "2026-08-16T15:00:00.000Z",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Stef",
+    "name": "Stef"
+  },
+  "preferences": {
+    "genres": [
+      "Comedy",
+      "Drama",
+      "Mystery",
+      "Thriller"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu",
+      "Apple TV",
+      "Paramount+",
+      "Peacock",
+      "AMC+",
+      "Starz"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [],
+  "updatedAt": "2026-09-19T19:38:42.000Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

@@ -1,0 +1,661 @@
+{
+  "id": "user-danic-4753",
+  "name": "Danic's Collection",
+  "owner": {
+    "createdAt": "2026-08-02T03:37:24.612Z",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Danic",
+    "id": "user-danic-4753",
+    "name": "Danica",
+    "email": "user-danic-4753@coughtater.com"
+  },
+  "preferences": {
+    "genres": [
+      "Drama",
+      "Spy Thriller",
+      "Mystery"
+    ],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Netflix",
+      "HBO",
+      "Disney+",
+      "Prime Video",
+      "Hulu"
+    ],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1785642126724",
+      "title": "Grey's Anatomy",
+      "actors": [
+        "Ellen Pompeo",
+        "Chandra Wilson",
+        "James Pickens Jr.",
+        "Caterina Scorsone",
+        "Camilla Luddington"
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "A Hard Day's Night",
+        "S1E2": "The First Cut Is the Deepest",
+        "S1E3": "Winning a Battle, Losing the War",
+        "S1E4": "No Man's Land",
+        "S1E5": "Shake Your Groove Thing",
+        "S1E6": "If Tomorrow Never Comes",
+        "S1E7": "The Self-Destruct Button",
+        "S1E8": "Save Me",
+        "S1E9": "Who's Zoomin' Who?",
+        "S22E1": "Grey Sloan Strong",
+        "S22E2": "We Built This City",
+        "S22E3": "Between Two Lungs",
+        "S22E4": "Goodbye Horses",
+        "S22E5": "Sometimes I Feel Like a Motherless Child",
+        "S22E6": "When I Crash",
+        "S22E7": "Skyfall",
+        "S22E8": "Heavy on Me",
+        "S22E9": "Fortunate Son",
+        "S23E1": "TBA",
+        "S22E10": "Strip That Down",
+        "S22E11": "(If You Want It) Do It Yourself",
+        "S22E12": "Get Lucky",
+        "S22E13": "Love the Way You Lie",
+        "S22E14": "Wrecking Ball",
+        "S22E15": "Take Me to the River",
+        "S22E16": "Feel It Still",
+        "S22E17": "Through the Fire",
+        "S22E18": "Bridge Over Troubled Water"
+      },
+      "overview": "Follows the personal and professional lives of a group of doctors at Seattle's Grey Sloan Memorial Hospital.",
+      "concluded": false,
+      "createdAt": "2026-08-02T03:42:06.724Z",
+      "directors": [
+        "Shonda Rhimes",
+        "Linda Klein",
+        "Ellen Pompeo"
+      ],
+      "updatedAt": "2026-08-02T03:42:06.724Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/jP0Rhj9OTPDAwQlHQwOLFDdeE8t.jpg",
+      "nextEpisode": {
+        "season": 22,
+        "episode": 1,
+        "title": "Grey Sloan Strong",
+        "airDate": "2026-09-24",
+        "overview": "The surgeons at Grey Sloan Memorial take on a challenging emergency."
+      },
+      "totalSeasons": 23,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-02T03:42:06.724Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:04.286Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        9,
+        27,
+        25,
+        17,
+        24,
+        24,
+        22,
+        24,
+        24,
+        24,
+        25,
+        24,
+        24,
+        24,
+        25,
+        21,
+        17,
+        20,
+        20,
+        10,
+        18,
+        18,
+        1
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:01.574Z",
+      "progressUpdatedAt": "2026-08-02T03:42:06.724Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T00:56:52.360Z",
+      "rottenTomatoesScore": 82
+    },
+    {
+      "id": "show-1785642058988",
+      "title": "The Americans",
+      "actors": [
+        "Keri Russell",
+        "Matthew Rhys",
+        "Holly Taylor",
+        "Keidrich Sellati",
+        "Noah Emmerich"
+      ],
+      "genres": [
+        "Crime",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "The Clock",
+        "S1E3": "Gregory",
+        "S1E4": "In Control",
+        "S1E5": "COMINT",
+        "S1E6": "Trust Me",
+        "S1E7": "Duty and Honor",
+        "S1E8": "Mutually Assured Destruction",
+        "S1E9": "Safe House",
+        "S6E1": "Dead Hand",
+        "S6E2": "Tchaikovsky",
+        "S6E3": "Urban Transport Planning",
+        "S6E4": "Mr. and Mrs. Teacup",
+        "S6E5": "The Great Patriotic War",
+        "S6E6": "Rififi",
+        "S6E7": "Harvest",
+        "S6E8": "The Summit",
+        "S6E9": "Jennings, Elizabeth",
+        "S1E10": "Only You",
+        "S1E11": "Covert War",
+        "S1E12": "The Oath",
+        "S1E13": "The Colonel",
+        "S6E10": "START"
+      },
+      "overview": "Set during the Cold War period in the 1980s, The Americans is the story of Elizabeth and Philip Jennings, two Soviet KGB officers posing as an American married couple in the suburbs of Washington D.C. and their neighbor, Stan Beeman, an FBI Counterintelligence agent.",
+      "concluded": true,
+      "createdAt": "2026-08-02T03:40:58.988Z",
+      "directors": [
+        "Joe Weisberg",
+        "David Woods",
+        "Mary Rae Thewlis"
+      ],
+      "updatedAt": "2026-08-02T03:40:58.988Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSuG_1v8qSY_Jr5OTI94uFnIsSsd_eqokq2cHQQ7Bv43w&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 6,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-02T03:40:58.988Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.290Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        13,
+        13,
+        13,
+        13,
+        13,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-02T03:40:58.988Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-02T03:41:32.415Z",
+      "rottenTomatoesScore": 79
+    },
+    {
+      "id": "show-1785642045934",
+      "title": "ER",
+      "actors": [
+        "Maura Tierney",
+        "Parminder Nagra",
+        "Linda Cardellini",
+        "Scott Grimes",
+        "David Lyons"
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "24 Hours",
+        "S1E2": "Day One",
+        "S1E3": "Going Home",
+        "S1E4": "Hit and Run",
+        "S1E5": "Into That Good Night",
+        "S1E6": "Chicago Heat",
+        "S1E7": "Another Perfect Day",
+        "S1E8": "9 1/2 Hours",
+        "S1E9": "ER Confidential",
+        "S1E10": "Blizzard",
+        "S1E11": "The Gift",
+        "S1E12": "Happy New Year",
+        "S1E13": "Luck of the Draw",
+        "S1E14": "Long Day's Journey",
+        "S1E15": "Feb 5, '95",
+        "S1E16": "Make of Two Hearts",
+        "S1E17": "The Birthday Party",
+        "S1E18": "Sleepless in Chicago",
+        "S1E19": "Love's Labor Lost",
+        "S1E20": "Full Moon, Saturday Night",
+        "S1E21": "House of Cards",
+        "S1E22": "Men Plan, God Laughs",
+        "S1E23": "Love Among the Ruins",
+        "S1E24": "Motherhood",
+        "S1E25": "Everything Old Is New Again",
+        "S15E1": "Life After Death",
+        "S15E2": "Another Thursday at County",
+        "S15E3": "The Book of Abby",
+        "S15E4": "Parental Guidance",
+        "S15E5": "Haunted",
+        "S15E6": "Oh, Brother",
+        "S15E7": "Heal Thyself",
+        "S15E8": "Age of Innocence",
+        "S15E9": "Let It Snow",
+        "S15E10": "The High Holiday",
+        "S15E11": "Separation Anxiety",
+        "S15E12": "Dream Runner",
+        "S15E13": "Love Is a Battlefield",
+        "S15E14": "A Long, Strange Trip",
+        "S15E15": "The Family Man",
+        "S15E16": "The Beginning of the End",
+        "S15E17": "T-minus-6",
+        "S15E18": "What We Do",
+        "S15E19": "Old Times",
+        "S15E20": "Shifting Equilibrium",
+        "S15E21": "I Feel Good",
+        "S15E22": "And in the End..."
+      },
+      "overview": "ER explores the inner workings of an urban teaching hospital and the critical issues faced by the dedicated physicians and staff of its overburdened emergency room.",
+      "concluded": true,
+      "createdAt": "2026-08-02T03:40:45.934Z",
+      "directors": [
+        "Michael Crichton",
+        "Janine Sherman Barrois",
+        "Joe Sachs"
+      ],
+      "ownerName": "Danica",
+      "updatedAt": "2026-08-02T03:40:45.934Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Danica"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/b1t0mS2MAqnMdh5opqi94rlDEjn.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 15,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-02T03:40:45.934Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:04.291Z",
+      "streamingService": "Peacock",
+      "episodesPerSeason": [
+        25,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        22,
+        23,
+        19,
+        22
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-02T03:40:45.934Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-02T03:41:32.675Z",
+      "rottenTomatoesScore": 78
+    },
+    {
+      "id": "show-1785642035845",
+      "title": "The Pitt",
+      "actors": [
+        "Noah Wyle",
+        "Patrick Ball",
+        "Katherine LaNasa",
+        "Supriya Ganesh",
+        "Fiona Dourif"
+      ],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "7:00 A.M.",
+        "S1E2": "8:00 A.M.",
+        "S1E3": "9:00 A.M.",
+        "S1E4": "10:00 A.M.",
+        "S1E5": "11:00 A.M.",
+        "S1E6": "12:00 P.M.",
+        "S1E7": "1:00 P.M.",
+        "S1E8": "2:00 P.M.",
+        "S1E9": "3:00 P.M.",
+        "S3E1": "7:00 A.M.",
+        "S1E10": "4:00 P.M.",
+        "S1E11": "5:00 P.M.",
+        "S1E12": "6:00 P.M.",
+        "S1E13": "7:00 P.M.",
+        "S1E14": "8:00 P.M.",
+        "S1E15": "9:00 P.M."
+      },
+      "overview": "The staff of Pittsburgh's Trauma Medical Center work around the clock to save lives in an overcrowded and underfunded emergency department.",
+      "concluded": false,
+      "createdAt": "2026-08-02T03:40:35.845Z",
+      "directors": [
+        "R. Scott Gemmill",
+        "Joe Sachs",
+        "Michelle Lankwarden"
+      ],
+      "updatedAt": "2026-08-02T03:40:35.845Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/z3BkMbCy5ajZPMyKEUwsPHuz2cV.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "7:00 A.M.",
+        "airDate": "2027-01-07",
+        "overview": "Season 3 premiere: The third 15-hour emergency trauma shift begins in Pittsburgh."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-02T03:40:35.845Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-24T20:00:04.293Z",
+      "streamingService": "Max",
+      "episodesPerSeason": [
+        15,
+        15,
+        15
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:03.302Z",
+      "progressUpdatedAt": "2026-08-02T03:40:35.845Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-02T03:41:32.224Z",
+      "rottenTomatoesScore": 87
+    },
+    {
+      "id": "show-1785641981484-164545",
+      "title": "The Good Place",
+      "actors": [
+        "Kristen Bell",
+        "Ted Danson",
+        "William Jackson Harper",
+        "Jameela Jamil",
+        "D'Arcy Carden",
+        "Manny Jacinto"
+      ],
+      "genres": [
+        "Comedy",
+        "Fantasy",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Everything Is Fine",
+        "S1E2": "Flying",
+        "S1E3": "Tahani Al-Jamil",
+        "S1E4": "Jason Mendoza",
+        "S1E5": "Category 55 Emergency Doomsday Crisis",
+        "S1E6": "What We Owe to Each Other",
+        "S1E7": "The Eternal Shriek",
+        "S1E8": "Most Improved Player",
+        "S1E9": "...Someone Like Me as a Member",
+        "S4E1": "A Girl from Arizona",
+        "S4E2": "A Girl from Arizona Part 2",
+        "S4E3": "Chillaxing",
+        "S4E4": "Tinker, Tailor, Demon, Spy",
+        "S4E5": "Employee of the Bearimy",
+        "S4E6": "A Chip Driver Mystery",
+        "S4E7": "Help Is Other People",
+        "S4E8": "The Funerals To End All Funerals",
+        "S4E9": "The Answer",
+        "S1E10": "Chidi's Choice",
+        "S1E11": "What's My Motivation",
+        "S1E12": "Mindy St. Claire",
+        "S1E13": "Michael's Gambit",
+        "S4E10": "You've Changed, Man",
+        "S4E11": "Mondays, Am I Right?",
+        "S4E12": "Patty",
+        "S4E13": "Whenever You're Ready"
+      },
+      "overview": "Due to an error, self-absorbed Eleanor Shellstrop arrives in the Good Place after her death. Determined to stay, she tries to become a better person.",
+      "concluded": true,
+      "createdAt": "2026-08-02T03:39:41.484Z",
+      "directors": [
+        "Michael Schur",
+        "Morgan Sackett",
+        "Dean Holland",
+        "Beth McCarthy-Miller"
+      ],
+      "ownerName": "Danica",
+      "updatedAt": "2026-08-02T03:39:41.484Z",
+      "userScore": 5,
+      "isFavorite": false,
+      "ownerNames": [
+        "Danica"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTKnBtbgqOBDxHSTUYx0-RIMHPnQNYeA70gVEtFaqmW8A&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "familyDetails": [
+        {
+          "latestWatched": {
+            "title": "Everything Is Fine",
+            "season": 1,
+            "episode": 1
+          },
+          "status": "Backlog",
+          "userNotes": "Very clever premise and execution - Bell and Danson anchor a hilarious ensemble. Go in blind like me if you can. ",
+          "userScore": 5,
+          "ownerName": "Julio"
+        }
+      ],
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-02T03:39:41.484Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.293Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        13,
+        13,
+        13,
+        13
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-02T03:39:41.484Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-02T03:22:55.217Z",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "show-1785641910570",
+      "title": "Tom Clancy's Jack Ryan",
+      "actors": [
+        "John Krasinski",
+        "Wendell Pierce",
+        "Michael Kelly",
+        "Abbie Cornish",
+        "Betty Gabriel"
+      ],
+      "genres": [
+        "Action",
+        "Thriller",
+        "Drama",
+        "Political"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Pilot",
+        "S1E2": "French Connection",
+        "S1E3": "Black 22",
+        "S1E4": "The Wolf",
+        "S1E5": "End of Honor",
+        "S1E6": "Sources and Methods",
+        "S1E7": "The Boy",
+        "S1E8": "Inshallah",
+        "S4E1": "Triage",
+        "S4E2": "Convergence",
+        "S4E3": "Sacrifices",
+        "S4E4": "Bethesda",
+        "S4E5": "Wukong",
+        "S4E6": "Proof of Concept"
+      },
+      "overview": "An up-and-coming CIA analyst, Jack Ryan, is thrust into a dangerous field assignment as he uncovers a pattern in terrorist communication that launches him into the center of a dangerous gambit with a new breed of terrorism that threatens destruction on a global scale.",
+      "concluded": true,
+      "createdAt": "2026-08-02T03:38:30.570Z",
+      "directors": [
+        "Carlton Cuse",
+        "Patricia Riggen",
+        "Daniel Sackheim"
+      ],
+      "updatedAt": "2026-08-02T03:38:30.570Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQEuabTQM52Qm18l4hjTDqfgqMx4A3fZqB90GVP7sCHbw&s=10",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-02T03:38:30.570Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-24T20:00:04.293Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8,
+        8,
+        8,
+        6
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.475Z",
+      "progressUpdatedAt": "2026-08-02T03:38:30.570Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-02T03:39:40.622Z",
+      "rottenTomatoesScore": 77
+    },
+    {
+      "id": "show-1785641844784-931296-0",
+      "title": "Only Murders in the Building",
+      "actors": [],
+      "genres": [
+        "Comedy",
+        "Mystery"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "True Crime",
+        "S1E2": "Who Is Tim Kono?",
+        "S1E3": "How Well Do You Know Your Neighbors?",
+        "S1E4": "The Sting",
+        "S1E5": "Twist",
+        "S1E6": "To Protect and Serve",
+        "S1E7": "The Boy from 6B",
+        "S1E8": "Fan Fiction",
+        "S1E9": "Double Time",
+        "S1E10": "Open and Shut"
+      },
+      "overview": "Three strangers who share an obsession with true crime podcasts suddenly find themselves wrapped up in one when a gruesome death occurs inside their exclusive Upper West Side apartment building.",
+      "concluded": false,
+      "createdAt": "2026-08-02T03:37:24.784Z",
+      "directors": [],
+      "isStarter": true,
+      "ownerName": "Danica",
+      "updatedAt": "2026-08-02T03:37:24.784Z",
+      "userScore": 9.1,
+      "isFavorite": false,
+      "ownerNames": [
+        "Danica"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTmVSb15sNxoG3kQxUKQQhfpS98F_rpqY7zUQDlTsScvA&s=10",
+      "nextEpisode": {
+        "season": 6,
+        "episode": 1,
+        "title": "Season 6 Premiere",
+        "airDate": "2026-09-29",
+        "overview": "A new mystery unfolds in the storied hallways of the Arconia."
+      },
+      "totalSeasons": 6,
+      "familyDetails": [
+        {
+          "status": "Watching",
+          "latestWatched": {
+            "episode": 4,
+            "season": 4,
+            "title": "The Stunt Man"
+          },
+          "userNotes": "Love Steve Martin, Martin Short, and Selena Gomez together!",
+          "userScore": 9.1,
+          "ownerName": "EJC"
+        }
+      ],
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "True Crime",
+        "progressUpdatedAt": "2026-08-02T03:37:24.784Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-08-24T20:00:04.293Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:28:04.723Z",
+      "progressUpdatedAt": "2026-08-02T03:37:24.784Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-02T01:24:18.057Z",
+      "rottenTomatoesScore": 97
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:34.074Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

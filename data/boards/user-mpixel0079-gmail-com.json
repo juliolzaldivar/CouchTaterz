@@ -1,0 +1,711 @@
+{
+  "notifications": [
+    {
+      "senderId": "default",
+      "senderName": "Julio",
+      "show": {
+        "userNotes": "Nic Cage, Spider-Man... Noir?! They wrote this for me. Beautifully unhinged performance.  Oh and I loved it in both black and white and color. ",
+        "reviewUpdatedAt": "2026-08-27T05:13:50.878Z",
+        "createdAt": "2026-07-17T22:53:45.704Z",
+        "actors": [
+          "Nicolas Cage",
+          "Lamorne Morris",
+          "Li Jun Li",
+          "Karen Rodriguez",
+          "Abraham Popoola"
+        ],
+        "userScore": 9,
+        "updatedAt": "2026-08-27T05:13:50.878Z",
+        "overview": "Ben Reilly, an aging and down on his luck private investigator in 1930s New York, is forced to grapple with his past life as the city's one and only superhero.",
+        "status": "Completed",
+        "episodeReviews": {},
+        "isFavorite": false,
+        "redundancyVerified": true,
+        "title": "Spider-Noir",
+        "bannerPosition": "center 25%",
+        "bannerImage": "https://image.tmdb.org/t/p/w1280/6t2FvBr9DS8MOq0m5FAwPBCdAW5.jpg",
+        "rottenTomatoesScore": 84,
+        "nextEpisode": null,
+        "episodes": {
+          "1-8": "The Man in the Mask",
+          "1-7": "Nobody's Hero",
+          "S1E3": "Double Cross",
+          "1-3": "Double Cross",
+          "1-1": "Step Into My Office",
+          "S1E1": "Step Into My Office",
+          "1-5": "Betrayal",
+          "1-2": "Tread Lightly",
+          "S1E4": "A Mistake I'll Never Make Again",
+          "S1E6": "Nightmare on a Gurney",
+          "1-4": "A Mistake I'll Never Make Again",
+          "S1E5": "Betrayal",
+          "S1E7": "Nobody's Hero",
+          "S1E2": "Tread Lightly",
+          "1-6": "Nightmare on a Gurney",
+          "S1E8": "The Man in the Mask"
+        },
+        "directors": [
+          "Oren Uziel",
+          "Phil Lord",
+          "Christopher Miller"
+        ],
+        "ownerName": "Julio",
+        "latestWatched": {
+          "title": "Step Into My Office",
+          "episode": 1,
+          "season": 1
+        },
+        "totalSeasons": 1,
+        "genres": [
+          "Drama",
+          "Mystery",
+          "Crime"
+        ],
+        "redundancyCheckedAt": "2026-08-27T03:10:13.333Z",
+        "concluded": false,
+        "ownerNames": [
+          "Julio"
+        ],
+        "episodesPerSeason": [
+          8
+        ],
+        "streamingService": "Other",
+        "id": "show-1784328825704"
+      },
+      "createdAt": "2026-08-27T05:14:52.162Z",
+      "message": "Have you seen this yet? Nic fuckin Cage.",
+      "id": "notif-1787807692162-f9ejy003q",
+      "senderAvatarUrl": "https://api.dicebear.com/9.x/pixel-art/svg?seed=LazyPotato_3661&backgroundColor=1e293b&hairColor%5B%5D=261308&glassesProbability=0&mouth%5B%5D=happy04&eyes%5B%5D=variant08&eyesColor%5B%5D=48210a&clothing%5B%5D=variant03&clothingColor%5B%5D=141414&hatProbability=0&beardProbability=100&beard%5B%5D=variant01&accessoriesProbability=0"
+    }
+  ],
+  "owner": {
+    "isAdmin": false,
+    "id": "user-mpixel0079-gmail-com",
+    "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocILPah-QKmiHV1HBFpP9dhZPtbZ12OT_9WCtZZi8dBDrjnpxFXo=s96-c",
+    "createdAt": "2026-08-27T05:03:27.988Z",
+    "email": "mpixel0079@gmail.com",
+    "isPro": false,
+    "name": "Salvador Hardin"
+  },
+  "preferences": {
+    "genres": [],
+    "actors": [],
+    "directors": [],
+    "services": [
+      "Disney+",
+      "Hulu",
+      "Prime Video",
+      "Peacock"
+    ],
+    "gender": "Prefer not to say",
+    "ageRange": "25\u201334",
+    "geography": "Los Angeles, California, United States",
+    "country": "United States",
+    "stateRegion": "California",
+    "city": "Los Angeles",
+    "timezone": "America/Los_Angeles",
+    "eras": [
+      "Current & Modern (2020s)",
+      "2010s Prestige TV"
+    ],
+    "vibes": [],
+    "favoriteShows": [],
+    "alertPreference": "email",
+    "alertDestination": "mpixel0079@gmail.com",
+    "notificationLeadDays": 30
+  },
+  "shows": [
+    {
+      "id": "show-1787809975869-927629",
+      "title": "Blue Eye Samurai",
+      "actors": [
+        "Maya Erskine",
+        "George Takei",
+        "Masi Oka",
+        "Cary-Hiroyuki Tagawa",
+        "Brenda Song",
+        "Darren Barnet"
+      ],
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Drama"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Hammerscale",
+        "S1E2": "An Unexpected Element",
+        "S1E3": "A Fixed Number of Paths",
+        "S1E4": "Peculiarities",
+        "S1E5": "The Tale of the Ronin and the Bride",
+        "S1E6": "All Evil Dreams and Angry Words",
+        "S1E7": "Nothing Broken",
+        "S1E8": "The Great Fire of 1657",
+        "S2E1": "London Bound",
+        "S2E2": "The Thames Fog"
+      },
+      "overview": "In 17th-century Japan, when borders are closed to the outside world, a mixed-race master of the sword, Mizu, lives a life in disguise while seeking to deliver vengeance on those who made her an outcast.",
+      "concluded": false,
+      "createdAt": "2026-08-27T05:52:55.869Z",
+      "directors": [
+        "Jane Wu"
+      ],
+      "ownerName": "Salvador Hardin",
+      "updatedAt": "2026-08-25T02:19:33.565Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Salvador Hardin"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR3eJzntzcIcCmF7jkP1vX7fYZ7gEajVvymT4CYvMS2hQ&s=10",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "London Bound",
+        "airDate": "2026-10-16",
+        "overview": "Mizu journeys across the ocean to 17th-century London to hunt the remaining conspirators."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-25T02:19:33.565Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-25T02:19:33.565Z",
+      "streamingService": "Netflix",
+      "episodesPerSeason": [
+        8,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-25T02:19:33.565Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-27T03:10:13.333Z",
+      "rottenTomatoesScore": 96
+    },
+    {
+      "id": "show-1787809908458-860119",
+      "title": "One Piece",
+      "actors": [
+        "Mayumi Tanaka",
+        "Kazuya Nakai",
+        "Mari Yaguchi",
+        "Akemi Okamura",
+        "Kappei Yamaguchi"
+      ],
+      "genres": [
+        "Action & Adventure",
+        "Comedy",
+        "Animation"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "Romance Dawn",
+        "S1E2": "The Man in the Straw Hat",
+        "S1E3": "Tell No Tales",
+        "S1E4": "The Pirates Are Coming",
+        "S1E5": "Eat at Baratie!",
+        "S1E6": "The Chef and the Chore Boy",
+        "S1E7": "The Girl with the Sawfish Tattoo",
+        "S1E8": "Worst in the East",
+        "S2E1": "Loguetown & The Grand Line",
+        "S2E2": "Whiskey Peak",
+        "S2E3": "Little Garden",
+        "S2E4": "Drum Island",
+        "S2E5": "Wax On, Wax Off",
+        "S2E6": "Nami Deerest",
+        "S2E7": "Reindeer Shames",
+        "S2E8": "Deer and Loathing in Drum Kingdom"
+      },
+      "overview": "Years ago, the fearsome Pirate King, Gol D. Roger was executed leaving a huge pile of treasure and the famous \"One Piece\" behind. Whoever claims the \"One Piece\" will be named the new King of the Pirates.\n\nMonkey D. Luffy, a boy who consumed a \"Devil Fruit,\" decides to follow in the footsteps of his idol, the pirate Shanks, and find the One Piece. It helps, of course, that his body has the properties of rubber and that he's surrounded by a bevy of skilled fighters and thieves to help him along the way.\n\nLuffy will do anything to get the One Piece and become King of the Pirates!",
+      "concluded": false,
+      "createdAt": "2026-08-27T05:51:48.458Z",
+      "directors": [
+        "Showrunner Creator"
+      ],
+      "ownerName": "Salvador Hardin",
+      "updatedAt": "2026-08-25T02:19:33.557Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "ownerNames": [
+        "Salvador Hardin"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/2rmK7mnchw9Xr3XdiTFSxTTLXqv.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Loguetown & The Grand Line",
+        "airDate": "2026-09-19",
+        "overview": "Luffy and the Straw Hat Pirates prepare to enter the perilous waters of the Grand Line."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-25T02:19:33.557Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-25T02:19:33.557Z",
+      "streamingService": "Other",
+      "episodesPerSeason": [
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-25T02:19:33.557Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-27T03:10:13.261Z",
+      "rottenTomatoesScore": 87
+    },
+    {
+      "id": "show-1787808824880-47978",
+      "title": "Harley Quinn",
+      "actors": [
+        "Kaley Cuoco",
+        "Lake Bell"
+      ],
+      "genres": [
+        "Action & Adventure",
+        "Animation",
+        "Comedy",
+        "Sci-Fi & Fantasy"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S5E3": "Legion of Doom Redux",
+        "S5E4": "Harlivy Forever",
+        "S5E5": "Bachelorette Part Two",
+        "S5E6": "Assault on Arkham",
+        "S5E7": "Clown Princess of Crime",
+        "S5E8": "The Bat and the Cat",
+        "S5E9": "Monsters of the Deep",
+        "S1E1": "Til Death Do Us Part",
+        "S1E2": "A High Bar",
+        "S1E3": "So You Need a Crew?",
+        "S1E4": "Finding Mr. Right",
+        "S1E5": "Being Harley Quinn",
+        "S1E6": "You're a Damn Good Cop, Jim Gordon",
+        "S1E7": "The Line",
+        "S1E8": "L.O.D.R.S.V.P",
+        "S1E9": "A Seat at the Table",
+        "S5E1": "Gotham City Sirens",
+        "S5E2": "Poison Ivy League",
+        "S1E10": "Bensonhurst",
+        "S1E11": "Harley Quinn Highway",
+        "S1E12": "Devil's Snare",
+        "S1E13": "The Final Joke",
+        "S5E10": "The Mess is the Point"
+      },
+      "overview": "Harley Quinn has finally broken things off once and for all with the Joker. Now, she's trying to make it on her own as the criminal Queenpin of Gotham City, with help from Poison Ivy and a ragtag crew of DC castoffs.",
+      "concluded": false,
+      "createdAt": "2026-08-27T05:33:44.880Z",
+      "directors": [
+        "Patrick Schumacker",
+        "Justin Halpern",
+        "Dean Lorey"
+      ],
+      "ownerName": "Salvador Hardin",
+      "updatedAt": "2026-08-25T02:19:33.569Z",
+      "userScore": 8,
+      "isFavorite": false,
+      "ownerNames": [
+        "Salvador Hardin"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/sNHoOagykUU0WpVBa162w1NP0mP.jpg",
+      "nextEpisode": {
+        "season": 5,
+        "episode": 4,
+        "title": "Harlivy Forever",
+        "airDate": "2026-09-25",
+        "overview": "Ivy and Harley navigate unexpected relationship hurdles while on a frantic road trip."
+      },
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-25T02:19:33.569Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-25T02:19:33.569Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        13,
+        13,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:06.002Z",
+      "progressUpdatedAt": "2026-08-25T02:19:33.569Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-27T03:10:13.376Z",
+      "rottenTomatoesScore": 83
+    },
+    {
+      "id": "show-1787808241609",
+      "title": "LEGO Masters",
+      "actors": [
+        "Will Arnett",
+        "Jamie Berard",
+        "Amy Corbett"
+      ],
+      "genres": [
+        "Family",
+        "Reality"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Dream Park Theme Park",
+        "S1E2": "Space Smash",
+        "S1E3": "Cut in Half",
+        "S1E4": "Movie Genres",
+        "S1E5": "Mega City Block",
+        "S1E6": "Need for Speed / Super-Bridges",
+        "S1E7": "Storybook",
+        "S1E8": "Good vs. Evil",
+        "S1E9": "Star Wars",
+        "S5E1": "Rebuild the Galaxy",
+        "S5E2": "Wedding Cakes",
+        "S5E3": "Over the Falls",
+        "S5E4": "Wicked",
+        "S5E5": "Get in Gear",
+        "S5E6": "Batman",
+        "S5E7": "Masquerade",
+        "S5E8": "Is it Brick? 90's Edition",
+        "S5E9": "Great Ball Contraptions",
+        "S1E10": "Finals",
+        "S5E10": "Hall of Fame Finale",
+        "S5E11": "Best of the Best",
+        "S5E12": "Cliffhanger",
+        "S5E13": "Jumper",
+        "S5E14": "Grand Finale"
+      },
+      "overview": "Teams of LEGO enthusiasts go head-to-head, with infinite possibilities and an unlimited supply of LEGO bricks. Teams of two will compete against each other in ambitious brick-building challenges to be crowned the country's most talented amateur LEGO builders.  Based on the hit British reality-competition series of the same name.",
+      "concluded": false,
+      "createdAt": "2026-08-27T05:24:01.609Z",
+      "directors": [
+        "Robert May",
+        "Jill Wilfert"
+      ],
+      "updatedAt": "2026-08-27T05:24:00.511Z",
+      "userNotes": "",
+      "userScore": null,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/nzDVzGquqMRs9fp5X5dHqNJvTXK.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 5,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-27T05:24:00.511Z"
+      },
+      "bannerPosition": "center 25%",
+      "episodeReviews": {},
+      "reviewUpdatedAt": "2026-08-27T05:24:00.511Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        12,
+        13,
+        11,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-27T05:24:00.511Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-27T05:24:05.990Z",
+      "rottenTomatoesScore": 72
+    },
+    {
+      "id": "show-1787808198086",
+      "title": "Silver Surfer",
+      "actors": [
+        "Paul Essiembre"
+      ],
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Sci-Fi",
+        "Fantasy",
+        "Kids"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "The Origin of the Silver Surfer Part 1",
+        "S1E2": "The Origin of the Silver Surfer Part 2",
+        "S1E3": "The Origin of the Silver Surfer Part 3",
+        "S1E4": "The Planet of Dr. Moreau",
+        "S1E5": "Learning Curve Part 1",
+        "S1E6": "Learning Curve Part 2",
+        "S1E7": "Innervisions",
+        "S1E8": "Antibody",
+        "S1E9": "Second Foundation",
+        "S1E10": "Radical Justice",
+        "S1E11": "The Forever War",
+        "S1E12": "Return to Zenn-La",
+        "S1E13": "The End of Eternity"
+      },
+      "overview": "The adventures of the cosmic wanderer as he seeks his lost home after rebelling from his master.",
+      "concluded": true,
+      "createdAt": "2026-08-27T05:23:18.086Z",
+      "directors": [
+        "Larry Brody",
+        "Stan Lee",
+        "Chris Kane"
+      ],
+      "updatedAt": "2026-08-27T05:24:00.511Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/jTupUx9wdoIKe8BFoP5Z1xzEtno.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 13,
+        "title": "The End of Eternity",
+        "progressUpdatedAt": "2026-08-27T05:24:00.511Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-27T05:24:00.511Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        13
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-27T05:24:00.511Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-27T05:24:05.990Z",
+      "rottenTomatoesScore": 74
+    },
+    {
+      "id": "show-1787807999209",
+      "title": "Spider-Noir",
+      "actors": [
+        "Nicolas Cage",
+        "Lamorne Morris",
+        "Li Jun Li",
+        "Karen Rodriguez",
+        "Abraham Popoola"
+      ],
+      "genres": [
+        "Drama",
+        "Mystery",
+        "Crime"
+      ],
+      "status": "Backlog",
+      "episodes": {
+        "S1E1": "1930s Web",
+        "S1E2": "Tread Lightly",
+        "S1E3": "Double Cross",
+        "S1E4": "A Mistake I'll Never Make Again",
+        "S1E5": "Betrayal",
+        "S1E6": "Nightmare on a Gurney",
+        "S1E7": "Nobody's Hero",
+        "S1E8": "The Man in the Mask"
+      },
+      "overview": "Ben Reilly, an aging and down on his luck private investigator in 1930s New York, is forced to grapple with his past life as the city's one and only superhero.",
+      "concluded": true,
+      "createdAt": "2026-08-27T05:19:59.209Z",
+      "directors": [
+        "Oren Uziel",
+        "Phil Lord",
+        "Christopher Miller"
+      ],
+      "ownerName": "Salvador Hardin",
+      "updatedAt": "2026-08-27T05:13:50.878Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Salvador Hardin"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6t2FvBr9DS8MOq0m5FAwPBCdAW5.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "1930s Web",
+        "progressUpdatedAt": "2026-08-27T05:13:50.878Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-27T05:13:50.878Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:07.422Z",
+      "progressUpdatedAt": "2026-08-27T05:13:50.878Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-27T03:10:13.333Z",
+      "rottenTomatoesScore": 84
+    },
+    {
+      "id": "show-1787807698144",
+      "title": "IT: Welcome to Derry",
+      "actors": [
+        "Bill Skarsg\u00e5rd",
+        "Jovan Adepo",
+        "Taylour Paige",
+        "Chris Chalk",
+        "James Remar",
+        "Madeleine Stowe"
+      ],
+      "genres": [
+        "Horror",
+        "Mystery",
+        "Drama"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "The Black Spot",
+        "S1E2": "Under the Streets",
+        "S1E3": "Now You See It",
+        "S1E4": "The Great Swirling Apparatus of Our Planet's Function",
+        "S1E5": "29 Neibolt Street",
+        "S1E6": "In the Name of the Father",
+        "S1E7": "The Black Spot",
+        "S1E8": "Winter Fire"
+      },
+      "overview": "Set in the universe of Stephen King's IT, this prequel series expands the story established in the films IT and IT Chapter Two, exploring the origins of Pennywise the Dancing Clown and the terror embedded in the history of Derry, Maine.",
+      "concluded": false,
+      "createdAt": "2026-08-27T05:14:58.144Z",
+      "directors": [
+        "Andy Muschietti"
+      ],
+      "ownerName": "Salvador Hardin",
+      "updatedAt": "2026-08-27T05:19:35.121Z",
+      "userScore": 7,
+      "isFavorite": false,
+      "ownerNames": [
+        "Salvador Hardin"
+      ],
+      "bannerImage": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTgojBYRx2eUdagOPhhyPXXEIbVuNqMK3My-Wvkr-5XEA&s=10",
+      "nextEpisode": {
+        "season": 1,
+        "episode": 1,
+        "title": "The Black Spot",
+        "airDate": "2026-10-11",
+        "overview": "In 1962 Derry, Maine, four kids uncover the terrifying history beneath their small town."
+      },
+      "totalSeasons": 1,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-08-27T05:19:35.121Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-27T05:19:35.121Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        9
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-27T05:19:35.121Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-27T05:19:46.079Z",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "show-1787807552339",
+      "title": "X-Men '97",
+      "actors": [
+        "Ensemble Cast"
+      ],
+      "genres": [
+        "Animation",
+        "Action",
+        "Adventure",
+        "Sci-Fi",
+        "Fantasy"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "To Me, My X-Men",
+        "S1E2": "Mutant Liberation Begins",
+        "S1E3": "Fire Made Flesh",
+        "S1E4": "Motendo / Lifedeath - Part 1",
+        "S1E5": "Remember It",
+        "S1E6": "Lifedeath - Part 2",
+        "S1E7": "Bright Eyes",
+        "S1E8": "Tolerance is Extinction - Part 1",
+        "S1E9": "Tolerance is Extinction - Part 2",
+        "S2E1": "Days of Past Future",
+        "S2E2": "A Force to be Reckoned With",
+        "S2E3": "Rise of Apocalypse: Part 1",
+        "S2E4": "Rise of Apocalypse Part II",
+        "S2E5": "Weapon X, Lies, and DVDs",
+        "S2E6": "Danger.exe",
+        "S2E7": "Strange Land, Savage Heart",
+        "S2E8": "The Dead Man's Hand",
+        "S2E9": "The Dead Man's Hand",
+        "S1E10": "Tolerance is Extinction - Part 3",
+        "S2E10": "Age of Apocalypse Finale"
+      },
+      "overview": "The X-Men, a band of mutants who use their uncanny gifts to protect a world that hates and fears them, are challenged like never before, forced to face a dangerous and unexpected new future.",
+      "concluded": false,
+      "createdAt": "2026-08-27T05:12:32.340Z",
+      "directors": [
+        "Dana Vasquez-Eberhardt",
+        "Julia Lewald",
+        "Eric Lewald"
+      ],
+      "ownerName": "Salvador Hardin",
+      "updatedAt": "2026-08-27T05:26:04.475Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Salvador Hardin"
+      ],
+      "bannerImage": "https://images.squarespace-cdn.com/content/v1/51b3dc8ee4b051b96ceb10de/a3d300bb-f1b7-4fca-b376-03273a92de3e/X-MEN+%2797+Star+is+%2522Amazed+Disney+Greenlit%2522+Season+2+Because+It%E2%80%99s+%2522Very%2C+Very+Dark%2522+and+%2522A+Lot+of+People+Die%2522.jpg?format=2500w",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 10,
+        "title": "Age of Apocalypse Finale",
+        "airDate": "2026-08-26",
+        "overview": "The X-Men unite across fractured timelines for the ultimate battle against Apocalypse."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 1,
+        "title": "To Me, My X-Men",
+        "progressUpdatedAt": "2026-08-27T05:26:04.475Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-27T05:26:04.475Z",
+      "streamingService": "Disney+",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.486Z",
+      "progressUpdatedAt": "2026-08-27T05:26:04.475Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-27T05:14:08.765Z",
+      "rottenTomatoesScore": 87
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:58.600Z",
+  "id": "user-mpixel0079-gmail-com",
+  "name": "Mario Cordoba's Collection",
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

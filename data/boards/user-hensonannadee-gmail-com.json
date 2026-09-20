@@ -1,0 +1,28 @@
+{
+  "notifications": [],
+  "shows": [],
+  "preferences": {
+    "genres": [],
+    "actors": [],
+    "directors": [],
+    "services": [],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  },
+  "owner": {
+    "email": "hensonannadee@gmail.com",
+    "name": "AnnaDee Henson",
+    "id": "user-hensonannadee-gmail-com",
+    "createdAt": "2026-08-30T06:07:36.235Z",
+    "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocKx5Xyel3sFd5NYvTA1wE8iyDizn8ejVOzZWGAl6AUak_CRbA=s96-c",
+    "isAdmin": false,
+    "isPro": false
+  },
+  "name": "AnnaDee Henson's Collection",
+  "id": "user-hensonannadee-gmail-com",
+  "updatedAt": "2026-09-19T19:38:36.106Z",
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": []
+}

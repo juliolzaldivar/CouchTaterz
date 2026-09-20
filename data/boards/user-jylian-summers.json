@@ -1,0 +1,622 @@
+{
+  "id": "user-jylian-summers",
+  "name": "Jylian's Shows",
+  "owner": {
+    "createdAt": "2026-08-20T10:00:00.000Z",
+    "avatarUrl": "https://api.dicebear.com/7.x/pixel-art/svg?seed=Jylian",
+    "email": "jylian_summers@yahoo.com",
+    "name": "Jylian",
+    "id": "user-jylian-summers"
+  },
+  "shows": [
+    {
+      "id": "jylian-1",
+      "title": "Severance",
+      "actors": [
+        "Adam Scott",
+        "Patricia Arquette",
+        "John Turturro",
+        "Britt Lower"
+      ],
+      "genres": [
+        "Drama",
+        "Sci-Fi",
+        "Mystery"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S2E1": "Hello Ms. Cobel",
+        "S2E2": "Goodbye, Mrs. Selvig",
+        "S2E3": "Who Is Alive?",
+        "S2E4": "Woe's Hollow",
+        "S2E5": "Trojan's Horse",
+        "S2E6": "Attila",
+        "S2E7": "Chikhai Bardo",
+        "S2E8": "Sweet Vitriol",
+        "S2E9": "The After Hours",
+        "S2E10": "Cold Harbor"
+      },
+      "overview": "Mark leads a team of office workers whose memories have been surgically divided between their work and personal lives.",
+      "concluded": false,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [
+        "Ben Stiller",
+        "Aoife McArdle"
+      ],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 10,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/ixgFmf1X59PUZam2qbAfskx2gQr.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-01-15",
+        "overview": "Mark and the severed department uncover deeper Lumon corporate secrets."
+      },
+      "totalSeasons": 3,
+      "familyDetails": [
+        {
+          "userScore": 10,
+          "ownerName": "Julio",
+          "status": "Backlog",
+          "userNotes": "Ben Wyatt needs a haircut but is incredibly compelling in this workplace mind bender. Hope he finds Leslie soon. ",
+          "latestWatched": {
+            "season": 1,
+            "episode": 9,
+            "title": "The We We Are"
+          }
+        }
+      ],
+      "latestWatched": {
+        "season": 2,
+        "episode": 3,
+        "title": "Who Is Alive?",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "isBannerHidden": false,
+      "reviewUpdatedAt": "2026-07-20T11:05:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        9,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:08.831Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:49:29.486Z",
+      "rottenTomatoesScore": 97
+    },
+    {
+      "id": "jylian-2",
+      "title": "The Last of Us",
+      "actors": [],
+      "genres": [
+        "Horror",
+        "Drama",
+        "Sci-Fi",
+        "Action"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S2E1": "Jackson",
+        "S2E2": "Through the Valley",
+        "S2E3": "The Path",
+        "S2E4": "Day One",
+        "S2E5": "Feel Her Love",
+        "S2E6": "The Price",
+        "S2E7": "Seattle Day 3"
+      },
+      "overview": "Twenty years after modern civilization has been destroyed, Joel, a hardened survivor, is hired to smuggle Ellie, a 14-year-old girl, out of an oppressive quarantine zone.",
+      "concluded": false,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 9.5,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/acevLdSl5I2MK5RYAm7gwAndt1w.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-04-18",
+        "overview": "The next chapter in Ellie's journey begins across the fractured frontier."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 2,
+        "episode": 4,
+        "title": "Day One",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:10:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        9,
+        7,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:09.296Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:50.013Z",
+      "rottenTomatoesScore": 96
+    },
+    {
+      "id": "jylian-3",
+      "title": "Silo",
+      "actors": [],
+      "genres": [
+        "Sci-Fi",
+        "Drama",
+        "Mystery"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S2E1": "The Engineer",
+        "S2E2": "Order",
+        "S2E3": "Solo",
+        "S2E4": "The Harmonium",
+        "S2E5": "Descent",
+        "S2E6": "Barricades",
+        "S2E7": "The Dive",
+        "S2E8": "The Book of Quinn",
+        "S2E9": "The Safeguard",
+        "S3E1": "Who Are You?",
+        "S3E2": "It's All Good",
+        "S3E3": "A Dark Web",
+        "S3E4": "Whatever You Do, Don't Go Home",
+        "S3E5": "Memory",
+        "S3E6": "The Drive",
+        "S3E7": "Radio",
+        "S3E8": "Gray Goo",
+        "S3E9": "The Surface",
+        "S2E10": "Into the Fire",
+        "S3E10": "Legacy"
+      },
+      "overview": "In a ruined and toxic future, thousands live in a giant silo deep underground. After its sheriff breaks a cardinal rule and residents die mysteriously, engineer Juliette starts to uncover shocking secrets.",
+      "concluded": false,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 9.2,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/uTWhbLc7Bj4qNSdW3ZvZKL8cOHv.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 10,
+        "title": "Legacy",
+        "airDate": "2026-09-04",
+        "overview": "Season 3 finale: The ultimate struggle for the future of the remaining silos."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 2,
+        "episode": 10,
+        "title": "Into the Fire",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:15:00.000Z",
+      "streamingService": "Apple TV",
+      "episodesPerSeason": [
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:10.340Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "hasAirDateReminder": false,
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-20T20:48:03.598Z",
+      "rottenTomatoesScore": 88
+    },
+    {
+      "id": "jylian-4",
+      "title": "Sh\u014dgun",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "History",
+        "Action"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S1E1": "Anjin",
+        "S1E2": "Servants of Two Masters",
+        "S1E3": "Tomorrow Is Tomorrow",
+        "S1E4": "The Eightfold Fence",
+        "S1E5": "Broken to the Fist",
+        "S1E6": "Ladies of the Willow World",
+        "S1E7": "A Stick of Time",
+        "S1E8": "The Abyss of Life",
+        "S1E9": "Crimson Sky",
+        "S1E10": "A Dream of a Dream",
+        "S2E1": "Toranaga's Realm",
+        "S2E2": "The Rising Sun"
+      },
+      "overview": "In Japan in the year 1600, Lord Yoshii Toranaga is fighting for his life as his enemies on the Council of Regents unite against him, when a mysterious European ship is found marooned in a nearby fishing village.",
+      "concluded": false,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 9.8,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/6Tb87q9Tog30F5AAHh1gyDT2Vve.jpg",
+      "nextEpisode": {
+        "season": 2,
+        "episode": 1,
+        "title": "Toranaga's Realm",
+        "airDate": "2027-02-12",
+        "overview": "Lord Toranaga consolidates his Shogunate amid new political intrigues and western embassies."
+      },
+      "totalSeasons": 2,
+      "latestWatched": {
+        "season": 1,
+        "episode": 10,
+        "title": "A Dream of a Dream",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:20:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.812Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "jylian-5",
+      "title": "The Bear",
+      "actors": [],
+      "genres": [
+        "Drama",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S3E1": "Tomorrow",
+        "S3E2": "Next",
+        "S3E3": "Doors",
+        "S3E4": "Violet",
+        "S3E5": "Children",
+        "S3E6": "Napkins",
+        "S3E7": "Legacy",
+        "S3E8": "Ice Chips",
+        "S3E9": "Apologies",
+        "S4E1": "Groundhogs",
+        "S4E2": "Soubise",
+        "S4E3": "Scallop",
+        "S4E4": "Worms",
+        "S4E5": "Replicants",
+        "S4E6": "Sophie",
+        "S4E7": "Bears",
+        "S4E8": "Green",
+        "S4E9": "Tonnato",
+        "S3E10": "Forever",
+        "S4E10": "Goodbye"
+      },
+      "overview": "A young chef from the fine dining world returns to Chicago to run his family\u2019s sandwich shop after a tragic death in his family.",
+      "concluded": true,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 9.4,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/aJtG4txtmiRHwAAqENQHZvBs6kY.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 3,
+        "episode": 6,
+        "title": "Napkins",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:25:00.000Z",
+      "streamingService": "Hulu",
+      "episodesPerSeason": [
+        8,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.916Z",
+      "rottenTomatoesScore": 99
+    },
+    {
+      "id": "jylian-6",
+      "title": "House of the Dragon",
+      "actors": [],
+      "genres": [
+        "Fantasy",
+        "Drama",
+        "Action"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S2E1": "A Son for a Son",
+        "S2E2": "Rhaenyra the Cruel",
+        "S2E3": "The Burning Mill",
+        "S2E4": "The Red Dragon and the Gold",
+        "S2E5": "Regent",
+        "S2E6": "Smallfolk",
+        "S2E7": "The Red Sowing",
+        "S2E8": "The Queen Who Ever Was",
+        "S4E1": "The Hour of the Wolf"
+      },
+      "overview": "An internal succession war within House Targaryen at the height of its power, 172 years before the birth of Daenerys Targaryen.",
+      "concluded": false,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 9.1,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/577eXC8wFQT0eUrJcgznSiFPRmk.jpg",
+      "nextEpisode": {
+        "season": 4,
+        "episode": 1,
+        "title": "The Hour of the Wolf",
+        "airDate": "2028-06-18",
+        "overview": "The climactic final season of the Targaryen civil war begins."
+      },
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 2,
+        "episode": 8,
+        "title": "The Queen Who Ever Was",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:30:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        8,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:12.057Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.952Z",
+      "rottenTomatoesScore": 90
+    },
+    {
+      "id": "jylian-7",
+      "title": "Succession",
+      "actors": [],
+      "genres": [
+        "Drama"
+      ],
+      "status": "Completed",
+      "episodes": {
+        "S4E1": "The Munsters",
+        "S4E2": "Rehearsal",
+        "S4E3": "Connor's Wedding",
+        "S4E4": "Honeymoon States",
+        "S4E5": "Kill List",
+        "S4E6": "Living+",
+        "S4E7": "Tailgate Party",
+        "S4E8": "America Decides",
+        "S4E9": "Church and State",
+        "S4E10": "With Open Eyes"
+      },
+      "overview": "The Roy family is known for controlling the biggest media and entertainment company in the world. However, their world changes when their father steps down from the company.",
+      "concluded": true,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 9.9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/bcdUYUFk8GdpZJPiSAas9UeocLH.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 4,
+      "latestWatched": {
+        "season": 4,
+        "episode": 10,
+        "title": "With Open Eyes",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:35:00.000Z",
+      "streamingService": "HBO",
+      "episodesPerSeason": [
+        10,
+        10,
+        10,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "verified",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.951Z",
+      "rottenTomatoesScore": 95
+    },
+    {
+      "id": "jylian-8",
+      "title": "Fallout",
+      "actors": [],
+      "genres": [
+        "Sci-Fi",
+        "Action",
+        "Comedy"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "The End",
+        "S1E2": "The Target",
+        "S1E3": "The Head",
+        "S1E4": "The Ghouls",
+        "S1E5": "The Past",
+        "S1E6": "The Trap",
+        "S1E7": "The Radio",
+        "S1E8": "The Beginning"
+      },
+      "overview": "In a future, post-apocalyptic Los Angeles brought about by nuclear decimation, citizens must live in underground bunkers to protect themselves from radiation, mutants and bandits.",
+      "concluded": false,
+      "createdAt": "2026-08-20T10:00:00.000Z",
+      "directors": [],
+      "ownerName": "Jylian",
+      "updatedAt": "2026-08-20T10:00:00.000Z",
+      "userScore": 9,
+      "isFavorite": false,
+      "ownerNames": [
+        "Jylian"
+      ],
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/coaPCIqQBPUZsOnJcWZxhaORcDT.jpg",
+      "nextEpisode": {
+        "season": 3,
+        "episode": 1,
+        "title": "Season 3 Premiere",
+        "airDate": "2027-11-10",
+        "overview": "The wasteland journey ventures into uncharted territory."
+      },
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 6,
+        "title": "The Trap",
+        "progressUpdatedAt": "2026-08-20T10:00:00.000Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-07-20T11:40:00.000Z",
+      "streamingService": "Prime Video",
+      "episodesPerSeason": [
+        8,
+        8,
+        10
+      ],
+      "metadataAuditedAt": "2026-09-18T03:31:12.988Z",
+      "progressUpdatedAt": "2026-08-20T10:00:00.000Z",
+      "redundancyVerified": true,
+      "metadataAuditStatus": "updated",
+      "redundancyCheckedAt": "2026-08-04T03:34:49.860Z",
+      "rottenTomatoesScore": 94
+    },
+    {
+      "id": "show-1788458483460",
+      "title": "The Mandalorian",
+      "actors": [
+        "Pedro Pascal",
+        "Katee Sackhoff",
+        "Carl Weathers"
+      ],
+      "genres": [
+        "Sci-Fi",
+        "Action",
+        "Adventure"
+      ],
+      "status": "Watching",
+      "episodes": {
+        "S1E1": "Chapter 1: The Mandalorian",
+        "S1E2": "Chapter 2: The Child",
+        "S1E3": "Chapter 3: The Sin",
+        "S1E4": "Chapter 4: Sanctuary",
+        "S1E5": "Chapter 5: The Gunslinger",
+        "S1E6": "Chapter 6: The Prisoner",
+        "S1E7": "Chapter 7: The Reckoning",
+        "S1E8": "Chapter 8: Redemption",
+        "S3E1": "Chapter 17: The Apostate",
+        "S3E2": "Chapter 18: The Mines of Mandalore",
+        "S3E3": "Chapter 19: The Convert",
+        "S3E4": "Chapter 20: The Foundling",
+        "S3E5": "Chapter 21: The Pirate",
+        "S3E6": "Chapter 22: Guns for Hire",
+        "S3E7": "Chapter 23: The Spies",
+        "S3E8": "Chapter 24: The Return"
+      },
+      "overview": "The travels of a lone bounty hunter in the outer reaches of the galaxy, far from the authority of the New Republic.",
+      "concluded": true,
+      "createdAt": "2026-09-03T18:01:23.460Z",
+      "directors": [
+        "Jon Favreau",
+        "Dave Filoni"
+      ],
+      "updatedAt": "2026-09-09T03:56:29.968Z",
+      "userScore": 8,
+      "isFavorite": false,
+      "bannerImage": "https://image.tmdb.org/t/p/w1280/9zcbqSxdsRMZWHYtyCd1nXPr2xq.jpg",
+      "nextEpisode": null,
+      "totalSeasons": 3,
+      "latestWatched": {
+        "season": 1,
+        "episode": 0,
+        "title": "Not Started",
+        "progressUpdatedAt": "2026-09-09T03:56:29.968Z"
+      },
+      "bannerPosition": "center 25%",
+      "reviewUpdatedAt": "2026-08-28T18:35:14.172Z",
+      "streamingService": "Disney+",
+      "episodesPerSeason": [
+        8,
+        8,
+        8
+      ],
+      "metadataAuditedAt": "2026-09-15T23:36:18.487Z",
+      "progressUpdatedAt": "2026-09-09T03:56:29.968Z",
+      "metadataAuditStatus": "verified",
+      "rottenTomatoesScore": 90
+    }
+  ],
+  "updatedAt": "2026-09-19T19:38:43.191Z",
+  "notifications": [],
+  "dismissedNotificationIds": [],
+  "dismissedAlertKeys": [],
+  "preferences": {
+    "genres": [],
+    "actors": [],
+    "directors": [],
+    "services": [],
+    "eras": [],
+    "vibes": [],
+    "favoriteShows": [],
+    "notificationLeadDays": 30
+  }
+}

@@ -4,6 +4,7 @@
  */
 
 import express from "express";
+import http from "http";
 import path from "path";
 import fs from "fs";
 import zlib from "zlib";
@@ -13,6 +14,16 @@ import { createServer as createViteServer } from "vite";
 import { initializeApp as initializeClientApp, getApps as getClientApps } from "firebase/app";
 import { getFirestore as getClientFirestore, collection, doc, getDoc, getDocs, setDoc, deleteDoc, writeBatch, setLogLevel, terminate } from "firebase/firestore";
 import { TvShow, Board, StreamingService, User, UserPreferences } from "./src/types"; // note: using relative import
+import {
+  resolveWatchedProgress,
+  calculateProgressScore,
+  getStrictReviewTimestamp,
+  mergeEpisodeReviewsPreservingUserData,
+  mergeUserNotesPreservingUserData,
+  mergeUserScorePreservingUserData,
+  mergeEpisodeScoresPreservingUserData,
+  isGenericOrPlaceholderReview,
+} from "./src/utils/progressReconciler";
 import { saveBoardToCloudSql, getAllBoardsFromCloudSql, saveFriendsToCloudSql, getAllFriendsFromCloudSql, saveMerchandiseItemToCloudSql, getMerchandiseForShowFromCloudSql, getAllMerchandiseFromCloudSql, deleteBoardFromCloudSql, deleteFriendsFromCloudSql, MerchandiseItem } from "./src/db/cloudsqlService";
 import { sendAirDateReminderEmail, checkAndDispatchDueReminders, getEmailProviderConfig, readReminderLogs, markReminderAsDismissed } from "./server/emailService";
 import { SHOW_SCHEDULES, resolveNextUpcomingEpisode, normalizeTitle as normalizeScheduleTitle } from "./server/showSchedules";
@@ -22,8 +33,18 @@ import { auditShow, auditAllShows } from "./server/metadataAuditor";
 import { startPeriodicMetadataSync, stopPeriodicMetadataSync, getMetadataSyncTelemetry, runPeriodicMetadataAudit, registerDatabaseWriter } from "./server/periodicMetadataSync";
 import { DEFAULT_SHOWS } from "./server/data/defaultShows";
 import { POPULAR_SHOWS_METADATA } from "./server/data/popularShowsMetadata";
+import { boundShowEpisodes, verifyStorageHealth, BOARDS_DIR, loadAllBoardsFromDisk, saveBoardToDisk, deleteBoardFromDisk } from "./server/storageOptimizer";
 
 dotenv.config();
+
+// Auto-detect production environment when running from bundled dist/server.cjs
+const isBundledRuntime =
+  (typeof __filename !== "undefined" && (__filename.endsWith(".cjs") || __filename.includes("dist"))) ||
+  Boolean(process.argv[1] && (process.argv[1].endsWith(".cjs") || process.argv[1].includes("dist")));
+
+if (isBundledRuntime) {
+  process.env.NODE_ENV = "production";
+}
 
 // Suppress Firestore verbose internal logs
 try {
@@ -138,11 +159,7 @@ async function fetchWithTimeout(url: string, options: any = {}, timeoutMs = 1000
 }
 
 const app = express();
-// Environment detection:
-// In the AI Studio development container, an internal reverse-proxy (nginx) listens on :8080 and proxies :3000.
-// When deployed directly to production Cloud Run, Cloud Run routes external traffic to the port configured in process.env.PORT (default 8080).
-const isAiStudioSandbox = Boolean(process.env.CONTROL_PLANE_PORT || process.env.DEFAULT_APP_PORT || process.env.NGINX_PORT);
-const PORT = isAiStudioSandbox ? 3000 : (process.env.PORT ? parseInt(process.env.PORT, 10) : 3000);
+const PORT = 3000;
 const DB_FILE = path.join(process.cwd(), "data.json");
 
 // Firebase Firestore Cloud Database setup
@@ -427,6 +444,8 @@ function normalizeShowGenres(title: string, rawGenres: string[] = [], overview: 
   return result.length > 0 ? result : ['Drama'];
 }
 
+// DEFAULT_SHOWS and POPULAR_SHOWS_METADATA modularized to server/data/
+
 // Helper for safe file writing
 function safeWriteFileSync(filePath: string, data: any) {
   try {
@@ -436,10 +455,15 @@ function safeWriteFileSync(filePath: string, data: any) {
     }
     const jsonString = JSON.stringify(data, null, 2);
     
-    // Maintain atomic .bak copy of existing file before overwrite
+    // Maintain atomic backup in data/backups/ so root workspace stays clean
     if (fs.existsSync(filePath)) {
       try {
-        fs.copyFileSync(filePath, `${filePath}.bak`);
+        const backupDir = path.join(process.cwd(), "data", "backups");
+        if (!fs.existsSync(backupDir)) {
+          fs.mkdirSync(backupDir, { recursive: true });
+        }
+        const baseName = path.basename(filePath);
+        fs.copyFileSync(filePath, path.join(backupDir, `${baseName}.bak`));
       } catch (bakErr) {}
     }
 
@@ -518,8 +542,10 @@ function safeReadJsonFileSync<T>(filePath: string): T | null {
       }
     } catch (zlibRecoveryErr) {}
 
-    // Attempt 2: Try reading .bak file
-    const bakPath = `${filePath}.bak`;
+    // Attempt 2: Try reading .bak file (check data/backups/ first, then adjacent)
+    const backupDir = path.join(process.cwd(), "data", "backups");
+    const isolatedBak = path.join(backupDir, `${path.basename(filePath)}.bak`);
+    const bakPath = fs.existsSync(isolatedBak) ? isolatedBak : `${filePath}.bak`;
     if (fs.existsSync(bakPath)) {
       try {
         const bakContent = fs.readFileSync(bakPath, "utf8");
@@ -572,41 +598,53 @@ function getMasterJulioShows(): TvShow[] {
   try {
     const MASTER_FILE = path.join(process.cwd(), "data", "julioMasterShows.json");
     if (fs.existsSync(MASTER_FILE)) {
-      const masterShows = safeReadJsonFileSync<TvShow[]>(MASTER_FILE);
-      if (Array.isArray(masterShows) && masterShows.length > 50) {
-        return masterShows;
+      const backupShows = safeReadJsonFileSync<TvShow[]>(MASTER_FILE);
+      if (Array.isArray(backupShows) && backupShows.length > 50) {
+        return backupShows;
       }
     }
   } catch (e) {}
   return DEFAULT_SHOWS;
 }
 
+const ALL_SERVICES: StreamingService[] = ['Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+', 'Starz', 'Other'];
+
+// High-speed In-Memory Database Cache to eliminate synchronous multi-megabyte disk reads
+let cachedDb: Record<string, Board> | null = null;
+let cachedDbMtime = 0;
+
 // Helper to read database
 function readDatabase(): Record<string, Board> {
   try {
-    const ALL_SERVICES: StreamingService[] = ['Netflix', 'HBO', 'Disney+', 'Prime Video', 'Hulu', 'Apple TV', 'Paramount+', 'Peacock', 'AMC+', 'Starz'];
-    if (!fs.existsSync(DB_FILE)) {
-      const initialDb: Record<string, Board> = {
-        default: {
-          id: "default",
-          name: "Julio's Collection",
-          shows: getMasterJulioShows(),
-          preferences: {
-            genres: [],
-            actors: [],
-            directors: [],
-            services: ALL_SERVICES
-          },
-          updatedAt: new Date().toISOString(),
-        },
-      };
-      safeWriteFileSync(DB_FILE, initialDb);
-      return initialDb;
+    // Fast in-memory path: return cached database if disk file has not changed
+    try {
+      const stat = fs.statSync(DB_FILE);
+      if (cachedDb && stat.mtimeMs === cachedDbMtime) {
+        return cachedDb;
+      }
+    } catch (statErr) {}
+
+    let db: Record<string, Board> = {};
+
+    // 1. Load from modular boards first (Google AI Studio optimal architecture)
+    try {
+      const modularBoards = loadAllBoardsFromDisk(BOARDS_DIR) as Record<string, Board>;
+      if (modularBoards && Object.keys(modularBoards).length > 0) {
+        db = modularBoards;
+      }
+    } catch (mErr) {}
+
+    // 2. Fallback to monolithic DB_FILE if modular boards are missing or empty
+    if (Object.keys(db).length === 0 && fs.existsSync(DB_FILE)) {
+      const diskDb = safeReadJsonFileSync<Record<string, Board>>(DB_FILE);
+      if (diskDb && typeof diskDb === 'object') {
+        db = diskDb;
+      }
     }
 
-    const db = safeReadJsonFileSync<Record<string, Board>>(DB_FILE);
-    if (!db || typeof db !== 'object') {
-      console.error("[DB] Could not parse DB_FILE or backup. Re-initializing default DB structure.");
+    // 3. Fallback to default structure if still empty
+    if (Object.keys(db).length === 0) {
+      console.log("[DB] Initializing default database structure.");
       const fallbackDb: Record<string, Board> = {
         default: {
           id: "default",
@@ -617,6 +655,9 @@ function readDatabase(): Record<string, Board> {
         }
       };
       safeWriteFileSync(DB_FILE, fallbackDb);
+      saveBoardToDisk("default", fallbackDb.default);
+      cachedDb = fallbackDb;
+      try { cachedDbMtime = fs.statSync(DB_FILE).mtimeMs; } catch (e) {}
       return fallbackDb;
     }
 
@@ -637,13 +678,16 @@ function readDatabase(): Record<string, Board> {
           db["default"].shows = masterShows;
         }
         safeWriteFileSync(DB_FILE, db);
+        saveBoardToDisk("default", db["default"]);
       }
     }
 
-    // Ensure all boards have their authoritative user reviews and scores preserved from the ledger
-    for (const board of Object.values(db)) {
+    // Ensure boards have their authoritative user reviews and scores preserved from the ledger
+    // and bound episodes to permanently prevent JSON dictionary ballooning
+    for (const [boardId, board] of Object.entries(db)) {
       if (board && Array.isArray(board.shows)) {
-        board.shows = applyReviewsLedgerToShows(board.shows);
+        board.shows = applyReviewsLedgerToShows(board.shows, boardId);
+        board.shows.forEach((s: any) => boundShowEpisodes(s));
       }
     }
 
@@ -909,11 +953,14 @@ function readDatabase(): Record<string, Board> {
             show.episodes = show.episodes || {};
             for (let epNum = 1; epNum <= 10; epNum++) {
               const epTitle = s18Titles[epNum];
-              const kDash = `18-${epNum}`;
               const kS = `S18E${epNum}`;
-              if (show.episodes[kDash] !== epTitle || show.episodes[kS] !== epTitle) {
-                show.episodes[kDash] = epTitle;
+              const kDash = `18-${epNum}`;
+              if (show.episodes[kS] !== epTitle) {
                 show.episodes[kS] = epTitle;
+                showModified = true;
+              }
+              if (show.episodes[kDash]) {
+                delete show.episodes[kDash];
                 showModified = true;
               }
             }
@@ -1215,8 +1262,16 @@ function readDatabase(): Record<string, Board> {
     
     if (modified) {
       safeWriteFileSync(DB_FILE, db);
+      for (const [bId, bVal] of Object.entries(db)) {
+        if (bVal) saveBoardToDisk(bId, bVal);
+      }
     }
     
+    cachedDb = db;
+    try {
+      cachedDbMtime = fs.statSync(DB_FILE).mtimeMs;
+    } catch (e) {}
+
     return db;
   } catch (err) {
     console.log("[DB] Using initial default or empty database state.");
@@ -1273,24 +1328,58 @@ setInterval(() => {
   flushPendingFirestoreQueue().catch(() => {});
 }, 15000);
 
-// Helper to write database safely & immediately to disk and Cloud Firestore
+// Helper to write database safely & immediately to modular boards, aggregate file, and Cloud Firestore
 async function writeDatabaseAsync(data: Record<string, Board>, targetBoardId?: string): Promise<void> {
   // 0. Safeguard all user reviews, episode takes, notes and scores to the immutable ledger
   try {
     recordShowsToLedger(data);
   } catch (e) {}
 
-  // 1. Immediately persist to local disk
-  safeWriteFileSync(DB_FILE, data);
+  // 1. Enforce active-window episode bounding on target board (or all boards) to permanently prevent JSON ballooning
+  try {
+    if (targetBoardId && data[targetBoardId] && Array.isArray(data[targetBoardId].shows)) {
+      data[targetBoardId].shows.forEach((s: any) => boundShowEpisodes(s));
+    } else {
+      for (const board of Object.values(data)) {
+        if (board && Array.isArray(board.shows)) {
+          board.shows.forEach((s: any) => boundShowEpisodes(s));
+        }
+      }
+    }
+  } catch (e) {}
 
-  // Keep backup file synchronized if default has master library
+  // 2. Persist modular board files (<1ms for single board, strictly within Google AI Studio parameters)
+  try {
+    if (targetBoardId) {
+      if (data[targetBoardId]) {
+        saveBoardToDisk(targetBoardId, data[targetBoardId]);
+      } else {
+        deleteBoardFromDisk(targetBoardId);
+      }
+    } else {
+      for (const [bId, board] of Object.entries(data)) {
+        if (board) {
+          saveBoardToDisk(bId, board);
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. Immediately persist aggregate data.json for backward compatibility
+  safeWriteFileSync(DB_FILE, data);
+  cachedDb = data;
+  try {
+    cachedDbMtime = fs.statSync(DB_FILE).mtimeMs;
+  } catch (e) {}
+
+  // Keep master shows file synchronized if default has master library
   if (data["default"] && Array.isArray(data["default"].shows) && data["default"].shows.length >= 50) {
     try {
-      safeWriteFileSync(path.join(process.cwd(), "julio_shows_backup.json"), data["default"].shows);
+      safeWriteFileSync(path.join(process.cwd(), "data", "julioMasterShows.json"), data["default"].shows);
     } catch (e) {}
   }
 
-  // 2. Primary: Persist to Cloud Firestore immediately with non-blocking timeout
+  // 4. Primary: Persist to Cloud Firestore immediately with non-blocking timeout
   if (dbFirestore) {
     if (isFirestoreQuotaExhausted) {
       pendingFirestoreQueue.add(targetBoardId || "all");
@@ -1338,7 +1427,7 @@ async function writeDatabaseAsync(data: Record<string, Board>, targetBoardId?: s
     }
   }
 
-  // 3. Optional secondary: Persist to Cloud SQL if configured & active
+  // 5. Optional secondary: Persist to Cloud SQL if configured & active
   if (process.env.SQL_HOST) {
     try {
       if (targetBoardId && data[targetBoardId]) {
@@ -1355,7 +1444,20 @@ async function writeDatabaseAsync(data: Record<string, Board>, targetBoardId?: s
 }
 
 function writeDatabase(data: Record<string, Board>, targetBoardId?: string): void {
-  safeWriteFileSync(DB_FILE, data);
+  // Ultra-fast in-memory update (0ms)
+  cachedDb = data;
+
+  // Ultra-fast targeted single board write (<1ms) if target specified
+  if (targetBoardId && data[targetBoardId]) {
+    try {
+      if (Array.isArray(data[targetBoardId].shows)) {
+        data[targetBoardId].shows.forEach((s: any) => boundShowEpisodes(s));
+      }
+      saveBoardToDisk(targetBoardId, data[targetBoardId]);
+    } catch (e) {}
+  }
+
+  // Non-blocking asynchronous sync for aggregate data.json, ledger, and Cloud Firestore
   writeDatabaseAsync(data, targetBoardId).catch((err) => {
     console.error(`[writeDatabase] Background sync notice for ${targetBoardId || "all"}:`, err?.message || err);
   });
@@ -1369,6 +1471,7 @@ interface AppCache {
   recaps: Record<string, string>;
   teasers: Record<string, string>;
   episodeTitles: Record<string, any>;
+  episodeImages?: Record<string, any>;
   recommendations: Record<string, { timestamp: number; data: any }>;
 }
 
@@ -1377,6 +1480,7 @@ let appCache: AppCache = {
   recaps: {},
   teasers: {},
   episodeTitles: {},
+  episodeImages: {},
   recommendations: {}
 };
 
@@ -1390,6 +1494,7 @@ function loadCache() {
         recaps: {}, // Force fresh, highly-accurate regeneration using the new wide-grounding search
         teasers: {}, // Force fresh, highly-accurate regeneration using the new wide-grounding search
         episodeTitles: parsed.episodeTitles || {},
+        episodeImages: parsed.episodeImages || {},
         recommendations: parsed.recommendations || {}
       };
       // Save cache with cleared recaps and teasers to ensure we do not clear on every reload
@@ -1694,12 +1799,12 @@ app.get("/api/boards", async (req, res) => {
                 const currentDb = readDatabase();
                 if (!currentDb[boardId]) {
                   currentDb[boardId] = cloudBoard;
-                  safeWriteFileSync(DB_FILE, currentDb);
+                  writeDatabase(currentDb, boardId);
                 } else {
                   const { mergedBoard, changed } = mergeBoards(cloudBoard, currentDb[boardId]);
                   if (changed) {
                     currentDb[boardId] = mergedBoard;
-                    safeWriteFileSync(DB_FILE, currentDb);
+                    writeDatabase(currentDb, boardId);
                   }
                 }
               }
@@ -1718,7 +1823,7 @@ app.get("/api/boards", async (req, res) => {
             const cloudBoard = cloudDoc.data() as Board;
             if (cloudBoard && Array.isArray(cloudBoard.shows)) {
               db[boardId] = cloudBoard;
-              safeWriteFileSync(DB_FILE, db);
+              writeDatabase(db, boardId);
             }
           }
         } catch (fErr) {
@@ -1862,7 +1967,7 @@ app.get("/api/boards", async (req, res) => {
                 }
                 return s;
               });
-              safeWriteFileSync(DB_FILE, latestDb);
+              writeDatabase(latestDb, boardId);
             }
           }
         } catch (bgErr) {
@@ -2022,14 +2127,15 @@ app.post("/api/boards", async (req, res) => {
     if (key) processedIncomingKeys.add(key);
   });
 
-  // If no explicit deletion was requested, preserve any existing shows that were not in the incoming list (prevents stale tabs from wiping newer shows)
-  if (deletedIdsSet.size === 0) {
-    existingMap.forEach((showVal, key) => {
-      if (!processedIncomingKeys.has(key)) {
-        finalOrderedShows.push(isJulio ? showVal : sanitizeShowForNonOwnerServer(showVal, false));
-      }
-    });
-  }
+  // User Library Permanence Safeguard: Always preserve baseline shows that were not explicitly deleted.
+  // Never drop other shows simply because deletedIdsSet contains a specific show being removed!
+  existingMap.forEach((showVal, key) => {
+    const isExplicitlyDeleted = (showVal.id && deletedIdsSet.has(showVal.id)) ||
+                                (showVal.title && deletedIdsSet.has(showVal.title.toLowerCase().trim()));
+    if (!isExplicitlyDeleted && !processedIncomingKeys.has(key)) {
+      finalOrderedShows.push(isJulio ? showVal : sanitizeShowForNonOwnerServer(showVal, false));
+    }
+  });
 
   const cleanedFinalShows = isJulio ? finalOrderedShows : finalOrderedShows.map((s: any) => sanitizeShowForNonOwnerServer(s, false));
 
@@ -2336,8 +2442,6 @@ app.delete(["/api/boards", "/api/boards/:id"], (req, res) => {
   writeDatabase(db, boardId);
   res.json({ success: true, message: `User profile ${boardId} successfully deleted.` });
 });
-
-
 
 // Core community Taterz users for login & connections
 const COMMUNITY_USERS = [
@@ -2721,9 +2825,25 @@ function resolveCanonicalTitle(title1?: string, title2?: string): string {
   return t1 || t2 || '';
 }
 
+function normalizeReviewTextServer(text?: string): string {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[“”"']/g, '')
+    .replace(/[—–-]/g, ' ')
+    .replace(/[^a-z0-9 ]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 // Authentic takes written by Julio on the default board.
 // Must never be leaked or attached to any friend or non-admin board.
 const JULIO_AUTHENTIC_TAKES: Record<string, Record<string, string>> = {
+  "the shards": {
+    "S1E1": "Creepy vibe, interesting visuals and the soundtrack for E1 was on point for anybody 80s inclined. Super LA centric. Curious to see where we're headed."
+  },
   "silo": {
     "S3E9": "Bernard draws focus and exhales under an open sky. The Silos are finished just in time. Collin Hanks plays Chopsticks like his dad."
   },
@@ -2747,7 +2867,11 @@ const JULIO_AUTHENTIC_TAKES: Record<string, Record<string, string>> = {
     "S9E10": "Wow, an impressive season finale. 'He belongs more to me than to you' was some cold ass shit, Morty Prime. Some creepy messed up scenes but great writing."
   },
   "x-men '97": {
-    "S2E8": "Rogue, Remy and Apocalypse come to a head. Elf lives his faith. Charles is just kinda there."
+    "S2E8": "Rogue, Remy and Apocalypse come to a head. Elf lives his faith. Charles is just kinda there.",
+    "S2E9": "Remy, Rogue and Apocalypse come to a head. Charles doesn't seem to do much about it. Stick around for the final scene at the end."
+  },
+  "supernatural": {
+    "S1E1": "Dad's on a hunting trip and hasn't been home in a few days. Solid start to an amazing series. And we're off (again)!"
   },
   "my adventures with superman": {
     "S3E5": "Hank throws a fit. Clark engages in fisticuffs. John wraps up his visit. The future belongs to everyone?"
@@ -2756,9 +2880,118 @@ const JULIO_AUTHENTIC_TAKES: Record<string, Record<string, string>> = {
     "S1E1": "Hal's kind of a dick, but I loved Waylien taunting him with the Oath during the interrogation scene. John farms aura.",
     "S1E2": "John makes a friend. Hal finally suits up and chats with everyone's favorite pink prisoner. Something is rotten in the state of Denmark.",
     "S1E3": "“Courage is fear that has said its prayers, son.” Hell of a childhood ya got there, John.",
-    "S1E4": "Hal and John discuss Disney’s weenie. Truck go boom. Car go crash. I don’t think Hal likes John much."
+    "S1E4": "Hal and John discuss Disney’s weenie. Truck go boom. Car go crash. Things come into focus.  I don’t think Hal likes John much."
   }
 };
+
+const ALL_NORMALIZED_JULIO_TAKES_SERVER = new Set<string>();
+for (const showTakes of Object.values(JULIO_AUTHENTIC_TAKES)) {
+  for (const takeText of Object.values(showTakes)) {
+    ALL_NORMALIZED_JULIO_TAKES_SERVER.add(normalizeReviewTextServer(takeText));
+  }
+}
+ALL_NORMALIZED_JULIO_TAKES_SERVER.add(normalizeReviewTextServer("Hal and John discuss Disney’s weenie. Truck go boom. Car go crash. I don’t think Hal likes John much."));
+
+const JULIO_AUTHENTIC_NOTES_SERVER: string[] = [
+  "Deep mystery, deep hole.",
+  "To me, my X-Men! If you like Marvel, you need to be watching this.",
+  "Not your daddy's Green Lantern, but lots to like. Leaning into the space cop and less superhero. Some stellar performances and loads of easter eggs for fanboys.",
+  "Consistently awesome action and badassery. AR carries the show, that talented wall of meat. Can't wait for S4.",
+  "Rebecca Ferguson is magnificent. Can't wait for season 3!",
+  "Ahh geez... still solid, even after the cast change.",
+  "Negan, you old bastard, why can’t I quit you? Probably cause I like seeing John and Bella on tv. Extra tater points to whoever gets the reference.",
+  "Superb cast and writing. Zoe isn't blue or green but leads the CIA's war on terror. S3 kicks off super strong: modern day drone warfare changes the game.",
+  "This series is hilarious. Even if you're not into animation, Penny & the vo cast does such a phenomenal job its always worth a laugh.",
+  "This is art in motion. If you love animation, samurais, or martial arts revenge stories, give this a shot before season 2. One of my favorite series on Netflix.",
+  "Nic Cage, Spider-Man... Noir?! They wrote this for me. Beautifully unhinged performance.  Oh and I loved it in both black and white and color.",
+  "Thomas Shelby is a force. Peaky Blinders is peak tv.",
+  "Was amazing and then lost its mojo. Hope they get it back this season.",
+  "One of the greatest television dramas ever written. Outstanding finale and unforgettable dialogue.",
+  "Hilarious, gory, and wonderfully authentic to the game lore. Walton Goggins as the Ghoul is iconic.",
+  "The tension in every kitchen scene is so real!",
+  "Dragons and political intrigue at their finest.",
+  "Masterpiece cinematography, dialogue, and performances.",
+  "The office environment is so eerie. That season finale cliffhanger was one of the best in TV history!",
+  "Need to rewatch before the final season drops. S4 was epic, especially the Max/Vecna storyline.",
+  "Incredible adaptation of the game! Pedro Pascal and Bella Ramsey are stellar. Season 2 was a masterpiece, now waiting for Season 3.",
+  "Obsessed with this show! One of the best on TV right now.",
+  "Ella Purnell and Walton Goggins are phenomenal.",
+  "A triumph of animation art, soundtrack, and tragic sibling storytelling. Absolute masterpiece.",
+  "Grogu is the cutest character ever. Season 3 ended the main arc nicely, heard there's a movie coming next.",
+  "Mando takes off his helmet and adopts another special orphan. This is the way.",
+  "Intense, stressful, but absolute culinary cinema. The kitchen chemistry is unmatched. Every second is packed with tension.",
+  "Dragon battles in Season 2 were mindblowing. The Dance of the Dragons is getting fierce.",
+  "Cinematography, costumes, and political intrigue are staggering. Must binge next!",
+  "One of the best modern sitcoms. Quinta Brunson and the cast have phenomenal comic timing.",
+  "Heartwarming, wholesome, and delightfully funny all the way through all 3 seasons.",
+  "A masterclass in character transformation and tension from start to finish.",
+  "Sharp social satire, gorgeous resort settings, and Jennifer Coolidge at her absolute peak.",
+  "Samurai Jacks’s darker, angrier and bloodier cousin.",
+  "Some pretty timely and relevant questions in episode 1. Ai will challenge our relationships with work and meaning.",
+  "Interesting but all too common tale of Western colonialism clashing upon native (Hawaiian) life. Amazing attention to detail. Thankfully, Aquabro discovers pants about the third episode in.",
+  "Amazing acting, super creepy performance. Highly recommend. AD won’t let me do his voice anymore but it’s so fun.",
+  "Fun if your a fan of anime or the game - not all heroes with a whip are named Indiana.",
+  "Best of the spinoffs. Daryl tries to get home from France while saving a teenage French Jesus. Amazing locales and wine.",
+  "This show dies and comes back so often you'd think it was a Winchester. Super smart and ridiculously stupid funny at the same time. I'd rank above The Simpsons...",
+  "Ready for Season 2!",
+  "Childhood feels.",
+  "Some folks just can't get a good break. Worst luck, but best show out of the Dutton bunch. Sam Elliot's mustache FTW.",
+  "S1 had aliens probing Cartman. S28 has Trump probing Vance. Full circle.",
+  "What if George Costanza had his own show? Watch and find out.",
+  "The best non anime anime there is. If you’re not sold by the end of the shows intro, we’re watching different shows.",
+  "Added from Julio's picks",
+  "Juno Temple and Jon Hamm knocked season 5 out of the park!",
+  "Night Country atmosphere in Alaska was eerie and cool.",
+  "Still has its moments of brilliance and lots of nostalgia, but man, what this show used to be...",
+  "If you don't understand the implication, then we can’t be friends.",
+  "The go back and watch comfort show.",
+  "Isaac Asimov’s sprawling masterpiece in glorious installments that are so layered, dense and complex they demand multiple viewings. And they deserve it.",
+  "Not everyone realizes it but Samantha actually had two Dicks on this show.",
+  "I so loved the graphic novel by Stephen King’s son, Joe Hill but the show fell short of it. The parts that came through were great and not too creepy for the less brave.",
+  "Superman. Of course I’m gonna watch it. Wee Hughie does a great job on the show’s fresh take on the original superhero.",
+  "Nothin like Big Bang. Delightfully weird. Nice to see a bit of cursing and carnage in the BB world.",
+  "A tragedy this ended. I'd put this up with loss of Firefly. The music was ripped out of my old Walkman.",
+  "Fiona is back! I can't wait to start this.",
+  "Brubaker, Kris. Brubaker. It’s an Elseworld’s version of Batman set in the 40s.",
+  "Bill Burr is amazing(ly dysfunctional and hilarious). The trough scene deserves an Emmy.",
+  "Gary Oldman is hilarious and brilliant.",
+  "Michael finally gets his comeuppance. Took long enough…",
+  "Absolute perfection. The unraveling mystery of Lumon is unmatched!",
+  "Incredible emotional depth and tense atmosphere.",
+  "Rebecca Ferguson is magnificent. Can't wait for season 3!",
+  "Heartwarming and hilarious. Futbol is life!",
+  "Gearing up for the final season!",
+  "Love Steve Martin, Martin Short, and Selena Gomez together!",
+  "Jean Smart is a treasure.",
+  "Consistently funny and heartwarming workplace comedy.",
+  "Excited for Thailand!",
+  "High pressure financial madness!",
+  "Huge mystery box vibes. Rebecca Ferguson carries the show brilliantly.",
+  "Favorite sci-fi thriller of 2024-2026. Rebecca Ferguson is unbelievable.",
+  "Top tier animation, peak superhero writing.",
+  "Peak detective noir meets DC universe.",
+  "Pure action fun. Don't overthink it, just enjoy the ride.",
+  "Intense military espionage thriller.",
+  "Loving the mind-bending mystery and cinematography!"
+];
+
+const ALL_NORMALIZED_JULIO_NOTES_SERVER = new Set<string>(
+  JULIO_AUTHENTIC_NOTES_SERVER.map(n => normalizeReviewTextServer(n))
+);
+
+function isLeakedJulioTextServer(text: string): boolean {
+  if (!text || typeof text !== 'string') return false;
+  const norm = normalizeReviewTextServer(text);
+  if (!norm) return false;
+  if (ALL_NORMALIZED_JULIO_TAKES_SERVER.has(norm) || ALL_NORMALIZED_JULIO_NOTES_SERVER.has(norm)) return true;
+  for (const take of ALL_NORMALIZED_JULIO_TAKES_SERVER) {
+    if (take && (norm === take || (norm.length > 20 && (norm.includes(take) || take.includes(norm))))) return true;
+  }
+  for (const note of ALL_NORMALIZED_JULIO_NOTES_SERVER) {
+    if (note && (norm === note || (norm.length > 20 && (norm.includes(note) || note.includes(norm))))) return true;
+  }
+  return false;
+}
 
 function isJulioAccountServer(userOrIdOrEmail?: any): boolean {
   if (!userOrIdOrEmail) return false;
@@ -2783,42 +3016,25 @@ function isJulioAccountServer(userOrIdOrEmail?: any): boolean {
   return false;
 }
 
-function sanitizeShowForNonOwnerServer(show: any, isAuthoritativeOwner: boolean = false): any {
+function sanitizeShowForNonOwnerServer(show: any, isAuthoritativeOwner: boolean = false, boardOwnerName?: string): any {
   if (!show || isAuthoritativeOwner) return show;
   const normTitle = (show.title || '').toLowerCase().trim();
-  const knownTakesForShow = JULIO_AUTHENTIC_TAKES[normTitle];
 
   let cleanedEpReviews = show.episodeReviews ? { ...show.episodeReviews } : undefined;
   let cleanedEpScores = show.episodeScores ? { ...show.episodeScores } : undefined;
   let hasChanged = false;
 
-  if (cleanedEpReviews && knownTakesForShow) {
-    for (const [epKey, reviewText] of Object.entries(cleanedEpReviews)) {
-      const knownText = knownTakesForShow[epKey];
-      if (knownText && typeof reviewText === 'string' && reviewText.trim() === knownText.trim()) {
-        delete cleanedEpReviews[epKey];
-        if (cleanedEpScores && cleanedEpScores[epKey] !== undefined) {
-          delete cleanedEpScores[epKey];
-        }
-        hasChanged = true;
-      }
-    }
-  }
-
-  if (cleanedEpReviews) {
+  // 1. Clean leaked episode reviews and their matching episode scores
+  if (cleanedEpReviews && Object.keys(cleanedEpReviews).length > 0) {
     for (const [epKey, reviewText] of Object.entries(cleanedEpReviews)) {
       if (typeof reviewText === 'string') {
-        const trimmed = reviewText.trim();
-        for (const showTakes of Object.values(JULIO_AUTHENTIC_TAKES)) {
-          for (const takeText of Object.values(showTakes)) {
-            if (trimmed === takeText.trim()) {
-              delete cleanedEpReviews[epKey];
-              if (cleanedEpScores && cleanedEpScores[epKey] !== undefined) {
-                delete cleanedEpScores[epKey];
-              }
-              hasChanged = true;
-            }
+        const norm = normalizeReviewTextServer(reviewText);
+        if (ALL_NORMALIZED_JULIO_TAKES_SERVER.has(norm)) {
+          delete cleanedEpReviews[epKey];
+          if (cleanedEpScores && cleanedEpScores[epKey] !== undefined) {
+            delete cleanedEpScores[epKey];
           }
+          hasChanged = true;
         }
       }
     }
@@ -2831,18 +3047,39 @@ function sanitizeShowForNonOwnerServer(show: any, isAuthoritativeOwner: boolean 
     cleanedEpScores = {};
   }
 
+  // 2. Clean leaked user notes
+  let cleanedNotes = show.userNotes;
+  if (cleanedNotes && typeof cleanedNotes === 'string') {
+    if (isLeakedJulioTextServer(cleanedNotes)) {
+      cleanedNotes = '';
+      hasChanged = true;
+    }
+  }
+
+  // 3. Clean stale watched progress for Silo S3E9 if inherited
   let cleanedWatched = show.latestWatched;
   if (normTitle === 'silo' && cleanedWatched?.season === 3 && cleanedWatched?.episode === 9) {
-    if (!show.userScore && (!show.userNotes || show.userNotes.trim() === 'Deep mystery, deep hole.')) {
+    if (!show.userScore && !cleanedNotes) {
       cleanedWatched = { season: 1, episode: 0, title: 'Not Started' };
       hasChanged = true;
     }
   }
 
-  let cleanedNotes = show.userNotes;
-  if (normTitle === 'silo' && cleanedNotes?.trim() === 'Deep mystery, deep hole.') {
-    cleanedNotes = '';
-    hasChanged = true;
+  // 4. Correct ownerName on non-owner shows if it says "Julio"
+  let correctedOwnerName = show.ownerName;
+  let correctedOwnerNames = show.ownerNames;
+  if (boardOwnerName && boardOwnerName.toLowerCase() !== 'julio') {
+    if (correctedOwnerName && correctedOwnerName.toLowerCase() === 'julio') {
+      correctedOwnerName = boardOwnerName;
+      hasChanged = true;
+    }
+    if (Array.isArray(correctedOwnerNames) && correctedOwnerNames.includes('Julio')) {
+      correctedOwnerNames = correctedOwnerNames.filter((n: string) => n.toLowerCase() !== 'julio');
+      if (!correctedOwnerNames.includes(boardOwnerName)) {
+        correctedOwnerNames.push(boardOwnerName);
+      }
+      hasChanged = true;
+    }
   }
 
   if (!hasChanged) return show;
@@ -2852,7 +3089,9 @@ function sanitizeShowForNonOwnerServer(show: any, isAuthoritativeOwner: boolean 
     episodeReviews: cleanedEpReviews,
     episodeScores: cleanedEpScores,
     latestWatched: cleanedWatched,
-    userNotes: cleanedNotes
+    userNotes: cleanedNotes,
+    ownerName: correctedOwnerName,
+    ownerNames: correctedOwnerNames
   };
 }
 
@@ -2861,8 +3100,9 @@ function sanitizeBoardForNonOwnerServer(board: any): { board: any; changed: bool
   if (isJulioAccountServer(board.id) || isJulioAccountServer(board.owner)) return { board, changed: false };
 
   let changed = false;
+  const boardOwnerName = board.owner?.name || board.name || 'Buddy';
   const sanitizedShows = board.shows.map((s: any) => {
-    const sanitized = sanitizeShowForNonOwnerServer(s, false);
+    const sanitized = sanitizeShowForNonOwnerServer(s, false, boardOwnerName);
     if (sanitized !== s) changed = true;
     return sanitized;
   });
@@ -2889,48 +3129,27 @@ function mergeSingleShow(showA: any, showB: any): any {
   const secondary = showB;
 
   // Extract show-level, status-level, and review-level update timestamps
-  const timeReviewA = new Date(showA.reviewUpdatedAt || showA.updatedAt || showA.createdAt || 0).getTime();
-  const timeReviewB = new Date(showB.reviewUpdatedAt || showB.updatedAt || showB.createdAt || 0).getTime();
+  // CRITICAL: Review timestamps MUST NEVER fall back to updatedAt or createdAt!
+  const timeReviewA = getStrictReviewTimestamp(showA);
+  const timeReviewB = getStrictReviewTimestamp(showB);
   const timeStatusA = new Date(showA.statusUpdatedAt || showA.updatedAt || showA.createdAt || 0).getTime();
   const timeStatusB = new Date(showB.statusUpdatedAt || showB.updatedAt || showB.createdAt || 0).getTime();
 
-  // Authoritative user notes resolution: compare timestamps if present, fallback to client mutation / non-empty content
-  let resolvedNotes = "";
-  const notesA = (showA.userNotes !== undefined ? showA.userNotes : showA.myReview);
-  const notesB = (showB.userNotes !== undefined ? showB.userNotes : showB.myReview);
+  // Authoritative user notes resolution with user content protection
+  const resolvedNotes = mergeUserNotesPreservingUserData(
+    showA.userNotes !== undefined ? showA.userNotes : showA.myReview,
+    showB.userNotes !== undefined ? showB.userNotes : showB.myReview,
+    timeReviewA,
+    timeReviewB
+  );
 
-  if (timeReviewA > timeReviewB && notesA !== undefined) {
-    resolvedNotes = notesA || "";
-  } else if (timeReviewB > timeReviewA && notesB !== undefined) {
-    resolvedNotes = notesB || "";
-  } else if (notesA !== undefined && String(notesA).trim().length > 0) {
-    resolvedNotes = notesA;
-  } else if (notesB !== undefined && String(notesB).trim().length > 0) {
-    resolvedNotes = notesB;
-  } else if (notesA !== undefined) {
-    resolvedNotes = notesA || "";
-  } else if (notesB !== undefined) {
-    resolvedNotes = notesB || "";
-  }
-
-  // Primary score takes precedence: compare timestamps if present, fallback to non-null / client mutation
-  let resolvedScore: number | null = null;
-  const scoreA = showA.userScore !== undefined ? showA.userScore : (typeof showA.myRating === 'number' ? showA.myRating : undefined);
-  const scoreB = showB.userScore !== undefined ? showB.userScore : (typeof showB.myRating === 'number' ? showB.myRating : undefined);
-
-  if (timeReviewA > timeReviewB && scoreA !== undefined) {
-    resolvedScore = scoreA;
-  } else if (timeReviewB > timeReviewA && scoreB !== undefined) {
-    resolvedScore = scoreB;
-  } else if (scoreA !== undefined && scoreA !== null) {
-    resolvedScore = scoreA;
-  } else if (scoreB !== undefined && scoreB !== null) {
-    resolvedScore = scoreB;
-  } else if (scoreA !== undefined) {
-    resolvedScore = scoreA;
-  } else if (scoreB !== undefined) {
-    resolvedScore = scoreB;
-  }
+  // Authoritative user score resolution with user content protection
+  const resolvedScore = mergeUserScorePreservingUserData(
+    showA.userScore !== undefined ? showA.userScore : (typeof showA.myRating === 'number' ? showA.myRating : null),
+    showB.userScore !== undefined ? showB.userScore : (typeof showB.myRating === 'number' ? showB.myRating : null),
+    timeReviewA,
+    timeReviewB
+  );
 
   // Intelligent status resolution: respect show-level status timestamps and preserve explicit user statuses
   let resolvedStatus = base.status || secondary.status || "Backlog";
@@ -2945,16 +3164,25 @@ function mergeSingleShow(showA: any, showB: any): any {
   }
   const resolvedTitle = resolveCanonicalTitle(base.title, secondary.title);
 
-  // Progress (latestWatched) resolution: Primary incoming client is strictly authoritative if provided
-  let resolvedWatched = base.latestWatched !== undefined && base.latestWatched !== null
-    ? base.latestWatched
-    : secondary.latestWatched;
+  // Progress (latestWatched) resolution: Monotonically resolve progress, preventing regressions across all series
+  const { latestWatched: resolvedWatched, progressUpdatedAt: resolvedProgressUpdated } = resolveWatchedProgress(base, secondary);
 
-  // Authoritative merge of episode reviews: incoming episode reviews take direct precedence while preserving previously logged episodes
-  let mergedEpReviews: Record<string, string> = normalizeAndDeduplicateEpisodeReviews({
-    ...(secondary.episodeReviews && typeof secondary.episodeReviews === 'object' ? secondary.episodeReviews : {}),
-    ...(base.episodeReviews && typeof base.episodeReviews === 'object' ? base.episodeReviews : {}),
-  }, resolvedNotes);
+  // Authoritative protected merge of episode reviews:
+  // Existing authentic reviews are strictly guarded against blank, generic, or catalog placeholder overwrites
+  const protectedEpReviews = mergeEpisodeReviewsPreservingUserData(
+    base.episodeReviews,
+    secondary.episodeReviews,
+    timeReviewA,
+    timeReviewB
+  );
+  let mergedEpReviews: Record<string, string> = normalizeAndDeduplicateEpisodeReviews(protectedEpReviews, resolvedNotes);
+
+  const mergedEpScores: Record<string, number> = mergeEpisodeScoresPreservingUserData(
+    base.episodeScores,
+    secondary.episodeScores,
+    timeReviewA,
+    timeReviewB
+  );
 
   // Next episode resolution: Preserve valid nextEpisode if present or calculate from canonical schedule
   let resolvedNextEpisode = (base.nextEpisode && base.nextEpisode.airDate)
@@ -2996,9 +3224,11 @@ function mergeSingleShow(showA: any, showB: any): any {
     status: resolvedStatus,
     statusUpdatedAt: newestStatusUpdated,
     latestWatched: resolvedWatched,
+    progressUpdatedAt: resolvedProgressUpdated,
     userNotes: resolvedNotes,
     userScore: resolvedScore,
     episodeReviews: mergedEpReviews,
+    episodeScores: Object.keys(mergedEpScores).length > 0 ? mergedEpScores : undefined,
     nextEpisode: resolvedNextEpisode,
     reviewUpdatedAt: newestReviewUpdated,
     updatedAt: newestUpdated,
@@ -3010,10 +3240,23 @@ function mergeSingleShow(showA: any, showB: any): any {
     overview: base.overview || secondary.overview || "",
     bannerImage: base.bannerImage || secondary.bannerImage || "",
     bannerPosition: base.bannerPosition || secondary.bannerPosition || "center 25%",
-    totalSeasons: Math.max(base.totalSeasons || 1, secondary.totalSeasons || 1),
-    episodesPerSeason: (base.episodesPerSeason && base.episodesPerSeason.length >= (secondary.episodesPerSeason?.length || 0))
-      ? base.episodesPerSeason
-      : (secondary.episodesPerSeason || base.episodesPerSeason || [10]),
+    totalSeasons: Math.max(base.totalSeasons || 1, secondary.totalSeasons || 1, resolvedWatched?.season || 1),
+    episodesPerSeason: (() => {
+      const maxS = Math.max(base.totalSeasons || 1, secondary.totalSeasons || 1, resolvedWatched?.season || 1);
+      const eps = (base.episodesPerSeason && base.episodesPerSeason.length >= (secondary.episodesPerSeason?.length || 0))
+        ? [...base.episodesPerSeason]
+        : [...(secondary.episodesPerSeason || base.episodesPerSeason || [10])];
+      while (eps.length < maxS) {
+        eps.push(10);
+      }
+      if (resolvedWatched && resolvedWatched.season <= eps.length) {
+        const sIdx = resolvedWatched.season - 1;
+        if (resolvedWatched.episode > eps[sIdx]) {
+          eps[sIdx] = resolvedWatched.episode;
+        }
+      }
+      return eps;
+    })(),
   };
 }
 
@@ -3081,9 +3324,11 @@ function mergeBoards(cloudBoard: Board, localBoard: Board): { mergedBoard: Board
       showMap.set(key, s);
     } else {
       const existing = showMap.get(key);
-      const isNewer = (isCloud && cloudTime >= localTime) || (!isCloud && localTime >= cloudTime);
-      const primary = isNewer ? s : existing;
-      const secondary = primary === s ? existing : s;
+      const timeS = Math.max(new Date(s.progressUpdatedAt || 0).getTime(), new Date(s.updatedAt || 0).getTime());
+      const timeExisting = Math.max(new Date(existing.progressUpdatedAt || 0).getTime(), new Date(existing.updatedAt || 0).getTime());
+      const isShowNewer = timeS > timeExisting;
+      const primary = isShowNewer ? s : existing;
+      const secondary = isShowNewer ? existing : s;
       showMap.set(key, mergeSingleShow(primary, secondary));
     }
   };
@@ -3181,12 +3426,7 @@ async function ensureDatabaseSynced(): Promise<void> {
 async function initFirestoreSync() {
   if (!dbFirestore || isFirestoreQuotaExhausted) return;
   try {
-    let localDb: Record<string, Board> = {};
-    if (fs.existsSync(DB_FILE)) {
-      try {
-        localDb = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
-      } catch (e) {}
-    }
+    let localDb: Record<string, Board> = readDatabase();
     let localModified = false;
 
     // 1. Sync System / Deleted Users
@@ -3250,7 +3490,25 @@ async function initFirestoreSync() {
             }
           }
           ensureBoardOwner(cloudBoard, normId);
-          const localBoard = localDb[normId];
+          let localBoard = localDb[normId];
+          if (isJulio) {
+            const masterShows = getMasterJulioShows();
+            if (Array.isArray(masterShows) && masterShows.length > 50) {
+              const masterBoardWrapper: Board = {
+                id: normId,
+                name: "Julio's Collection",
+                shows: masterShows,
+                preferences: { genres: [], actors: [], directors: [], services: ALL_SERVICES },
+                updatedAt: new Date(0).toISOString()
+              };
+              if (!localBoard) {
+                localBoard = masterBoardWrapper;
+              } else {
+                localBoard = mergeBoards(localBoard, masterBoardWrapper).mergedBoard;
+              }
+            }
+          }
+
           if (!localBoard) {
             localDb[normId] = { ...cloudBoard, id: normId };
             localModified = true;
@@ -3263,6 +3521,11 @@ async function initFirestoreSync() {
             ensureBoardOwner(mergedBoard, normId);
             const finalMerged = isJulio ? mergedBoard : sanitizeBoardForNonOwnerServer(mergedBoard).board;
             localDb[normId] = finalMerged;
+            if (isJulio && Array.isArray(finalMerged.shows) && finalMerged.shows.length >= 50) {
+              try {
+                safeWriteFileSync(path.join(process.cwd(), "data", "julioMasterShows.json"), finalMerged.shows);
+              } catch (e) {}
+            }
             if ((changed || cloudSanitized) && !isFirestoreQuotaExhausted) {
               localModified = true;
               setDoc(doc(dbFirestore, "boards", normId), sanitizeForFirestore(finalMerged), { merge: true }).catch((e) => {
@@ -3332,8 +3595,8 @@ async function initFirestoreSync() {
       }
     }
 
-    // Always ensure data.json is written with complete merged set
-    safeWriteFileSync(DB_FILE, localDb);
+    // Always ensure data.json and modular boards are written with complete merged set
+    writeDatabase(localDb);
 
     // 4. Sync Friends DB
     const friendsSnapshot = await getDocs(collection(dbFirestore, "friends"));
@@ -3383,12 +3646,7 @@ async function initCloudSqlSync() {
   if (!process.env.SQL_HOST) return;
   try {
     console.log("[Cloud SQL] Initializing PostgreSQL database sync...");
-    let localDb: Record<string, Board> = {};
-    if (fs.existsSync(DB_FILE)) {
-      try {
-        localDb = JSON.parse(fs.readFileSync(DB_FILE, "utf8"));
-      } catch (e) {}
-    }
+    let localDb: Record<string, Board> = readDatabase();
 
     const sqlBoards = await getAllBoardsFromCloudSql();
     if (!sqlBoards || Object.keys(sqlBoards).length === 0) {
@@ -3422,7 +3680,7 @@ async function initCloudSqlSync() {
         }
       }
       if (localModified) {
-        safeWriteFileSync(DB_FILE, localDb);
+        writeDatabase(localDb);
       }
     }
 
@@ -4416,7 +4674,7 @@ app.post("/api/admin/users/batch-delete", async (req, res) => {
       fs.writeFileSync(DELETED_USERS_FILE, JSON.stringify(Array.from(deletedUserIds), null, 2), "utf-8");
     } catch (e) {}
 
-    safeWriteFileSync(DB_FILE, db);
+    writeDatabase(db);
     const dir = path.dirname(FRIENDS_DB_FILE);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(FRIENDS_DB_FILE, JSON.stringify(friendsDb, null, 2), "utf8");
@@ -6207,8 +6465,8 @@ app.post("/api/admin/restore", async (req, res) => {
       return;
     }
 
-    // Write database safely to DB_FILE so immediate page reload reads fresh data
-    safeWriteFileSync(DB_FILE, targetDb);
+    // Write database safely and update modular boards and cache
+    writeDatabase(targetDb);
 
     // Sync directly to Cloud Firestore asynchronously in background (non-blocking)
     if (dbFirestore && !isFirestoreQuotaExhausted) {
@@ -6237,6 +6495,16 @@ app.post("/api/admin/restore", async (req, res) => {
   }
 });
 
+// 2.5b. Storage Health Circuit Breaker & Safeguard Inspection Endpoint
+app.get("/api/admin/storage-health", (req, res) => {
+  try {
+    const report = verifyStorageHealth(DB_FILE);
+    res.json(report);
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message || "Failed to verify storage health" });
+  }
+});
+
 // 2.5c. Audit metadata (temporary vs final titles, air dates, series image cards)
 app.post("/api/admin/audit-metadata", async (req, res) => {
   try {
@@ -6249,7 +6517,7 @@ app.post("/api/admin/audit-metadata", async (req, res) => {
 
     for (const [bId, board] of Object.entries(db)) {
       if (!board || !Array.isArray(board.shows)) continue;
-      board.shows = applyReviewsLedgerToShows(board.shows);
+      board.shows = applyReviewsLedgerToShows(board.shows, bId);
       const { result } = auditAllShows(board.shows);
       totalShowsAudited += result.totalShowsAudited;
       totalShowsModified += result.summary.showsModified;
@@ -7134,30 +7402,64 @@ app.get("/api/image-proxy", async (req, res) => {
     decodedUrl = imageUrl;
   }
 
-  // If local or relative URL, redirect directly
-  if (decodedUrl.startsWith('/') || decodedUrl.startsWith('data:') || !decodedUrl.startsWith('http')) {
-    if (!res.headersSent) {
-      return res.redirect(302, decodedUrl);
+  const fallbackImagePath = path.join(process.cwd(), 'public', 'fallback-tv.jpg');
+  const serveFallbackImage = () => {
+    if (fs.existsSync(fallbackImagePath)) {
+      res.setHeader('Content-Type', 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.sendFile(fallbackImagePath);
     }
-    return;
+    // High-contrast branded TV SVG placeholder fallback if file doesn't exist (never blank)
+    const fallbackSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720"><rect width="1280" height="720" fill="#101217"/><rect x="40" y="40" width="1200" height="640" rx="24" fill="#181B22" stroke="#2D3342" stroke-width="4"/><circle cx="640" cy="320" r="80" fill="#7C3AED" opacity="0.2"/><path d="M620 280 L680 320 L620 360 Z" fill="#A855F7"/><text x="640" y="440" fill="#F1F5F9" font-size="36" font-family="system-ui, -apple-system, sans-serif" font-weight="800" text-anchor="middle" letter-spacing="1">COUCHTATERZ</text><text x="640" y="480" fill="#64748B" font-size="20" font-family="system-ui, -apple-system, sans-serif" font-weight="600" text-anchor="middle">SERIES CARD PREVIEW</text></svg>`;
+    res.setHeader('Content-Type', 'image/svg+xml');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    return res.send(fallbackSvg);
+  };
+
+  // If local or relative URL, serve directly from public directory
+  if (decodedUrl.startsWith('/') || !decodedUrl.startsWith('http')) {
+    const localClean = decodedUrl.startsWith('/') ? decodedUrl.slice(1) : decodedUrl;
+    const localFilePath = path.join(process.cwd(), 'public', localClean);
+    if (fs.existsSync(localFilePath) && fs.statSync(localFilePath).isFile()) {
+      const ext = path.extname(localFilePath).toLowerCase();
+      const mimeMap: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.svg': 'image/svg+xml'
+      };
+      res.setHeader('Content-Type', mimeMap[ext] || 'image/jpeg');
+      res.setHeader('Cache-Control', 'public, max-age=86400');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.sendFile(localFilePath);
+    }
+    return serveFallbackImage();
   }
 
   try {
     const validUrl = new URL(decodedUrl);
 
-    const imageRes = await fetchWithTimeout(validUrl.toString(), {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-        'Referer': 'https://www.amazon.com/'
-      }
-    }, 5000);
+    // Host-appropriate headers to prevent 403 hotlink blocks.
+    // Prioritize JPEG and PNG to prevent AVIF decoding failure on iOS Safari canvas exports.
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+      'Accept': 'image/jpeg,image/png,image/webp;q=0.8,image/*;q=0.5'
+    };
+
+    if (validUrl.hostname.includes('amazon') || validUrl.hostname.includes('media-amazon')) {
+      headers['Referer'] = 'https://www.amazon.com/';
+    } else if (validUrl.hostname.includes('tmdb') || validUrl.hostname.includes('themoviedb')) {
+      headers['Referer'] = 'https://www.themoviedb.org/';
+    }
+
+    const imageRes = await fetchWithTimeout(validUrl.toString(), { headers }, 6000);
 
     if (!imageRes.ok) {
-      if (!res.headersSent) {
-        return res.redirect(302, validUrl.toString());
-      }
-      return;
+      console.warn(`[Image Proxy] Upstream returned HTTP ${imageRes.status} for ${validUrl.hostname}`);
+      return serveFallbackImage();
     }
 
     const contentType = imageRes.headers.get('content-type') || 'image/jpeg';
@@ -7171,14 +7473,8 @@ app.get("/api/image-proxy", async (req, res) => {
       return res.send(buffer);
     }
   } catch (err: any) {
-    // Graceful fallback redirect without throwing loud console errors
     if (!res.headersSent) {
-      try {
-        if (decodedUrl.startsWith('http://') || decodedUrl.startsWith('https://')) {
-          return res.redirect(302, decodedUrl);
-        }
-      } catch {}
-      return res.status(500).send("Error proxying image");
+      return serveFallbackImage();
     }
   }
 });
@@ -7576,7 +7872,7 @@ async function runRedundancyCheckAndValidate(show: any, titleQuery: string): Pro
         const eNum = ep.number;
         if (sNum && sNum > 0 && eNum && ep.name) {
           episodesMap[`S${sNum}E${eNum}`] = ep.name;
-          episodesMap[`${sNum}-${eNum}`] = ep.name;
+          delete episodesMap[`${sNum}-${eNum}`];
         }
         if (sNum && sNum > 0) {
           epsPerSeason[sNum] = (epsPerSeason[sNum] || 0) + 1;
@@ -7591,6 +7887,7 @@ async function runRedundancyCheckAndValidate(show: any, titleQuery: string): Pro
       show.totalSeasons = maxSeasonNum;
       show.episodesPerSeason = episodesPerSeasonArray;
       show.episodes = episodesMap;
+      boundShowEpisodes(show);
 
       if (show.latestWatched) {
         const k1 = `S${show.latestWatched.season}E${show.latestWatched.episode}`;
@@ -8368,8 +8665,10 @@ app.post("/api/episode-recap", async (req, res) => {
 });
 
 // Endpoint to fetch real episode title and full episode list for any show
-app.post("/api/episode-title", async (req, res) => {
-  const { title, season, episode } = req.body;
+app.all("/api/episode-title", async (req, res) => {
+  const title = (req.body?.title || req.query?.title) as string | undefined;
+  const season = req.body?.season !== undefined ? req.body.season : req.query?.season;
+  const episode = req.body?.episode !== undefined ? req.body.episode : req.query?.episode;
   if (!title || season === undefined || episode === undefined) {
     res.status(400).json({ error: "title, season, and episode are required" });
     return;
@@ -8424,12 +8723,63 @@ app.post("/api/episode-title", async (req, res) => {
       episodesList.forEach((ep: any) => {
         if (ep.season && ep.number && ep.name) {
           episodesMap[`S${ep.season}E${ep.number}`] = ep.name;
-          episodesMap[`${ep.season}-${ep.number}`] = ep.name;
           if (ep.season === sNum && ep.number === eNum) {
             matchedTitle = ep.name;
           }
         }
       });
+
+      // Overlay canonical schedule episodes to fill gaps or fix registry inaccuracies
+      const scheduleNorm = normalizeScheduleTitle(title);
+      const schedule = SHOW_SCHEDULES[cleanTitle] || Object.entries(SHOW_SCHEDULES).find(([k]) => normalizeScheduleTitle(k) === scheduleNorm)?.[1];
+      if (schedule && Array.isArray(schedule.episodes)) {
+        schedule.episodes.forEach((sEp) => {
+          if (sEp.title) {
+            episodesMap[`S${sEp.season}E${sEp.episode}`] = sEp.title;
+            if (sEp.season === sNum && sEp.episode === eNum) {
+              matchedTitle = sEp.title;
+            }
+          }
+        });
+      }
+
+      // Known catalog corrections
+      if (scheduleNorm.includes("south park") || cleanTitle.includes("south park")) {
+        const spCorrections: Record<string, string> = {
+          "S24E1": "The Pandemic Special",
+          "24-1": "The Pandemic Special",
+          "S24E2": "South ParQ Vaccination Special",
+          "24-2": "South ParQ Vaccination Special",
+          "S26E5": "DikinBaus Hot Dogs",
+          "26-5": "DikinBaus Hot Dogs",
+          "S29E1": "South American Biker Gangs",
+          "29-1": "South American Biker Gangs"
+        };
+        for (const [k, v] of Object.entries(spCorrections)) {
+          episodesMap[k] = v;
+        }
+        const requestedKey = `S${sNum}E${eNum}`;
+        if (spCorrections[requestedKey]) {
+          matchedTitle = spCorrections[requestedKey];
+        }
+      }
+
+      if (scheduleNorm.includes("fear factor") || cleanTitle.includes("fear factor") || scheduleNorm.includes("fearfactor") || cleanTitle.includes("fearfactor")) {
+        const ffCorrections: Record<string, string> = {
+          "S2E1": "Get the Hell Out",
+          "2-1": "Get the Hell Out",
+          "S2E2": "Tech-Hell",
+          "2-2": "Tech-Hell"
+        };
+        for (const [k, v] of Object.entries(ffCorrections)) {
+          episodesMap[k] = v;
+        }
+        const requestedKey = `S${sNum}E${eNum}`;
+        if (ffCorrections[requestedKey]) {
+          matchedTitle = ffCorrections[requestedKey];
+        }
+      }
+
       const resultData = {
         title: matchedTitle || `Episode ${eNum}`,
         episodes: episodesMap
@@ -8446,6 +8796,218 @@ app.post("/api/episode-title", async (req, res) => {
   }
 
   res.json({ title: `Episode ${eNum}` });
+});
+
+// Endpoint to search and provide official episodic stills and series backdrops for episode reviews & story cards
+app.all("/api/episode-images", async (req, res) => {
+  const title = (req.body?.title || req.query?.title) as string | undefined;
+  const season = req.body?.season !== undefined ? req.body.season : req.query?.season;
+  const episode = req.body?.episode !== undefined ? req.body.episode : req.query?.episode;
+
+  if (!title) {
+    res.status(400).json({ error: "title is required" });
+    return;
+  }
+
+  const sNum = Math.max(1, Number(season) || 1);
+  const eNum = Math.max(1, Number(episode) || 1);
+  const cleanTitle = title.toLowerCase().trim();
+  const cacheKey = `${cleanTitle}-${sNum}-${eNum}`;
+
+  // Check persistent cache first
+  if (appCache.episodeImages && appCache.episodeImages[cacheKey]) {
+    res.json(appCache.episodeImages[cacheKey]);
+    return;
+  }
+
+  const tmdbKey = process.env.TMDB_API_KEY;
+  const apiKey = (tmdbKey && tmdbKey.length === 32) ? tmdbKey : "1f54bd990f1cdfb230adb312546d765d";
+
+  const episodeStills: Array<{
+    id: string;
+    url: string;
+    thumbnail: string;
+    label: string;
+    source: string;
+    aspectRatio?: number;
+  }> = [];
+
+  const showBackdrops: Array<{
+    id: string;
+    url: string;
+    thumbnail: string;
+    label: string;
+    source: string;
+  }> = [];
+
+  const seenUrls = new Set<string>();
+  let episodeTitle = `Episode ${eNum}`;
+
+  try {
+    // 1. Search show on TMDB
+    const searchUrl = `https://api.themoviedb.org/3/search/tv?api_key=${apiKey}&query=${encodeURIComponent(title)}&language=en-US`;
+    const searchRes = await fetchWithTimeout(searchUrl, {}, 6000);
+    
+    let tmdbShowId: number | null = null;
+    if (searchRes.ok) {
+      const searchData = (await searchRes.json()) as any;
+      if (searchData.results && searchData.results.length > 0) {
+        tmdbShowId = searchData.results[0].id;
+      }
+    }
+
+    const promises: Promise<void>[] = [];
+
+    if (tmdbShowId) {
+      // Fetch TMDB episode stills
+      promises.push((async () => {
+        try {
+          const stillsUrl = `https://api.themoviedb.org/3/tv/${tmdbShowId}/season/${sNum}/episode/${eNum}/images?api_key=${apiKey}`;
+          const stillsRes = await fetchWithTimeout(stillsUrl, {}, 6000);
+          if (stillsRes.ok) {
+            const stillsData = (await stillsRes.json()) as any;
+            if (Array.isArray(stillsData.stills)) {
+              stillsData.stills.slice(0, 12).forEach((still: any, idx: number) => {
+                if (still.file_path) {
+                  const fullUrl = `https://image.tmdb.org/t/p/w1280${still.file_path}`;
+                  const thumbUrl = `https://image.tmdb.org/t/p/w300${still.file_path}`;
+                  if (!seenUrls.has(fullUrl)) {
+                    seenUrls.add(fullUrl);
+                    episodeStills.push({
+                      id: `tmdb-still-${idx + 1}`,
+                      url: fullUrl,
+                      thumbnail: thumbUrl,
+                      label: `Scene Still ${idx + 1}`,
+                      source: 'TMDB Episode Still',
+                      aspectRatio: still.aspect_ratio || 1.78
+                    });
+                  }
+                }
+              });
+            }
+          }
+        } catch (err) {}
+      })());
+
+      // Fetch TMDB episode details (for episode name and still_path)
+      promises.push((async () => {
+        try {
+          const epDetailUrl = `https://api.themoviedb.org/3/tv/${tmdbShowId}/season/${sNum}/episode/${eNum}?api_key=${apiKey}`;
+          const epRes = await fetchWithTimeout(epDetailUrl, {}, 6000);
+          if (epRes.ok) {
+            const epData = (await epRes.json()) as any;
+            if (epData.name) {
+              episodeTitle = epData.name;
+            }
+            if (epData.still_path) {
+              const fullUrl = `https://image.tmdb.org/t/p/w1280${epData.still_path}`;
+              const thumbUrl = `https://image.tmdb.org/t/p/w300${epData.still_path}`;
+              if (!seenUrls.has(fullUrl)) {
+                seenUrls.add(fullUrl);
+                episodeStills.unshift({
+                  id: `tmdb-primary-still`,
+                  url: fullUrl,
+                  thumbnail: thumbUrl,
+                  label: epData.name ? `Still: "${epData.name}"` : 'Official Episode Still',
+                  source: 'TMDB Still'
+                });
+              }
+            }
+          }
+        } catch (err) {}
+      })());
+
+      // Fetch TMDB show backdrops (for alternative artwork)
+      promises.push((async () => {
+        try {
+          const backdropsUrl = `https://api.themoviedb.org/3/tv/${tmdbShowId}/images?api_key=${apiKey}`;
+          const bgRes = await fetchWithTimeout(backdropsUrl, {}, 6000);
+          if (bgRes.ok) {
+            const bgData = (await bgRes.json()) as any;
+            if (Array.isArray(bgData.backdrops)) {
+              bgData.backdrops.slice(0, 8).forEach((bd: any, idx: number) => {
+                if (bd.file_path) {
+                  const fullUrl = `https://image.tmdb.org/t/p/w1280${bd.file_path}`;
+                  const thumbUrl = `https://image.tmdb.org/t/p/w300${bd.file_path}`;
+                  if (!seenUrls.has(fullUrl)) {
+                    seenUrls.add(fullUrl);
+                    showBackdrops.push({
+                      id: `tmdb-backdrop-${idx + 1}`,
+                      url: fullUrl,
+                      thumbnail: thumbUrl,
+                      label: `Show Backdrop ${idx + 1}`,
+                      source: 'TMDB Backdrop'
+                    });
+                  }
+                }
+              });
+            }
+          }
+        } catch (err) {}
+      })());
+    }
+
+    // Also fetch from TVmaze
+    promises.push((async () => {
+      try {
+        const tvmazeSearchUrl = `https://api.tvmaze.com/singlesearch/shows?q=${encodeURIComponent(title)}`;
+        const tvmSearchRes = await fetchWithTimeout(tvmazeSearchUrl, {
+          headers: { "User-Agent": "CouchTaterApp/1.0" }
+        }, 5000);
+
+        if (tvmSearchRes.ok) {
+          const tvmShow = (await tvmSearchRes.json()) as any;
+          if (tvmShow && tvmShow.id) {
+            const tvmEpUrl = `https://api.tvmaze.com/shows/${tvmShow.id}/episodebynumber?season=${sNum}&number=${eNum}`;
+            const tvmEpRes = await fetchWithTimeout(tvmEpUrl, {
+              headers: { "User-Agent": "CouchTaterApp/1.0" }
+            }, 5000);
+
+            if (tvmEpRes.ok) {
+              const tvmEp = (await tvmEpRes.json()) as any;
+              if (tvmEp.name && episodeTitle === `Episode ${eNum}`) {
+                episodeTitle = tvmEp.name;
+              }
+              if (tvmEp.image && (tvmEp.image.original || tvmEp.image.medium)) {
+                const fullUrl = tvmEp.image.original || tvmEp.image.medium;
+                const thumbUrl = tvmEp.image.medium || tvmEp.image.original;
+                if (!seenUrls.has(fullUrl)) {
+                  seenUrls.add(fullUrl);
+                  episodeStills.push({
+                    id: `tvmaze-still-1`,
+                    url: fullUrl,
+                    thumbnail: thumbUrl,
+                    label: tvmEp.name ? `TVmaze: "${tvmEp.name}"` : 'TVmaze Episode Still',
+                    source: 'TVmaze Capture'
+                  });
+                }
+              }
+            }
+          }
+        }
+      } catch (err) {}
+    })());
+
+    await Promise.all(promises);
+  } catch (err) {
+    console.error("[Episode Images] Error fetching episode stills:", err);
+  }
+
+  const resultData = {
+    title,
+    season: sNum,
+    episode: eNum,
+    episodeTitle,
+    episodeStills,
+    showBackdrops,
+    totalImages: episodeStills.length + showBackdrops.length
+  };
+
+  if (!appCache.episodeImages) appCache.episodeImages = {};
+  appCache.episodeImages[cacheKey] = resultData;
+  saveCache();
+
+  res.json(resultData);
 });
 
 // 3.7. Preset Next Episode Teasers from next-episode.net
@@ -9810,7 +10372,13 @@ app.get(["/list/:listId", "/p/:username"], async (req, res) => {
 // Vite & Static file serving setup
 async function startServer() {
   const distPath = path.join(process.cwd(), "dist");
-  const isProduction = process.env.NODE_ENV === "production";
+  const isBundled =
+    (typeof __filename !== "undefined" && (__filename.endsWith(".cjs") || __filename.includes("dist"))) ||
+    Boolean(process.argv[1] && (process.argv[1].endsWith(".cjs") || process.argv[1].includes("dist")));
+  const isProduction = process.env.NODE_ENV === "production" || isBundled;
+
+  // Explicitly serve public static assets (fallback images, icons, manifests)
+  app.use(express.static(path.join(process.cwd(), "public")));
 
   // Vite middleware for development (only active when not serving production bundle)
   if (!isProduction) {
@@ -9835,22 +10403,22 @@ async function startServer() {
     });
   }
 
-  const primaryServer = app.listen(PORT, "0.0.0.0", () => {
+  const primaryServer = http.createServer(app);
+  primaryServer.on("error", (err: any) => {
+    if (err.code === "EADDRINUSE") {
+      console.warn(`[Server] Port ${PORT} in use. Existing process or proxy active.`);
+    } else {
+      console.error(`[Server] Primary server error on port ${PORT}:`, err);
+    }
+  });
+
+  primaryServer.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT} (environment: ${process.env.NODE_ENV || "development"})`);
 
-    // In production deployment on Cloud Run, if PORT is not 3000, also bind a secondary fallback listener on 3000
-    if (!isAiStudioSandbox && PORT !== 3000) {
-      try {
-        const secondaryServer = app.listen(3000, "0.0.0.0", () => {
-          console.log("[Server] Secondary fallback listener active on port 3000");
-        });
-        secondaryServer.on("error", (err: any) => {
-          if (err?.code !== "EADDRINUSE") {
-            console.warn("[Server] Secondary listener notice:", err?.message);
-          }
-        });
-      } catch (e) {}
-    }
+    // Storage Health Circuit Breaker & Google AI Studio Safeguard Audit
+    try {
+      verifyStorageHealth(DB_FILE);
+    } catch (e) {}
 
     // Schedule periodic TV Air Date Reminder checks
     // Initial check after 10s warmup, then every 30 minutes
